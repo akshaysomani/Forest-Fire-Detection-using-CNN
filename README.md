@@ -296,7 +296,7 @@ erDiagram
 
     DATASET_CATEGORIES {
         uuid id PK
-        string name UNIQUE
+        string name
         string description
         timestamp created_at
         timestamp updated_at
@@ -305,7 +305,7 @@ erDiagram
 
     DATASET_LABELS {
         uuid id PK
-        string name UNIQUE
+        string name
         string description
         timestamp created_at
         timestamp updated_at
@@ -316,7 +316,7 @@ erDiagram
         uuid id PK
         uuid category_id FK
         uuid user_id FK
-        string name UNIQUE
+        string name
         string description
         string status
         string tags
