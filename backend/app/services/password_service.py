@@ -18,7 +18,7 @@ class PasswordService:
     @staticmethod
     def generate_action_token(email: str, action: str, expires_in_minutes: int = 60) -> str:
         """Generates a secure, signed JWT action token (for email verification or password resets)."""
-        expire = datetime.utcnow() + timedelta(minutes=expires_in_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes)
         payload = {
             "sub": email,
             "action": action,

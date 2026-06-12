@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
@@ -27,7 +27,7 @@ class SessionService:
         user_agent: str | None
     ) -> UserSession:
         """Tracks a new login session linked to a specific refresh token."""
-        expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         device_type = self._parse_device_type(user_agent)
 
         session = UserSession(
@@ -38,7 +38,7 @@ class SessionService:
             device_type=device_type,
             is_active=True,
             expires_at=expires_at,
-            last_activity_at=datetime.utcnow()
+            last_activity_at=datetime.now(timezone.utc)
         )
         db.add(session)
         await db.flush()
@@ -49,7 +49,7 @@ class SessionService:
         query = select(UserSession).where(
             UserSession.user_id == user_id,
             UserSession.is_active == True,
-            UserSession.expires_at > datetime.utcnow()
+            UserSession.expires_at > datetime.now(timezone.utc)
         )
         result = await db.execute(query)
         return list(result.scalars().all())
@@ -99,7 +99,7 @@ class SessionService:
 
     async def update_session_activity(self, db: AsyncSession, session_id: uuid.UUID) -> None:
         """Updates the last activity timestamp for a session."""
-        stmt = update(UserSession).where(UserSession.id == session_id).values(last_activity_at=datetime.utcnow())
+        stmt = update(UserSession).where(UserSession.id == session_id).values(last_activity_at=datetime.now(timezone.utc))
         await db.execute(stmt)
         await db.flush()
 

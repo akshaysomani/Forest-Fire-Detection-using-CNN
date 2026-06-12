@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: forest_fire_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - forest_fire_storage:/app/storage
+      # Mount DB file if SQLite is stored locally to persist data
+      - forest_fire_db_data:/app/db_data
+    env_file:
+      - ./backend/.env
+    environment:
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_DIR=/app/storage
+    restart: always
+
+volumes:
+  forest_fire_storage:
+    driver: local
+  forest_fire_db_data:
+    driver: local

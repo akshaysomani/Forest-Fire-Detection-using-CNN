@@ -667,3 +667,202 @@ Tests run on an isolated in-memory transactional SQLite database (`sqlite+aiosql
 - **Proxy Body Configuration**: Ensure file transfer limits on proxies like Nginx are set to allow larger files (e.g. `client_max_body_size 100M;`).
 - **Disk Monitoring**: Set Alerts on server host disk usage (e.g. trigger warnings at 85%, and critical alert at 90%).
 - **Version Backups**: Enable storage bucket Versioning rules on cloud filesystems to restore files in disaster recovery scenarios.
+
+---
+
+### Step 14: Image Storage & Ingestion System Design
+
+The Image Storage & Ingestion System manages the lifecycle of all input imagery ingested into the application (dashboards, CCTV monitoring feeds, drone surveys, or satellite batch uploads).
+
+To support the heavy computation of ML-oriented workloads and avoid server-side blocking, this module is built using a strict **Separation of Concerns (SoC)**, **Asynchronous Processing Workers**, and the **Service-Repository** pattern.
+
+#### Architecture Diagram
+```
+[Client App / API Consumers]
+             │
+             ▼ (JWT Auth + RBAC Guard)
+   [Image Controller]  ◄───────────►  [Cache Manager (Redis/In-Memory)]
+             │
+      ┌──────┴──────────────────────────────┐
+      ▼ (Fast Synchronous Upload)            ▼ (Query Registry)
+[Upload Service]                      [Image Repository]
+      │                                      │
+      ├──────────────────────────────┐       ▼
+      │ (Async Background Extraction) │   [SQL Database]
+      ▼                              ▼
+[Upload Processor]           [File Storage Manager]
+      │                              │
+      ▼                              ▼
+[Validation Pipeline]        [Storage Service]
+  - Magic Byte Signature       - Local Storage Provider
+  - Pillow Pixel Decoding      - S3 / GCS / Azure Providers
+  - MD5 Global Deduplication
+      │
+      ▼
+[Preprocessing Pipeline]
+  - EXIF Metadata Extractor
+  - Image Resizer & Rescaler
+  - ML Input Normalization
+  - WebP Thumbnail Optimizer
+```
+
+#### Image Ingestion Flow
+```mermaid
+graph TD
+    A[Raw Multipart File Upload] --> B{Magic Bytes Validation}
+    B -- Invalid --> C[Reject: 400 Bad Request]
+    B -- Valid --> D{Pixel Integrity Verification}
+    D -- Corrupt/Truncated --> C
+    D -- Healthy --> E{Global MD5 Deduplication}
+    E -- Duplicate Hash --> F[Share Storage Reference]
+    E -- Unique Hash --> G[Generate Storage Path]
+    G --> H[Extract EXIF & Telemetry]
+    H --> I[Write File to Storage Provider]
+    I --> J[Background Preprocessor]
+    J --> K[Generate 256x256 WebP Thumbnail]
+    J --> L[Run CNN Input Normalization]
+    K & L --> M[Register DB Records & Versions]
+```
+
+---
+
+### Step 15: Image Upload Integration Guide
+
+Detailed integration instructions for bulk, single, and ZIP uploads:
+
+#### 1. Single Image Ingestion
+- **URL**: `POST /api/v1/images/upload`
+- **Content-Type**: `multipart/form-data`
+- **Fields**:
+  - `file`: (Binary data) Image file.
+  - `source`: (String) Source identifier (`manual`, `drone`, `cctv`, `satellite`).
+
+#### curl Integration Example
+```bash
+curl -X POST "http://localhost:8000/api/v1/images/upload" \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -H "Content-Type: multipart/form-data" \
+     -F "file=@/path/to/forest_fire.png" \
+     -F "source=drone"
+```
+
+#### 2. Bulk Image Ingestion
+- **URL**: `POST /api/v1/images/bulk-upload`
+- **Content-Type**: `multipart/form-data`
+- **Fields**:
+  - `files`: (Multiple Binary files) Multiple files can be passed using the same key name.
+  - `source`: (String) Source system label.
+
+#### 3. ZIP Archive Ingestion (Async Background Worker)
+- **URL**: `POST /api/v1/images/upload-zip`
+- **Content-Type**: `multipart/form-data`
+- **Fields**:
+  - `file`: (Binary ZIP Archive) Compressed file.
+  - `source`: (String) Ingestion source tag.
+
+---
+
+### Step 16: Image Storage API Reference
+
+All endpoints require the HTTP Header: `Authorization: Bearer <JWT_ACCESS_TOKEN>`
+
+| HTTP Method | Path | Description | Access Level |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/images/upload` | Upload a single image file | Forest Officer, Admin |
+| `POST` | `/api/v1/images/bulk-upload` | Upload multiple image files concurrently | Forest Officer, Admin |
+| `POST` | `/api/v1/images/upload-zip` | Upload a ZIP archive containing images | Forest Officer, Admin |
+| `GET` | `/api/v1/images` | List registered images (paginated) | Viewer, Officer, Admin |
+| `GET` | `/api/v1/images/search` | Advanced search with multi-parameter filter | Viewer, Officer, Admin |
+| `GET` | `/api/v1/images/statistics` | Retrieve image database statistics | Viewer, Officer, Admin |
+| `GET` | `/api/v1/images/{id}/stream` | Stream/Retrieve the binary image payload | Viewer, Officer, Admin |
+| `GET` | `/api/v1/images/{id}/thumbnail` | Retrieve the WebP thumbnail representation | Viewer, Officer, Admin |
+| `DELETE` | `/api/v1/images/{id}` | Soft delete a registered image | Super Admin |
+
+#### Advanced Search Filter Query Parameters
+- `source` (e.g. `drone`, `cctv`)
+- `status` (e.g. `active`, `archived`)
+- `min_width` / `max_width`, `min_height` / `max_height`
+- `min_size` / `max_size` (bytes)
+- `camera_make` / `camera_model`
+- `min_lat` / `max_lat`, `min_lon` / `max_lon` (GPS coordinates)
+- `skip`, `limit` (paging)
+
+---
+
+### Step 17: Storage Providers Configuration & Setup Guide
+
+#### Configuration Settings (.env)
+```bash
+# Available Storage Providers: local, s3, gcs, azure
+STORAGE_PROVIDER="local"
+
+# Root path for local storage files (used by LocalStorageProvider)
+STORAGE_BASE_DIR="./storage"
+
+# AWS S3 Settings (used by S3StorageProvider)
+AWS_S3_BUCKET="forest-fire-images-production"
+AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+AWS_REGION="us-east-1"
+```
+
+- **LocalStorageProvider**: Asynchronous threadpool IO (`run_in_threadpool`) prevents event-loop blocking.
+- **S3StorageProvider**: Fully asynchronous bucket management using `aioboto3` client connections. Supports generating secure, time-limited presigned URLs.
+- **Local-to-Cloud Migration**: Handled by `FileStorageManager` which safely uploads files to the cloud, verifies MD5 hashes, updates databases under transaction, and deletes local copies.
+
+---
+
+### Step 18: Image Module Code Quality, Testing & Security Audit
+
+#### Security Controls
+- **Magic Bytes Validation**: Read first 8 bytes of file streams to match image format header signatures (reject spoofing).
+- **Pixel Flood Mitigation**: Limit pixel array decoding to maximum 8192x8192 boundaries.
+- **Zip Slip Mitigation**: Strip directory traversal paths (`../`) from filenames during extraction.
+- **Storage Private Access**: Block public read/write to storage buckets. Access via secure time-limited presigned URLs.
+
+#### Testing Suite
+- Run all tests: `python -m pytest --cov=app --cov-report=term`
+- 31/31 passed successfully.
+
+---
+
+### Step 19: Image Production Deployment & Monitoring Checklist
+
+- [ ] **Reverse Proxy Limits**: Configure Nginx `client_max_body_size 100M;` to support large ZIP/bulk uploads.
+- [ ] **Keep-Alive Timeouts**: Increase timeouts on load balancers to prevent premature network disconnects.
+- [ ] **Secret Management**: Inject cloud access keys at container runtime using secure secret managers.
+- [ ] **Bucket Policies**: Restrict cloud buckets to private access and enable versioning policies.
+- [ ] **Disk Sweeper Alerts**: Configure alarms when disk space exceeds 85% warning / 95% critical status.
+
+---
+
+## CI/CD Workflow & Docker Deployment
+
+This project includes a fully integrated GitHub Actions workflow for CI/CD and Docker files for containerized packaging.
+
+### GitHub Actions
+The workflow file at `.github/workflows/ci.yml` runs automatically on pushes and PRs to main. It:
+1. Provisions Python 3.11 container.
+2. Installs requirements.
+3. Performs formatting and code checks.
+4. Executes the full test suite and uploads coverage reports.
+
+### Docker Compose Quickstart
+To spin up the entire application locally in containerized form:
+1. Build and launch:
+   ```bash
+   docker-compose up --build -d
+   ```
+2. The FastAPI server runs on port `8000`. Storage is persisted via named Docker volumes: `forest_fire_storage` and `forest_fire_db_data`.
+
+---
+
+## Contributors
+- **Akshay Somani** (Lead Maintainer)
+
+## License
+This project is licensed under the MIT License - see the `LICENSE` file for details.
+
+## Acknowledgements
+Special thanks to all academic researchers, CNN computer vision architectures (like MobileNet, ResNet), and local forestry departments providing wildfire dataset feeds.
+

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from app.core.config import settings
 from app.core.exceptions import AuthenticationException, TokenExpiredException
@@ -9,9 +9,9 @@ class JWTService:
     @staticmethod
     def create_access_token(user_id: uuid.UUID, email: str, expires_delta: timedelta | None = None) -> str:
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = datetime.now(timezone.utc) + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
         to_encode = {
             "sub": str(user_id),
@@ -24,9 +24,9 @@ class JWTService:
     @staticmethod
     def create_refresh_token(user_id: uuid.UUID, jti: uuid.UUID, expires_delta: timedelta | None = None) -> str:
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = datetime.now(timezone.utc) + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
         to_encode = {
             "sub": str(user_id),

@@ -39,5 +39,8 @@ class StorageService:
     async def exists(self, file_path: str) -> bool:
         return await self.provider.exists(file_path)
 
+    async def generate_presigned_url(self, file_path: str, expiration: int = 3600) -> str:
+        return await self.provider.generate_presigned_url(file_path, expiration)
+
 
 storage_service = StorageService()

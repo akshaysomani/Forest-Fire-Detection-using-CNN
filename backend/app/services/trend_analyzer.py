@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple, Dict, Any
 
 
@@ -15,7 +15,7 @@ class TrendAnalyzer:
         data_map = {date_str: count for date_str, count in trend_data}
         result = []
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for i in range(days - 1, -1, -1):
             date_str = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             count = data_map.get(date_str, 0)

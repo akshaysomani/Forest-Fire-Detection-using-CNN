@@ -28,9 +28,9 @@ class TokenManager:
         token_hash = self._hash_token(token_str)
 
         if expires_delta:
-            expires_at = datetime.utcnow() + expires_delta
+            expires_at = datetime.now(timezone.utc) + expires_delta
         else:
-            expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
         db_token = RefreshToken(
             id=jti,
@@ -98,7 +98,7 @@ class TokenManager:
         session = session_result.scalar_one_or_none()
         if session:
             session.refresh_token_id = new_db_token.id
-            session.last_activity_at = datetime.utcnow()
+            session.last_activity_at = datetime.now(timezone.utc)
             db.add(session)
 
         # Create new access token

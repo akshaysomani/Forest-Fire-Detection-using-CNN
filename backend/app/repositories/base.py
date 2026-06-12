@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Generic, Type, TypeVar, Any, Sequence
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +58,7 @@ class BaseRepository(Generic[ModelType]):
         db_obj = await self.get_by_id(db, id, include_deleted=False)
         if not db_obj:
             return False
-        db_obj.deleted_at = datetime.utcnow()
+        db_obj.deleted_at = datetime.now(timezone.utc)
         db.add(db_obj)
         await db.flush()
         return True

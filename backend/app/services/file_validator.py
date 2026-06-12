@@ -34,6 +34,21 @@ class FileValidator:
         if mime_type and mime_type.lower() not in FileValidator.ALLOWED_MIME_TYPES:
             return False, f"Unsupported mime type: '{mime_type}'. Allowed mime types are: {list(FileValidator.ALLOWED_MIME_TYPES)}", None, None
 
+        # 3. Verify magic bytes to prevent spoofing
+        from app.services.image_validator import image_validator
+        valid_magic, magic_mime = image_validator.verify_magic_bytes(file_stream)
+        if not valid_magic or not magic_mime:
+            return False, "Invalid file signature: magic bytes do not match any supported image format.", None, None
+
+        mime_to_ext = {
+            "image/jpeg": {".jpg", ".jpeg"},
+            "image/png": {".png"},
+            "image/webp": {".webp"},
+            "image/gif": {".gif"}
+        }
+        if magic_mime not in mime_to_ext or ext not in mime_to_ext[magic_mime]:
+            return False, f"Spoofing detected: file extension '{ext}' does not match file signature '{magic_mime}'.", None, None
+
         # 3. Read size and check limits
         try:
             file_stream.seek(0, 2)

@@ -75,7 +75,7 @@ class UserService:
         # Create verification token
         token = password_service.generate_action_token(db_user.email, action="verify_email")
         db_user.email_verification_token = token
-        db_user.email_verification_expires_at = datetime.utcnow() + timedelta(hours=24)
+        db_user.email_verification_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
         db.add(db_user)
 
         # Audit log
@@ -114,7 +114,7 @@ class UserService:
             # Track failed attempt
             user.failed_login_attempts += 1
             if user.failed_login_attempts >= FAILED_LIMIT:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=LOCK_DURATION_MINUTES)
+                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCK_DURATION_MINUTES)
                 # Reset attempts on lock initiation to avoid overflow
                 user.failed_login_attempts = 0
 
@@ -138,7 +138,7 @@ class UserService:
         # Reset failed attempts and lockout
         user.failed_login_attempts = 0
         user.locked_until = None
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         db.add(user)
 
         # Audit successful login
@@ -186,7 +186,7 @@ class UserService:
 
         token = password_service.generate_action_token(email, action="reset_password", expires_in_minutes=30)
         user.password_reset_token = token
-        user.password_reset_expires_at = datetime.utcnow() + timedelta(minutes=30)
+        user.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
         db.add(user)
 
         audit = AuditLog(

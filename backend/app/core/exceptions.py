@@ -44,7 +44,7 @@ class AuthorizationException(BaseAPIException):
 
 
 class ValidationException(BaseAPIException):
-    status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code: int = status.HTTP_422_UNPROCESSABLE_CONTENT
     error_code: str = "VALIDATION_ERROR"
     message: str = "Request validation failed."
 
@@ -102,7 +102,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             details[loc] = error["msg"]
 
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
                 "success": False,
                 "error": {

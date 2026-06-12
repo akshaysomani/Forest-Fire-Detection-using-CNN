@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Tuple
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +21,7 @@ class DashboardRepository:
         query = select(func.count(func.distinct(UserSession.user_id))).where(
             and_(
                 UserSession.is_active == True,
-                UserSession.expires_at > datetime.utcnow()
+                UserSession.expires_at > datetime.now(timezone.utc)
             )
         )
         res = await db.execute(query)
@@ -32,7 +32,7 @@ class DashboardRepository:
         query = select(func.count(UserSession.id)).where(
             and_(
                 UserSession.is_active == True,
-                UserSession.expires_at > datetime.utcnow()
+                UserSession.expires_at > datetime.now(timezone.utc)
             )
         )
         res = await db.execute(query)
@@ -162,7 +162,7 @@ class DashboardRepository:
         Calculates daily user registrations over the specified rolling days.
         Returns tuples: (date_str, new_users_count)
         """
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
         # Handle SQLite date formatting vs PostgreSQL
         date_expr = func.strftime("%Y-%m-%d", User.created_at)
         
@@ -188,7 +188,7 @@ class DashboardRepository:
         Calculates daily uploads / processed images over the specified rolling days.
         Returns tuples: (date_str, upload_count)
         """
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
         date_expr = func.strftime("%Y-%m-%d", Detection.created_at)
 
         query = select(

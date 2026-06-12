@@ -59,8 +59,8 @@ class LabelManager:
             )
             .values(label_id=label_id, updated_at=func.now() if hasattr(db, "bind") else None) # Wait, standard Python datetime works best to be provider-independent
         )
-        # Let's import datetime
-        from datetime import datetime
+        # Let's import datetime with timezone
+        from datetime import datetime, timezone
         query = (
             update(DatasetFile)
             .where(
@@ -70,7 +70,7 @@ class LabelManager:
                     DatasetFile.deleted_at.is_(None)
                 )
             )
-            .values(label_id=label_id, updated_at=datetime.utcnow())
+            .values(label_id=label_id, updated_at=datetime.now(timezone.utc))
         )
 
         res = await db.execute(query)

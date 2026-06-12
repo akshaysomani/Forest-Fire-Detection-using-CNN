@@ -8,8 +8,9 @@ from typing import Any
 class JSONFormatter(logging.Formatter):
     """Formats log records as structured JSON payloads."""
     def format(self, record):
+        from datetime import timezone
         log_data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
             "logger": record.name

@@ -15,6 +15,15 @@ from app.models.dataset import (
     DatasetUploadHistory,
     DatasetAuditLog,
 )
+from app.models.image import (
+    Image,
+    ImageMetadata,
+    ImageVersion,
+    ImageProcessingLog,
+    ImageStorageLocation,
+    ImageAccessLog,
+    ImageAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -34,4 +43,11 @@ __all__ = [
     "DatasetFile",
     "DatasetUploadHistory",
     "DatasetAuditLog",
+    "Image",
+    "ImageMetadata",
+    "ImageVersion",
+    "ImageProcessingLog",
+    "ImageStorageLocation",
+    "ImageAccessLog",
+    "ImageAuditLog",
 ]

@@ -71,10 +71,11 @@ class DatasetSnapshotService:
                     })
 
                 # 2. Add metadata.json to zip
+                from datetime import timezone
                 meta_payload = {
                     "dataset_id": str(dataset_id),
                     "version": version_str,
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                     "created_by": creator_username,
                     "description": description or "",
                     "file_count": file_count,
