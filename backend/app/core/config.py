@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     # Database Config
     DATABASE_URL: str
 
+    # Storage Config
+    STORAGE_PROVIDER: str = "local"
+    STORAGE_BASE_DIR: str = "./storage"
+    AWS_S3_BUCKET: str = "forest-fire-detection-datasets"
+    GCS_BUCKET: str = "forest-fire-detection-datasets"
+    AZURE_CONTAINER: str = "forest-fire-detection-datasets"
+
     # Default Super Admin Seed data
     DEFAULT_ADMIN_EMAIL: EmailStr = "admin@forestfire.org"
     DEFAULT_ADMIN_USERNAME: str = "admin"

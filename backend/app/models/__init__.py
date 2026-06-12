@@ -6,6 +6,15 @@ from app.models.token import RefreshToken
 from app.models.session import UserSession
 from app.models.audit import AuditLog
 from app.models.detection import Detection
+from app.models.dataset import (
+    DatasetCategory,
+    DatasetLabel,
+    Dataset,
+    DatasetVersion,
+    DatasetFile,
+    DatasetUploadHistory,
+    DatasetAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -17,5 +26,12 @@ __all__ = [
     "RefreshToken",
     "UserSession",
     "AuditLog",
-    "Detection"
+    "Detection",
+    "DatasetCategory",
+    "DatasetLabel",
+    "Dataset",
+    "DatasetVersion",
+    "DatasetFile",
+    "DatasetUploadHistory",
+    "DatasetAuditLog",
 ]

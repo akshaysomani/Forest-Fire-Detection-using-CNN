@@ -23,6 +23,10 @@ async def lifespan(app: FastAPI):
     async with SessionLocal() as db:
         try:
             await permission_service.seed_roles_and_permissions(db)
+            
+            # Seed default dataset categories and labels
+            from app.services.dataset_service import dataset_service
+            await dataset_service.seed_categories_and_labels(db)
 
             # Check if default Super Admin already exists
             admin_query = select(User).where(User.username == settings.DEFAULT_ADMIN_USERNAME)
