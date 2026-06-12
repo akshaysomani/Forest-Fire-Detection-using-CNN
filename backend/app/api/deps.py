@@ -33,7 +33,7 @@ async def get_current_user(
     except ValueError:
         raise AuthenticationException("Invalid user identifier format in token.")
 
-    user = await user_repository.get_by_id(db, user_id)
+    user = await user_repository.get_user_with_roles_and_permissions(db, user_id)
     if not user:
         raise AuthenticationException("User associated with this token does not exist.")
 

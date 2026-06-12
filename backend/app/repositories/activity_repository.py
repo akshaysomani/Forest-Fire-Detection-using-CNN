@@ -16,7 +16,8 @@ class ActivityRepository:
         resource_type: Optional[str] = None
     ) -> Sequence[AuditLog]:
         """Fetch audit log items with optional filtering and pagination."""
-        query = select(AuditLog)
+        from sqlalchemy.orm import selectinload
+        query = select(AuditLog).options(selectinload(AuditLog.user))
         if user_id:
             query = query.where(AuditLog.user_id == user_id)
         if action:

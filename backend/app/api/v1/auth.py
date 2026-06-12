@@ -30,7 +30,9 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     """Registers a new user and issues an email verification token."""
     new_user = await user_service.register_user(db, user_in.model_dump())
     await db.commit()
-    return new_user
+    from app.repositories.user_repository import user_repository
+    refreshed_user = await user_repository.get_user_with_roles_and_permissions(db, new_user.id)
+    return refreshed_user
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -138,7 +140,9 @@ async def update_profile(
         profile_in=profile_in.model_dump(exclude_unset=True)
     )
     await db.commit()
-    return updated_user
+    from app.repositories.user_repository import user_repository
+    refreshed_user = await user_repository.get_user_with_roles_and_permissions(db, updated_user.id)
+    return refreshed_user
 
 
 @router.put("/change-password", status_code=status.HTTP_204_NO_CONTENT)

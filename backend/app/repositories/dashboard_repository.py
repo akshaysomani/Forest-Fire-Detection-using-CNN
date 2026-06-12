@@ -27,6 +27,17 @@ class DashboardRepository:
         res = await db.execute(query)
         return res.scalar_one()
 
+    async def get_active_sessions_count(self, db: AsyncSession) -> int:
+        """Count all active user sessions that have not expired."""
+        query = select(func.count(UserSession.id)).where(
+            and_(
+                UserSession.is_active == True,
+                UserSession.expires_at > datetime.utcnow()
+            )
+        )
+        res = await db.execute(query)
+        return res.scalar_one()
+
     async def get_verified_users_count(self, db: AsyncSession) -> int:
         """Count all users with verified email addresses."""
         query = select(func.count(User.id)).where(

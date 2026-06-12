@@ -26,19 +26,19 @@ _db_initialised = False
 
 @pytest_asyncio.fixture(autouse=True)
 async def setup_db():
-    """Initialise tables and seed roles once per process, then yield per-test."""
-    global _db_initialised
-    if not _db_initialised:
-        async with engine_test.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    """Initialise tables and seed roles per-test."""
+    async with engine_test.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-        async with SessionLocalTest() as db:
-            from app.services.permission_service import permission_service
-            await permission_service.seed_roles_and_permissions(db)
-            await db.commit()
+    async with SessionLocalTest() as db:
+        from app.services.permission_service import permission_service
+        await permission_service.seed_roles_and_permissions(db)
+        await db.commit()
 
-        _db_initialised = True
     yield
+
+    async with engine_test.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest_asyncio.fixture

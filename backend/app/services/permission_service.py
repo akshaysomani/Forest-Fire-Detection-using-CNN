@@ -77,7 +77,6 @@ class PermissionService:
             if not role:
                 role = Role(name=role_name, description=f"Default {role_name} role")
                 db.add(role)
-                await db.flush()
 
             # Assign permissions
             role.permissions = [db_permissions[name] for name in perm_names]

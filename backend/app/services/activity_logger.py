@@ -2,6 +2,7 @@ import logging
 import json
 import sys
 from datetime import datetime
+from typing import Any
 
 
 class JSONFormatter(logging.Formatter):
@@ -60,5 +61,4 @@ class ActivityLogger:
 
 
 # Allow typing helper
-from typing import Any
 activity_logger = ActivityLogger()
