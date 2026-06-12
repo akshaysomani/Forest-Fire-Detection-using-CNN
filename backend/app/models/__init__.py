@@ -24,6 +24,7 @@ from app.models.image import (
     ImageAccessLog,
     ImageAuditLog,
 )
+from app.models.training import TrainingRun, TrainingCheckpoint
 
 __all__ = [
     "BaseModel",
@@ -50,4 +51,6 @@ __all__ = [
     "ImageStorageLocation",
     "ImageAccessLog",
     "ImageAuditLog",
+    "TrainingRun",
+    "TrainingCheckpoint",
 ]

@@ -15,4 +15,8 @@ python-dotenv>=1.0.1
 aiosqlite>=0.20.0
 psutil>=6.0.0
 pillow>=10.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+scikit-learn>=1.0.0
+matplotlib>=3.5.0
 

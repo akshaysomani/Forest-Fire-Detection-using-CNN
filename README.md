@@ -836,6 +836,157 @@ AWS_REGION="us-east-1"
 
 ---
 
+### Step 20: CNN Training Pipeline (Module 5) Overview & Audit
+
+The CNN Training Pipeline Module enables ML engineers to train, monitor, evaluate, and resume deep learning image classification models (custom and pre-trained transfer learning architectures) directly via REST APIs. 
+
+#### Core Findings of the CNN Training Audit
+- **Pipeline Modularity**: All components are isolated inside the `app.services.training` sub-package.
+- **Async Execution**: Spawning training loops in separate background threads preserves FastAPI event loop reactivity.
+- **Deterministic Training**: Thread-safe global seeding blocks guarantee model training reproducibility.
+- **Data Integrity**: Checks verify image bitmap structural validity and physical storage availability before launching runs.
+- **Imbalance Mitigation**: Stratified splitting partitions classes proportionally across Train, Validation, and Test subsets.
+
+---
+
+### Step 21: Training Database Schema & Design
+
+The database schema manages run parameters, historical epoch metrics, and saved checkpoint paths. The tables link back to `datasets` and the initiating `users`.
+
+```mermaid
+erDiagram
+    DATASETS ||--o{ TRAINING_RUNS : "trains"
+    USERS ||--o{ TRAINING_RUNS : "starts"
+    TRAINING_RUNS ||--o{ TRAINING_CHECKPOINTS : "generates"
+    
+    TRAINING_RUNS {
+        uuid id PK
+        uuid dataset_id FK
+        uuid dataset_version_id FK "nullable"
+        uuid user_id FK
+        string status "pending | running | completed | failed | stopped"
+        string model_name "custom_cnn | resnet18 | mobilenet_v3 | efficientnet_b0"
+        json hyperparameters
+        json metrics_history
+        string error_message
+        timestamp started_at
+        timestamp completed_at
+        timestamp created_at
+    }
+    
+    TRAINING_CHECKPOINTS {
+        uuid id PK
+        uuid run_id FK
+        int epoch
+        float val_loss
+        float val_accuracy
+        string checkpoint_path
+        boolean is_best
+        timestamp created_at
+    }
+```
+
+---
+
+### Step 22: Dataset Splitting, Validation, and Statistics
+
+Before feeding images to PyTorch loaders, the data preparation pipeline (`dataset_preparation.py`) runs three distinct operations:
+
+1.  **Integrity Validation (`dataset_validator.py`)**: Checks for a minimum of 10 images, verifies that all images are labeled, checks for class diversity (at least two classes present), and verifies that each physical file exists in the storage provider.
+2.  **Stratified Splitting (`dataset_splitter.py`)**: Groups files by label and splits each class group into Train/Val/Test subsets (default: 80/10/10) using a random seed. This maintains proportional representation across splits.
+3.  **Statistics Aggregator (`data_statistics.py`)**: Computes label counts/percentages, average image dimensions, and channel-wise pixel color statistics (mean/std) based on a subset of up to 50 images to avoid storage I/O bottlenecks.
+
+---
+
+### Step 23: Preprocessing & Data Augmentations Engine
+
+Images are loaded from local or cloud storage and prepared for CNN ingestion using standard Torchvision transformations:
+
+-   **Standard Preprocessing (`preprocessing_pipeline.py`)**: Resizes images to 224x224, converts them to PyTorch tensors, and normalizes them using ImageNet constants (`mean=[0.485, 0.456, 0.406]`, `std=[0.229, 0.224, 0.225]`) or calculated dataset statistics.
+-   **Augmentation Manager (`augmentation_manager.py`)**: Resolves presets or custom configs to standard Torchvision transforms:
+    *   `none`: Resize and normalization only.
+    *   `light`: Flips, light rotation (10 degrees), and minor color jitter.
+    *   `default`: Standard flips, 15 degrees rotation, and moderate color jitter.
+    *   `heavy`: Horizontal/vertical flips, 30 degrees rotation, color jitter, zoom, and custom Gaussian noise injection (`AddGaussianNoise`).
+
+---
+
+### Step 24: CNN Model Architectures & Transfer Learning Factory
+
+The `ModelFactory` instantiates PyTorch neural networks, modifying their head layers for binary classification (Fire vs. Non-Fire):
+
+1.  **Custom CNN (`cnn_model.py`)**: A shallow architecture featuring 3 Conv2d blocks (with Batch Normalization, Max Pooling, and ReLU activations) followed by a Dropout layer (0.5) and 2 Linear layers.
+2.  **Pre-trained Transfer Learning Models**:
+    *   `resnet18` / `resnet50`: Replaces `model.fc` with a Dropout-Linear sequential block.
+    *   `mobilenet_v3`: Replaces `model.classifier[3]` with a binary Linear layer.
+    *   `efficientnet_b0`: Replaces `model.classifier[1]` with a binary Linear layer.
+
+---
+
+### Step 25: Background Training Engine & Early Stopping
+
+The `TrainingEngine` coordinates training runs without freezing the FastAPI main thread:
+
+-   **Background Thread Loop**: Spawns a dedicated thread for the run, setting up an isolated asyncio event loop for DB sessions (`SessionLocal()`) and async storage provider access.
+-   **Graceful Cancellation**: The thread registers with the thread-safe `RunManager`. When `/training/stop` is called, a `threading.Event` is set. The trainer checks this event at the batch boundary and exits cleanly if signaled.
+-   **Early Stopping**: Monitored epoch-by-epoch. If validation loss fails to improve for 5 consecutive epochs, training terminates early, saving the current state.
+-   **Observability Logs**: Emits structured JSON lines logs to stdout:
+    ```json
+    {"timestamp": "2026-06-13T00:00:00Z", "level": "INFO", "run_id": "uuid", "message": "Epoch 3 Completed: train_loss=0.1245, val_loss=0.0984...", "logger": "training_pipeline"}
+    ```
+
+---
+
+### Step 26: Training REST APIs & RBAC Controls
+
+Endpoints require a secure `Authorization: Bearer <token>` header:
+
+| Method | Path | Description | Access Level |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/training/start` | Start training in the background | Super Admin / Platform Mgr |
+| `POST` | `/api/v1/training/stop/{run_id}` | Gracefully stop an active run | Super Admin / Platform Mgr |
+| `POST` | `/api/v1/training/resume` | Resume run from the latest checkpoint | Super Admin / Platform Mgr |
+| `GET` | `/api/v1/training/status/{run_id}` | Query current run status and metrics | Viewer and above |
+| `GET` | `/api/v1/training/runs` | List training runs history (paginated) | Viewer and above |
+| `GET` | `/api/v1/training/metrics/{run_id}` | Get loss/accuracy history for graphing | Viewer and above |
+| `GET` | `/api/v1/training/checkpoints/{run_id}` | List checkpoints generated by a run | Viewer and above |
+
+---
+
+### Step 27: Evaluation, Experiment Tracking, and Artifacts
+
+Upon successful training, the engine automatically packages and uploads artifacts:
+
+1.  **Test Set Evaluation**: Computes final Accuracy, Precision, Recall, F1 Score, and ROC AUC using Scikit-Learn.
+2.  **Confusion Matrix Plot**: Matplotlib draws a fire-themed ("Oranges") confusion matrix and saves it to storage as `confusion_matrix.png`.
+3.  **JSON/Markdown Summaries**: Generates a standard evaluation report (`evaluation_report.md`), saving it alongside hyperparameter configurations (`config.json`) and metrics history (`metrics.json`) under `runs/{run_id}/artifacts/`.
+
+---
+
+### Step 28: Training Pipeline Testing Report
+
+Unit and integration tests are isolated using a transactional, in-memory SQLite database (`sqlite+aiosqlite:///:memory:`):
+-   **Image Mocking**: Tests create dynamic mock image bitmaps using Pillow (`Image.new`) to upload files.
+-   **Background Mocking**: Endpoints tests patch `start_training_run` using `unittest.mock.patch` to check validation logic without running full neural network loops.
+-   To run the test suite:
+    ```powershell
+    cd backend
+    python -m pytest
+    ```
+-   **Test Coverage**: The test suite covers config schemas, dataset splitter, statistics calculations, model factory, validation logic, and the complete set of REST controllers.
+
+---
+
+### Step 29: Training Production Checklist
+
+- [ ] **GPU Execution Support**: Compile Docker container images with matching Nvidia CUDA drivers for GPU-accelerated training.
+- [ ] **Docker Storage Mounts**: Ensure storage volumes (e.g., `/storage/runs`) are persistent and mounted to avoid losing weights on container updates.
+- [ ] **Reverse Proxy Timeouts**: Increase Nginx read/write timeouts to handle long-running client status polling requests.
+- [ ] **MLflow Logs Integration**: Configure log forwarders to forward console JSON logs to MLflow or centralized ELK stack dashboards.
+- [ ] **Checkpoints Clean-up**: Setup cron routines to prune non-best checkpoints for older runs to conserve disk space.
+
+---
+
 ## CI/CD Workflow & Docker Deployment
 
 This project includes a fully integrated GitHub Actions workflow for CI/CD and Docker files for containerized packaging.
@@ -865,4 +1016,5 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 
 ## Acknowledgements
 Special thanks to all academic researchers, CNN computer vision architectures (like MobileNet, ResNet), and local forestry departments providing wildfire dataset feeds.
+
 
