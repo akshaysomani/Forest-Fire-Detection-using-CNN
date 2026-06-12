@@ -211,3 +211,459 @@ cd backend
 python -m pytest
 ```
 *Note: In the testing environment, rate-limiting is bypassed, and database tables are recreated per-test to guarantee test isolation.*
+
+---
+
+### Step 7: Dataset Management Module Overview & Audit
+
+#### System Overview & Separation of Concerns (SoC)
+The Dataset Management Module is designed for ML engineers to build, organize, validate, and version image datasets for training CNN models. It utilizes a clean Separation of Concerns (SoC) design:
+
+```
+                  [ FastAPI Endpoints ]
+                           │
+             ┌─────────────┴─────────────┐
+             ▼                           ▼
+     [Upload Service]             [Version Service]
+     - Single / Bulk uploads      - Create Snapshots
+     - ZIP extractor worker       - Rollback manager
+             │                           │
+             └─────────────┬─────────────┘
+                           ▼
+                 [Validator Pipeline]
+                 - Format & size check
+                 - Image header decode
+                 - MD5 deduplication
+                           │
+                           ▼
+                  [Storage Service]
+                  - Local filesystem
+                  - S3 / GCS / Azure
+```
+
+#### Upload & Ingestion Pipelines
+1. **ZIP Ingestion**: Client uploads a ZIP archive to `POST /api/v1/datasets/zip-upload`.
+2. **Background Task**: The router creates an upload history record (status="pending") and hands extraction off to `DatasetProcessor` running in the background.
+3. **Subfolder Classification**: Files inside folders like `fire/` are assigned the label `Fire` automatically, while those inside `non_fire/` are labeled `Non-Fire`.
+4. **Active Workspace Registry**: Active files are written to `datasets/{dataset_id}/raw/` and registered in the database as unversioned files.
+
+#### Validation & Quality Checking
+Every image passes through three validation layers before it is accepted:
+1. **Format Validation**: Checks extension (`.jpg`, `.jpeg`, `.png`, `.webp`) and MIME types.
+2. **Resolution & Size Validation**: Checks resolution boundaries (min 128x128, max 8192x8192) and limits sizes to 10MB.
+3. **Structural Validation (Pillow check)**: Opens image headers and verifies no bitmap corruptions exist.
+4. **MD5 Deduplication**: Checks MD5 hash against existing records in this dataset to prevent database contamination.
+
+#### Existing Dataset Infrastructure State (DATASET_AUDIT.md Summary)
+- **Previous State**: None. Previously, the backend only had a generic `detections` table log referencing individual image paths but no concept of grouping images into curated training, validation, or test datasets.
+- **Identified Gaps**: No batch ZIP processing, no image validation (posing corruption risks to downstream models), hardcoded local file storage without scaling options, and no dataset APIs.
+- **Improvements Implemented**: Dedicated UUID declarative schema, multi-layer Pillow checks, background ZIP processing, abstract `StorageService`, and standard pagination APIs.
+
+---
+
+### Step 8: Dataset Architecture, Directory Layout & Database Design
+
+#### Directory Structure Layout
+To support scaling and multi-tenant structures, files are organized in a structured local workspace or cloud prefix pattern:
+```
+storage/
+├── datasets/
+│   └── {dataset_id}/
+│       ├── raw/                  # Active unversioned file registry
+│       │   ├── image_001.jpg
+│       │   └── image_002.png
+│       └── snapshots/            # Immutable version snapshots
+│           ├── v1.0.0.zip
+│           └── v1.1.0.zip
+└── temp/                         # Temporary staging folders for zip extractions
+    └── {upload_id}/
+```
+
+#### Database Schema Diagram & ERD
+```mermaid
+erDiagram
+    DATASET_CATEGORIES ||--o{ DATASETS : "categorizes"
+    USERS ||--o{ DATASETS : "owns"
+    DATASETS ||--o{ DATASET_VERSIONS : "contains"
+    DATASETS ||--o{ DATASET_FILES : "contains"
+    DATASET_VERSIONS ||--o{ DATASET_FILES : "snapshots"
+    DATASET_LABELS ||--o{ DATASET_FILES : "classifies"
+    DATASETS ||--o{ DATASET_UPLOAD_HISTORY : "tracks"
+    DATASETS ||--o{ DATASET_AUDIT_LOGS : "audits"
+    USERS ||--o{ DATASET_AUDIT_LOGS : "performs"
+    USERS ||--o{ DATASET_VERSIONS : "creates"
+    USERS ||--o{ DATASET_UPLOAD_HISTORY : "initiates"
+
+    DATASET_CATEGORIES {
+        uuid id PK
+        string name UNIQUE
+        string description
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DATASET_LABELS {
+        uuid id PK
+        string name UNIQUE
+        string description
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DATASETS {
+        uuid id PK
+        uuid category_id FK
+        uuid user_id FK
+        string name UNIQUE
+        string description
+        string status
+        string tags
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DATASET_VERSIONS {
+        uuid id PK
+        uuid dataset_id FK
+        uuid user_id FK
+        string version_str
+        string description
+        string status
+        json metadata_json
+        string snapshot_path
+        int size_bytes
+        int file_count
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DATASET_FILES {
+        uuid id PK
+        uuid dataset_id FK
+        uuid version_id FK "nullable"
+        uuid label_id FK "nullable"
+        string file_path
+        string filename
+        int file_size
+        string mime_type
+        string md5_hash
+        json metadata_json
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DATASET_UPLOAD_HISTORY {
+        uuid id PK
+        uuid dataset_id FK
+        uuid user_id FK
+        string status
+        string upload_type
+        string original_filename
+        int total_files
+        int processed_files
+        int failed_files
+        json error_details
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    DATASET_AUDIT_LOGS {
+        uuid id PK
+        uuid dataset_id FK
+        uuid user_id FK
+        string action
+        json details
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+```
+
+#### Database Table Definitions & Optimizations
+- **UUID Primary Keys**: All tables use `uuid.UUID` primary keys mapped via SQLAlchemy's Uuid column, preventing database enumeration attacks.
+- **Soft Deletes**: Tables implement a `deleted_at` nullable timestamp column. Standard queries will exclude records where `deleted_at is not None`.
+- **Index Performance**:
+  - `dataset_files(dataset_id, md5_hash)`: Speeds up deduplication checks when uploading files.
+  - `dataset_versions(dataset_id, version_str)`: Ensures unique versions per dataset and accelerates queries for version history.
+  - `dataset_files(label_id)`: Used to quickly aggregate category distributions.
+  - `dataset_audit_logs(dataset_id, created_at)`: Optimizes fetching audit trails.
+
+---
+
+### Step 9: Dataset Security, Vulnerability Prevention & RBAC Guard
+
+#### Path Traversal (Zip Slip) Mitigation
+- **Vulnerability**: ZIP files containing entries with relative traversals (e.g., `../../etc/passwd` or `..\..\App\main.py`) can overwrite system files during extraction.
+- **Mitigation**: `FileManager.sanitize_filename` uses `os.path.basename` to extract only the trailing filename segment. Any nested traversal path prefixes inside ZIP entries are discarded before storage saving.
+
+#### Double Extension & Script Uploads Blocking
+- **Vulnerability**: Attackers upload execution scripts masquerading as images (e.g., `exploit.jpg.sh`).
+- **Mitigation**:
+  - File extension checking restricts uploads strictly to `{ .jpg, .jpeg, .png, .gif, .webp }`.
+  - Content structure checks (`PIL.Image.open`) read file content headers. If a file contains script text instead of an image bitmap, Pillow will fail to read it, and the upload is rejected.
+
+#### RBAC Permissions Mapping
+- **Viewer Role**: Holds `view_predictions` and `view_reports`. Can only run read operations (`GET`).
+- **Forest Officer / Research Analyst Roles**: Hold `upload_images` and `analyze_data`. Allowed to create datasets, execute file uploads, batch label, and create versions.
+- **Super Admin Role**: Holds `manage_platform_settings` and `all`. Can soft-delete datasets, perform versions rollbacks, and view complete system details.
+
+---
+
+### Step 10: Dataset Storage & Cloud Migration Guide
+
+#### Storage Configuration Settings
+Storage settings are loaded from environment variables in `.env` through [app/core/config.py](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder%20(2)/Forest-Fire-Detection-using-CNN/backend/app/core/config.py):
+```bash
+# Available options: local, s3, gcs, azure
+STORAGE_PROVIDER="local"
+
+# Local storage path root
+STORAGE_BASE_DIR="./storage"
+
+# Cloud storage configurations (if using stubs/future cloud adapters)
+AWS_S3_BUCKET="forest-fire-detection-datasets"
+GCS_BUCKET="forest-fire-detection-datasets"
+AZURE_CONTAINER="forest-fire-detection-datasets"
+```
+
+#### Abstraction & Easy Migration to AWS S3 / Cloud Storage
+All files are processed through the unified `StorageService` helper class. High-level application logic calls `storage_service.save_file` or `storage_service.read_file` without knowing if files are local or in a cloud bucket.
+
+To migrate from **Local** to **AWS S3** in production:
+1. Copy all folders in `./storage/datasets/` recursively to your S3 bucket root.
+2. Update environment variables in your deployment setup:
+   ```bash
+   STORAGE_PROVIDER="s3"
+   AWS_S3_BUCKET="my-production-forest-fire-datasets"
+   AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+   AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+   ```
+3. Restart the FastAPI server. The `StorageService` constructor will resolve the `"s3"` driver automatically on startup.
+
+---
+
+### Step 11: Dataset Versioning, Immutability & Rollback Lifecycle
+
+#### The Immutability Concept
+- **Active State (`raw/`)**: Uploads are writeable, allowing adding files, modifying labels, and bulk adjustments.
+- **Freeze State (`version`)**: Snapshotting zips the entire set of active files, saves it to storage as `{version_str}.zip`, and saves metadata (file hashes, count, class distribution) to the database.
+- **File Locking**: The files are assigned a `version_id` in the database, freezing them. Any future uploads create new files with `version_id=None`.
+
+#### Version Rollback Lifecycle
+A rollback operation restores active files in the workspace (`raw/`) to match a target version's frozen snapshot:
+1. **Request**: `POST /api/v1/datasets/{id}/rollback` with `{"version_str": "v1.0.0"}` is received.
+2. **Clean active**: The backend deletes all current files in the database where `version_id is None` and removes their files from the `raw/` directory in storage.
+3. **Unzip and Restore**: The snapshot ZIP for `v1.0.0` is downloaded and extracted. The files are written back to `raw/` in storage, and new database file records are inserted with `version_id=None` (meaning they are now active and modifiable).
+4. **Audit**: The rollback is logged in the audit logs.
+
+#### MLOps Training Integration
+ML training scripts can dynamically pull specific version snapshots using curl:
+```bash
+# Retrieve zip snapshot directly for training
+curl -H "Authorization: Bearer <TOKEN>" \
+     -o dataset_v1.0.0.zip \
+     http://localhost:8000/api/v1/datasets/18f9720b-22ab-44b4-a21b-c74191c2bde2/versions/v1.0.0/download
+```
+
+---
+
+### Step 12: Dataset Management API Reference
+
+All API calls must contain the authentication header:
+`Authorization: Bearer <JWT_ACCESS_TOKEN>`
+
+#### Create Dataset
+- **Route**: `POST /api/v1/datasets`
+- **Role Guard**: Forest Officer, Research Analyst, Super Admin
+- **Payload**:
+  ```json
+  {
+    "name": "Forest Fires Summer 2026",
+    "description": "Images collected from Uttarakhand forest zones during June 2026.",
+    "category_id": "893c72b2-6019-4828-98e6-11b017b2b85e",
+    "tags": "uttarakhand,fire,summer"
+  }
+  ```
+- **Response (201 Created)**:
+  ```json
+  {
+    "id": "18f9720b-22ab-44b4-a21b-c74191c2bde2",
+    "name": "Forest Fires Summer 2026",
+    "description": "Images collected from Uttarakhand forest zones during June 2026.",
+    "category_id": "893c72b2-6019-4828-98e6-11b017b2b85e",
+    "status": "active",
+    "tags": "uttarakhand,fire,summer",
+    "user_id": "3a7b6c8d-90ab-12cd-34ef-567890abcdef",
+    "created_at": "2026-06-12T17:00:00Z",
+    "updated_at": "2026-06-12T17:00:00Z"
+  }
+  ```
+
+#### List Datasets (Paginated)
+- **Route**: `GET /api/v1/datasets?skip=0&limit=10&search=Summer`
+- **Role Guard**: Any active user
+- **Response (200 OK)**:
+  ```json
+  {
+    "total": 1,
+    "skip": 0,
+    "limit": 10,
+    "items": [
+      {
+        "id": "18f9720b-22ab-44b4-a21b-c74191c2bde2",
+        "name": "Forest Fires Summer 2026",
+        "category_id": "893c72b2-6019-4828-98e6-11b017b2b85e",
+        "status": "active",
+        "tags": "uttarakhand,fire,summer",
+        "user_id": "3a7b6c8d-90ab-12cd-34ef-567890abcdef",
+        "created_at": "2026-06-12T17:00:00Z",
+        "updated_at": "2026-06-12T17:00:00Z"
+      }
+    ]
+  }
+  ```
+
+#### Upload Image
+- **Route**: `POST /api/v1/datasets/upload`
+- **Format**: `multipart/form-data`
+- **Parameters**:
+  - `dataset_id` (Form Field UUID)
+  - `label_id` (Form Field UUID, Optional)
+  - `file` (Binary Image File)
+- **Response (201 Created)**:
+  ```json
+  {
+    "id": "76af5d3b-34bc-45ef-a1cd-b23456789def",
+    "dataset_id": "18f9720b-22ab-44b4-a21b-c74191c2bde2",
+    "version_id": null,
+    "file_path": "datasets/18f9720b-22ab-44b4-a21b-c74191c2bde2/raw/fire_001.jpg",
+    "filename": "fire_001.jpg",
+    "file_size": 245100,
+    "mime_type": "image/jpeg",
+    "md5_hash": "c4ca4238a0b923820dcc509a6f75849b",
+    "label_id": "ccaa123b-45bc-67de-ef89-101112131415",
+    "metadata_json": {
+      "width": 1024,
+      "height": 768
+    },
+    "created_at": "2026-06-12T17:05:00Z",
+    "updated_at": "2026-06-12T17:05:00Z"
+  }
+  ```
+
+#### ZIP Dataset Upload (Async Background Job)
+- **Route**: `POST /api/v1/datasets/zip-upload`
+- **Format**: `multipart/form-data`
+- **Parameters**:
+  - `dataset_id` (Form Field UUID)
+  - `file` (Binary ZIP File)
+- **Response (202 Accepted)**:
+  ```json
+  {
+    "id": "99bb123c-45de-67fg-89hi-jklmnopqrs12",
+    "dataset_id": "18f9720b-22ab-44b4-a21b-c74191c2bde2",
+    "user_id": "3a7b6c8d-90ab-12cd-34ef-567890abcdef",
+    "status": "pending",
+    "upload_type": "zip",
+    "original_filename": "archive.zip",
+    "total_files": 0,
+    "processed_files": 0,
+    "failed_files": 0,
+    "error_details": null,
+    "created_at": "2026-06-12T17:10:00Z",
+    "updated_at": "2026-06-12T17:10:00Z"
+  }
+  ```
+
+#### Create Version Snapshot
+- **Route**: `POST /api/v1/datasets/{id}/versions`
+- **Payload**:
+  ```json
+  {
+    "version_str": "v1.0.0",
+    "description": "First baseline dataset snapshot containing 150 checked images."
+  }
+  ```
+- **Response (201 Created)**:
+  ```json
+  {
+    "id": "aabbccdd-eeff-0011-2233-445566778899",
+    "dataset_id": "18f9720b-22ab-44b4-a21b-c74191c2bde2",
+    "version_str": "v1.0.0",
+    "description": "First baseline dataset snapshot containing 150 checked images.",
+    "status": "active",
+    "user_id": "3a7b6c8d-90ab-12cd-34ef-567890abcdef",
+    "snapshot_path": "datasets/18f9720b-22ab-44b4-a21b-c74191c2bde2/snapshots/v1.0.0.zip",
+    "size_bytes": 14210080,
+    "file_count": 150,
+    "created_at": "2026-06-12T17:15:00Z",
+    "updated_at": "2026-06-12T17:15:00Z"
+  }
+  ```
+
+#### Rollback Dataset Version
+- **Route**: `POST /api/v1/datasets/{id}/rollback`
+- **Payload**:
+  ```json
+  {
+    "version_str": "v1.0.0"
+  }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "message": "Successfully rolled back dataset to version 'v1.0.0'.",
+    "restored_files": 150
+  }
+  ```
+
+#### Bulk Assign Labels
+- **Route**: `POST /api/v1/datasets/{id}/labels`
+- **Payload**:
+  ```json
+  {
+    "file_ids": [
+      "76af5d3b-34bc-45ef-a1cd-b23456789def"
+    ],
+    "label_id": "ccaa123b-45bc-67de-ef89-101112131415"
+  }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "updated_count": 1
+  }
+  ```
+
+---
+
+### Step 13: Dataset Code Quality, Testing Report & Production Readiness
+
+#### Code Quality & Exceptions Handling
+- **Consistent Service Patterns**: The codebase strictly adheres to the established `Service-Repository` pattern used throughout the rest of the application.
+- **SQLAlchemy 2.x Styles**: The models use modern SQLAlchemy 2.x declarative styles, maintaining compatibility.
+- **Error Middleware**: Custom exceptions (`EntityNotFoundException`, `ValidationException`) are integrated into global exception serialization filters, returning standardized JSON error bodies.
+
+#### Testing Report (DATASET_TEST_REPORT.md Summary)
+Tests run on an isolated in-memory transactional SQLite database (`sqlite+aiosqlite:///:memory:`):
+- Recreates tables per-test fixture to ensure data isolation.
+- Mocks image generation dynamically inside tests using `Pillow` to generate distinct valid image files.
+- Command to run all tests:
+  ```powershell
+  cd backend
+  python -m pytest
+  ```
+- All tests completed successfully.
+
+#### Production Readiness Checklist
+- **Proxy Body Configuration**: Ensure file transfer limits on proxies like Nginx are set to allow larger files (e.g. `client_max_body_size 100M;`).
+- **Disk Monitoring**: Set Alerts on server host disk usage (e.g. trigger warnings at 85%, and critical alert at 90%).
+- **Version Backups**: Enable storage bucket Versioning rules on cloud filesystems to restore files in disaster recovery scenarios.
