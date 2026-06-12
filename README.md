@@ -104,7 +104,7 @@ erDiagram
         boolean is_active
         timestamp last_activity_at
         timestamp expires_at
-        timestamp created_at
+        timestamp "created_at"
     }
 
     AUDIT_LOGS {
