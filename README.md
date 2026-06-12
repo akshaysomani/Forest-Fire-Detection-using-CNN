@@ -87,7 +87,7 @@ erDiagram
     REFRESH_TOKENS {
         uuid id PK
         uuid user_id FK
-        string token_hash UNIQUE
+        string token_hash 
         string parent_token_hash
         timestamp expires_at
         boolean is_revoked
@@ -104,7 +104,7 @@ erDiagram
         boolean is_active
         timestamp last_activity_at
         timestamp expires_at
-        timestamp "created_at"
+        timestamp created_at
     }
 
     AUDIT_LOGS {
@@ -119,7 +119,7 @@ erDiagram
         timestamp created_at
     }
 ```
-
+---
 #### Database Tables Description
 1. **`users`**: Stores user credentials, lockout settings, verification statuses, and soft deletes.
 2. **`roles` / `permissions`**: RBAC system defining roles (`Super Admin`, `Forest Officer`, `Emergency Response Officer`, `Research Analyst`, `Viewer`) and granular access rights.
