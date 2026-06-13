@@ -987,6 +987,23 @@ Unit and integration tests are isolated using a transactional, in-memory SQLite 
 
 ---
 
+### Step 30: CNN Inference & Prediction Engine (Module 6 Documentation)
+
+This section consolidates all generated audits, guides, reviews, and checklists for the CNN Inference & Prediction Engine:
+
+1. **[Inference Engine Audit](INFERENCE_ENGINE_AUDIT.md)**: Details technical debt, model loading inefficiencies, and proposed optimizations.
+2. **[Inference Architecture Review](INFERENCE_ARCHITECTURE_REVIEW.md)**: Blueprint outlining layers, concurrency, and scaling patterns.
+3. **[Inference Security Review](INFERENCE_SECURITY_REVIEW.md)**: Details role authorization maps, path traversal defenses, and input validations.
+4. **[Inference Engine Guide](INFERENCE_ENGINE.md)**: Architectural documentation and sequence diagram for single image predictions.
+5. **[Prediction Operational Guide](PREDICTION_GUIDE.md)**: Operational guide outlining CURL examples, risk rating rules, and SLA telemetries.
+6. **[Prediction API Reference](PREDICTION_API_REFERENCE.md)**: HTTP request and response mappings for prediction endpoints.
+7. **[Model Loading & Caching Guide](MODEL_LOADING_GUIDE.md)**: Memory management caching thresholds and model hot-swapping procedures.
+8. **[Inference Code Review](INFERENCE_CODE_REVIEW.md)**: Python PEP 8 style formatting and refactoring reports.
+9. **[Inference Test Report](INFERENCE_TEST_REPORT.md)**: Integration test details and coverage results.
+10. **[Inference Production Checklist](INFERENCE_PRODUCTION_CHECKLIST.md)**: Hardware/GPU configurations and volume mounts setups.
+
+---
+
 ## CI/CD Workflow & Docker Deployment
 
 This project includes a fully integrated GitHub Actions workflow for CI/CD and Docker files for containerized packaging.
