@@ -59,10 +59,13 @@ async def lifespan(app: FastAPI):
 
     # Start Event Bus background workers
     from app.services.alert import queue_manager
+    from app.services.incident.incident_scheduler import incident_scheduler
     queue_manager.start_alert_queue()
+    incident_scheduler.start()
 
     yield
     # Shutdown actions
+    await incident_scheduler.stop()
     await queue_manager.stop_alert_queue()
     await engine.dispose()
 

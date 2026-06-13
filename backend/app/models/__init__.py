@@ -34,6 +34,16 @@ from app.models.alert import (
     AlertAcknowledgement,
     AlertAuditLog,
 )
+from app.models.incident import (
+    Incident,
+    IncidentEvent,
+    ResponseTeam,
+    ResponseMember,
+    IncidentAssignment,
+    IncidentUpdate,
+    IncidentStatusHistory,
+    IncidentAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -69,5 +79,13 @@ __all__ = [
     "AlertPreference",
     "AlertAcknowledgement",
     "AlertAuditLog",
+    "Incident",
+    "IncidentEvent",
+    "ResponseTeam",
+    "ResponseMember",
+    "IncidentAssignment",
+    "IncidentUpdate",
+    "IncidentStatusHistory",
+    "IncidentAuditLog",
 ]
 
