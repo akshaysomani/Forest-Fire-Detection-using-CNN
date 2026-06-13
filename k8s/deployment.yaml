@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forest-fire-backend
+  namespace: forest-fire
+  labels:
+    app: forest-fire-backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: forest-fire-backend
+  template:
+    metadata:
+      labels:
+        app: forest-fire-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+      - name: backend
+        image: ghcr.io/akshaysomani/forest-fire-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: "250m"
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        envFrom:
+        - configMapRef:
+            name: forest-fire-backend-config
+        env:
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: forest-fire-backend-secrets
+              key: JWT_SECRET
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: forest-fire-backend-secrets
+              key: ADMIN_PASSWORD
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: storage-volume
+          mountPath: /app/storage
+        - name: db-volume
+          mountPath: /app/db_data
+      volumes:
+      - name: storage-volume
+        emptyDir: {}
+      - name: db-volume
+        emptyDir: {}

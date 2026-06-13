@@ -10,13 +10,26 @@ services:
       - "8000:8000"
     volumes:
       - forest_fire_storage:/app/storage
-      # Mount DB file if SQLite is stored locally to persist data
       - forest_fire_db_data:/app/db_data
     env_file:
       - ./backend/.env
     environment:
       - STORAGE_PROVIDER=local
       - STORAGE_BASE_DIR=/app/storage
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: always
 
 volumes:

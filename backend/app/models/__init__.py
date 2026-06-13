@@ -73,6 +73,11 @@ from app.models.model_registry import (
     ModelLifecycleEvent,
     ModelAuditLog,
 )
+from app.models.mlops import (
+    Release,
+    Environment,
+    DeploymentJob,
+)
 
 __all__ = [
     "BaseModel",
@@ -139,6 +144,9 @@ __all__ = [
     "ModelApproval",
     "ModelLifecycleEvent",
     "ModelAuditLog",
+    "Release",
+    "Environment",
+    "DeploymentJob",
 ]
 
 

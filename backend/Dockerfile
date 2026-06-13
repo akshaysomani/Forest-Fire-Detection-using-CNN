@@ -1,30 +1,53 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# --- Builder Stage ---
+FROM python:3.11-slim AS builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
-
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies (build-essential for compiling some C libraries if needed)
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-COPY requirements.txt /app/
+COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir --user -r requirements.txt
 
-# Copy project files
-COPY . /app/
 
-# Expose port
+# --- Runner Stage ---
+FROM python:3.11-slim AS runner
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /root/.local /root/.local
+COPY --from=builder /app /app
+
+ENV PATH=/root/.local/bin:$PATH
+
+# Create non-root user and group
+RUN groupadd -g 10001 appgroup && \
+    useradd -r -u 10001 -g appgroup appuser
+
+# Copy source code and change ownership
+COPY . /app
+RUN mkdir -p /app/storage /app/db_data && \
+    chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
 EXPOSE 8000
 
-# Run FastAPI app using uvicorn
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]

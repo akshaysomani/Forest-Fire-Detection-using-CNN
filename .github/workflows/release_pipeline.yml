@@ -1,0 +1,61 @@
+name: MLOps Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Registry
+      run: |
+        echo "Simulating login to container registry..."
+        # In a real environment: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}"
+
+    - name: Build and Push Docker Image
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "Building image for release tag: $TAG_NAME"
+        echo "Simulating push to container registry: ghcr.io/akshaysomani/forest-fire-backend:$TAG_NAME"
+
+  generate-release-notes:
+    runs-on: ubuntu-latest
+    needs: build-and-publish
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "Generating changelog for tag $TAG_NAME..."
+        git log --oneline $(git describe --tags --abbrev=0 HEAD^1 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD > changelog.txt
+        echo "CHANGELOG:"
+        cat changelog.txt
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body_path: changelog.txt
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
