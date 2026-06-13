@@ -54,6 +54,15 @@ from app.models.gis import (
     LocationHistory,
     GISAuditLog,
 )
+from app.models.analytics import (
+    AnalyticsEvent,
+    AnalyticsMetric,
+    ReportDefinition,
+    ReportExecution,
+    DashboardSnapshot,
+    KPIHistory,
+    AnalyticsAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -105,5 +114,12 @@ __all__ = [
     "AlertLocation",
     "LocationHistory",
     "GISAuditLog",
+    "AnalyticsEvent",
+    "AnalyticsMetric",
+    "ReportDefinition",
+    "ReportExecution",
+    "DashboardSnapshot",
+    "KPIHistory",
+    "AnalyticsAuditLog",
 ]
 

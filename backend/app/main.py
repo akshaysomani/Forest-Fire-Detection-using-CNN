@@ -64,11 +64,25 @@ async def lifespan(app: FastAPI):
     # Start Event Bus background workers
     from app.services.alert import queue_manager
     from app.services.incident.incident_scheduler import incident_scheduler
+    from app.services.analytics.aggregation_scheduler import aggregation_scheduler
+    from app.services.analytics.report_scheduler import report_scheduler
+    from app.services.analytics.analytics_processor import analytics_processor
+    from app.services.alert.event_bus import event_bus
+
     queue_manager.start_alert_queue()
     incident_scheduler.start()
+    aggregation_scheduler.start()
+    report_scheduler.start()
+
+    # Register analytics event bus subscribers
+    event_bus.subscribe("alert_generated", analytics_processor.handle_alert_generated)
+    event_bus.subscribe("alert_escalated", analytics_processor.handle_alert_escalated)
+    event_bus.subscribe("geofence_breached", analytics_processor.handle_geofence_breached)
 
     yield
     # Shutdown actions
+    await report_scheduler.stop()
+    await aggregation_scheduler.stop()
     await incident_scheduler.stop()
     await queue_manager.stop_alert_queue()
     await engine.dispose()
