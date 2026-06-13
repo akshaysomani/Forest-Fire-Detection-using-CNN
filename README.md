@@ -989,36 +989,254 @@ Unit and integration tests are isolated using a transactional, in-memory SQLite 
 
 ### Step 30: CNN Inference & Prediction Engine (Module 6 Documentation)
 
-This section consolidates all generated audits, guides, reviews, and checklists for the CNN Inference & Prediction Engine:
+This section consolidates all audits, guides, reviews, and checklists for the CNN Inference & Prediction Engine.
 
-1. **[Inference Engine Audit](INFERENCE_ENGINE_AUDIT.md)**: Details technical debt, model loading inefficiencies, and proposed optimizations.
-2. **[Inference Architecture Review](INFERENCE_ARCHITECTURE_REVIEW.md)**: Blueprint outlining layers, concurrency, and scaling patterns.
-3. **[Inference Security Review](INFERENCE_SECURITY_REVIEW.md)**: Details role authorization maps, path traversal defenses, and input validations.
-4. **[Inference Engine Guide](INFERENCE_ENGINE.md)**: Architectural documentation and sequence diagram for single image predictions.
-5. **[Prediction Operational Guide](PREDICTION_GUIDE.md)**: Operational guide outlining CURL examples, risk rating rules, and SLA telemetries.
-6. **[Prediction API Reference](PREDICTION_API_REFERENCE.md)**: HTTP request and response mappings for prediction endpoints.
-7. **[Model Loading & Caching Guide](MODEL_LOADING_GUIDE.md)**: Memory management caching thresholds and model hot-swapping procedures.
-8. **[Inference Code Review](INFERENCE_CODE_REVIEW.md)**: Python PEP 8 style formatting and refactoring reports.
-9. **[Inference Test Report](INFERENCE_TEST_REPORT.md)**: Integration test details and coverage results.
-10. **[Inference Production Checklist](INFERENCE_PRODUCTION_CHECKLIST.md)**: Hardware/GPU configurations and volume mounts setups.
+#### 30.1 Inference Engine Audit Report
+An audit of the machine learning backend was conducted to evaluate live prediction readiness. While the training pipeline works, the system lacked a production-grade inference engine.
 
+##### Key Inefficiencies & Technical Debt:
+- **Model Loading**: Models were loaded on every single prediction request rather than cached, creating massive CPU/GPU overhead and high latency (~500ms–2s per request).
+- **Preprocessing**: The preprocessing pipeline lacked ImageNet normalization consistency and PIL-to-Tensor zero-copy optimization.
+- **Validation**: No file signature, corrupted JPEG payload, or resolution bounds checking existed, leaving the app open to crashes or OOM exceptions under bad inputs.
+- **Concurrency**: Inference was strictly single-threaded and synchronous, which would block request threads under heavy drone/CCTV camera feeds.
+- **Observability**: No runtime stats (latencies, counts, accuracy ratios) were recorded or exposed.
+
+##### Actions Taken:
+- Implemented a thread-safe `ModelCacheManager` to lazily load and cache PyTorch states.
+- Created `inference_preprocessor.py` and `prediction_transformer.py` to standardize resizing and normalizations.
+- Added file format validation and 15MB file size limits in `input_validator.py`.
+- Developed `prediction_queue.py` and background `batch_processor.py` for async queues.
+- Instrumented throughput, average latency, and accuracy metrics in `inference_monitor.py`.
+
+---
+
+#### 30.2 Inference Architecture Review
+The Inference Engine uses a decoupled service-repository design pattern:
+- **FastAPI Router (`prediction_controller.py`)** handles request ingress and maps permissions.
+- **`PredictionService`** coordinates prediction triggers and DB history writes.
+- **`PredictionEngine`** handles input checks, pre-processing, and runs the neural network forward pass.
+- **`ModelManager`** manages cached model references and devices routing.
+- **`BatchPredictionService`** queues items into `PredictionQueue` where `BatchProcessor` background workers consume tasks asynchronously.
+
+##### Concurrency & High Availability:
+- **Automatic CPU Fallback**: If GPU memory is exhausted or CUDA fails, the engine automatically falls back to CPU execution.
+- **Hot-Swapping**: Models are loaded and cached under active request loads. Changing target weight paths updates memory pointers atomically without restarts.
+- **LRU Cache Eviction**: Limits in-memory cache to `max_cached_models=3`. Evicting a model runs garbage collection (`gc.collect()`) and empties CUDA memory.
+
+---
+
+#### 30.3 Inference Security Review
+- **Role-Based Access Control (RBAC)**:
+  - `POST /predictions` and `/predictions/batch` require `upload_images` permission (Super Admin & Forest Officer).
+  - `GET /predictions`, `GET /predictions/{id}`, and `/predictions/statistics` require `view_predictions` permission (Super Admin, Forest Officer, Emergency Response Officer, Analyst, Viewer).
+- **Input Hardening**: Max file upload set to 15MB. MIME types restricted to JPEG, PNG, and WebP. Enforces Pillow file signature checks (`verify()`) prior to tensor casting to prevent Remote Code Execution (RCE).
+- **SQL Injection Prevention**: All queries bind parameters using SQLAlchemy 2.0 ORM query syntax, avoiding raw query formatting.
+- **Threat Modeling**: Memory leaks prevented via LRU cache limitations. Ingress requests throttled via global Rate Limit Middleware.
+
+---
+
+#### 30.4 Inference Engine Guide
+The Inference Engine handles PyTorch model evaluations, database logging, and threat level risk mappings.
+
+##### Single Image Prediction Sequence Flow:
+1. Client submits image bytes to `POST /api/v1/predictions`.
+2. Controller triggers `InputValidator` checks (size and image MIME).
+3. Preprocessor resizes image to model size (solid RGB).
+4. Transformer performs ImageNet normalization and converts to PyTorch tensor.
+5. ModelManager fetches the active model from the LRU cache.
+6. Executor executes forward pass in eval mode with `torch.no_grad()` (uses CPU fallback on error).
+7. Classification service extracts highest probability class index.
+8. Risk analyzer resolves danger risk rating.
+9. Database repository inserts prediction logs in the `detections` table.
+10. API returns prediction output.
+
+---
+
+#### 30.5 Prediction Operational Guide
+- **Real-Time Analysis**: Post binary data to `/api/v1/predictions` with optional GPS coordinates:
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/api/v1/predictions" -H "Authorization: Bearer <TOKEN>" -F "file=@smoke.jpg" -F "latitude=37.7" -F "longitude=-122.4"
+  ```
+- **Batch Processing**: Queue lists of images:
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/api/v1/predictions/batch" -H "Authorization: Bearer <TOKEN>" -F "files=@drone1.jpg" -F "files=@drone2.jpg"
+  ```
+  Check progress with the returned `job_id`:
+  ```bash
+  curl -H "Authorization: Bearer <TOKEN>" "http://127.0.0.1:8000/api/v1/predictions/batch/<JOB_ID>"
+  ```
+- **Risk Level Rules**:
+  - Non-Fire: Low risk.
+  - Fire with Confidence >= 85%: High risk (triggers alert system).
+  - Fire with Confidence >= 60%: Medium risk (triggers drone sweeps).
+  - Fire with Confidence < 60%: Low risk (requires operator review).
+- **SLA Telemetry**: Latency SLA <= 50ms per forward pass. Throughput SLA up to 1,200 images/minute.
+
+---
+
+#### 30.6 Prediction API Reference
+Served under prefix `/api/v1/predictions`:
+- `POST /predictions`: single upload. Requires `upload_images`. Returns detection details, risk level, probabilities, and duration.
+- `POST /predictions/batch`: async batch queueing. Requires `upload_images`. Returns job status and ID.
+- `GET /predictions/batch/{job_id}`: checks progress. Requires `view_predictions`.
+- `GET /predictions`: lists historic runs (paginated). Requires `view_predictions`.
+- `GET /predictions/statistics`: returns total volume, counts, average confidence, latency, and accuracy. Requires `view_predictions`.
+
+---
+
+#### 30.7 Model Loading & Caching Guide
+- **Registry Adapters**: Queries database runs for the checkpoint marked `is_best=True`. Defaults to a default, un-pretrained `CustomCNN` structure if database records are empty.
+- **LRU Memory Cache**: Limits memory cache footprint to `max_cached_models=3`. Purges oldest active weights and frees memory pools via `torch.cuda.empty_cache()` and Python `gc.collect()`.
+- **Hot-Swapping**: To dynamically update weights without restarts, call:
+  `await model_manager.load_and_set_active_model(model_name, checkpoint_path, run_id)`
+  This maps request flows to the new model pointer atomically.
+
+---
+
+#### 30.8 Inference Code Review
+- **Pep 8 Coding Standards**: Strict snake_case naming, PascalCase class structures, and typing annotations.
+- **Modularity**: Separation of concern between database queries, processing, and forward pass loops to prevent circular dependencies.
+- **Refactored Bugs**:
+  - Refactored `get()` helper calls to use `get_by_id()` repository method.
+  - Fixed database statistics SQL Integer cast warnings.
+  - Re-mapped console audit logger calls from async to synchronous blocks.
+
+---
+
+#### 30.9 Inference Test Report
+Tests are run inside isolated in-memory SQLite database setups using mock image streams and mock preprocessors:
+- **Total Tests**: 12 cases (All passed).
+- **Coverage**: ~92.4% code coverage.
+- **Scope**: Covers resolution limits (15MB checks), corrupt buffer exceptions, Preprocessor resizing, normalization output dimensions, risk/class mapping rules, database inserts, and controller route permissions checks.
+
+---
+
+#### 30.10 Inference Production Checklist
+- [x] **GPU Driver Match**: Ensure PyTorch matches NVIDIA CUDA driver sets.
+- [x] **FP16 Computations**: Enable half-precision calculations to save VRAM.
+- [x] **Lifespan hooks**: Verify migrations and permissions seed on container start.
+- [x] **Persistent volumes**: Map local mounts to save training checkpoints and uploaded images.
+- [x] **JSON log formatting**: Stream structured stdout lines for logging platforms.
+
+---
 ---
 
 ### Step 31: Fire Detection Alert Management System (Module 7 Documentation)
 
-This section consolidates all generated audits, guides, reviews, and checklists for the Fire Detection Alert Management System:
+This section consolidates all audits, guides, reviews, and checklists for the Fire Detection Alert Management System.
 
-1. **[Alert System Audit](ALERT_SYSTEM_AUDIT.md)**: Audits existing alerting gaps, notifications pipelines, and logging mechanisms.
-2. **[Alert Architecture Review](ALERT_ARCHITECTURE_REVIEW.md)**: Blueprint outlining event-driven decoupled systems, reliability models, and disaster recovery.
-3. **[Alert Database Review](ALERT_DATABASE_REVIEW.md)**: Relational schema designs, optimization indexes, and foreign key relations mapping.
-4. **[Alert Security Review](ALERT_SECURITY_REVIEW.md)**: Access control lists (RBAC), parameter sanitizations, and quiet hours privacy audits.
-5. **[Alert Lifecycle Guide](ALERT_MANAGEMENT.md)**: Operational instructions on alert transitions, acknowledgement workflows, and response SLAs.
-6. **[Notification Delivery Guide](NOTIFICATION_GUIDE.md)**: Configurations for channels (email, SMS, in-app) and quiet hour window logic.
-7. **[Alert API Reference](ALERT_API_REFERENCE.md)**: HTTP route endpoints, schemas, payloads, and response mappings.
-8. **[Event Processing Guide](EVENT_PROCESSING_GUIDE.md)**: Asynchronous queueing patterns, consumer tasks, and transaction isolation structures.
-9. **[Alert Code Review](ALERT_CODE_REVIEW.md)**: Modular class organization, typing compliance, and error fallback reviews.
-10. **[Alert Test Report](ALERT_TEST_REPORT.md)**: Test suite executions details and code coverage metrics.
-11. **[Alert Production Checklist](ALERT_PRODUCTION_CHECKLIST.md)**: Deploy checklists, Docker volume setups, and production settings reviews.
+#### 31.1 Alert System Audit Report
+An audit of the alerting pipeline was performed to map operational gaps and reliability challenges.
+
+##### Gaps Identified:
+- **Passive Inferences**: Inferences were saved to database tables, but no engine inspected results or raised real-time alert warnings.
+- **Missing Tables**: The system did not have tables to register active alerts, notification dispatches, recipient links, user preference channels, acknowledgements, or audit trails.
+- **Coupled Operations**: Synchronous dispatches (like SMTP emails or SMS) during prediction workflows risked blocking inference loops or crashing APIs on network timeouts.
+- **No SLA/Escalations**: No mechanism existed to verify dispatcher response times or escalate active unacknowledged incidents to supervisors.
+- **No Preferences**: Dispatchers could not configure delivery channels, severity thresholds, or quiet hours, risking alert fatigue.
+
+##### Implementation Goals:
+- Build database schemas with index optimizations.
+- Implement an async Pub-Sub Event Bus to decouple prediction from delivery.
+- Set up automated severity classification and risk calculation services.
+- Establish quiet hour settings and channel delivery controls.
+- Create SLA timers to escalate unacknowledged alerts to administrative roles.
+
+---
+
+#### 31.2 Alert Architecture Review
+The Alert System uses an event-driven publish-subscribe pattern to handle warnings concurrently:
+- **Event Bus (`event_bus.py`)**: Uses an asynchronous in-memory `asyncio.Queue` queue to store generated alerts.
+- **Alert Event Handler (`alert_event_handler.py`)**: Consumes events and dispatches notifications inside background loops.
+- **Notification Service (`notification_service.py`)**: Gathers active users, checks preferences, logs dispatches, and routes messages.
+- **Delivery Manager (`delivery_manager.py`)**: Connects to email, in-app, or SMS providers.
+- **Transactional Safety**: The background worker isolates its database connections by creating separate transactional `SessionLocal` contexts to prevent leaks.
+- **SLA Escalation**: Tracks incident status times. If dispatcher response times exceed bounds, alerts escalate automatically.
+
+---
+
+#### 31.3 Alert Database Review
+The database schema maps relationships using SQLAlchemy 2.0 ORM types:
+- **`alerts`**: Holds fire alerts linked to `detections` (Critical, High, Medium, Low, Informational).
+- **`alert_events`**: Logs trigger details and raw payloads.
+- **`alert_notifications`**: Logs dispatches, channels (email, in-app, sms), statuses (pending, sent, failed), and retries.
+- **`alert_recipients`**: Maps alerts to target users.
+- **`alert_preferences`**: Stores user settings, enabled channels, and HH:MM quiet hours.
+- **`alert_acknowledgements`**: Tracks who acknowledged or resolved the incident.
+- **`alert_audit_logs`**: Logs historical updates for security compliance.
+
+##### Indices Implemented:
+- `alerts(status, deleted_at)`: Faster dashboard polling.
+- `alert_notifications(recipient_id, status)`: Quick list fetches.
+- `alert_preferences(user_id, channel)`: Faster checks.
+- `alert_acknowledgements(alert_id, user_id)`: Quick ownership checks.
+
+---
+
+#### 31.4 Alert Lifecycle Guide
+- **Active Alert Lifecycle States**:
+  - `active` -> dispatcher claims -> `acknowledged` -> dispatcher closes -> `resolved`.
+  - `active` -> SLA breached -> `escalated` -> dispatcher claims -> `acknowledged` -> `resolved`.
+- **Response SLAs**:
+  - **Critical** (Confidence >= 90%): 15 minutes.
+  - **High** (Confidence >= 75%): 30 minutes.
+  - **Medium** (Confidence >= 60%): 60 minutes.
+  - **Low** (Confidence >= 50%): 120 minutes.
+  - **Informational**: 24 hours.
+- **SLA Breach**: Escalation service scans active alerts, updates status to `escalated`, and publishes an `alert_escalated` event to notify administrative roles.
+
+---
+
+#### 31.5 Notification Delivery Guide
+- **Delivery Channels**: Email (sends HTML/markdown details), In-App (displays on dispatcher telemetry feeds), SMS (sends short text warning to phone).
+- **Quiet Hours**: Enforces quiet hours in HH:MM format (e.g. `22:00` to `06:00`). Quiet hours can cross midnight safely. Detections triggering notifications during quiet hours are created as `pending` with `Quiet hours active` tags.
+- **Abuse Prevention**: Every delivery log tracks counts and outcomes in `alert_notifications` table to audit routing actions.
+
+---
+
+#### 31.6 Alert API Reference
+Served under prefix `/api/v1/alerts`:
+- `POST /alerts`: triggers manual alert (`manage_platform_settings` required).
+- `GET /alerts`: lists and filters alerts (`view_alerts` required).
+- `GET /alerts/history`: retrieves audit logs (`access_audit_logs` required).
+- `GET /alerts/statistics`: returns counts and average acknowledgement times (`view_alerts` required).
+- `GET /alerts/preferences`: returns my setting preferences (requires auth).
+- `PUT /alerts/preferences`: updates my settings (requires auth).
+- `GET /alerts/{id}`: returns detailed alert, notifications, and event logs (`view_alerts` required).
+- `PATCH /alerts/{id}/acknowledge`: acknowledges alert (`view_alerts` required).
+- `PATCH /alerts/{id}/resolve`: resolves alert (`view_alerts` required).
+
+---
+
+#### 31.7 Event Processing Guide
+- **Pub-Sub Concurrency**: Emits notifications asynchronously via `asyncio.Queue` worker threads, ensuring slow SMTP dispatches don't block predictions.
+- **Queue Manager**: Manages background loop lifecycles on FastAPI startup and shutdown.
+- **Thread Safety**: Workers instantiate independent DB sessions via `SessionLocal()`, committing or rolling back autonomously to isolate processes.
+
+---
+
+#### 31.8 Alert Code Review
+- **Modularity**: Separation between rules engine, risk score, and notification channels.
+- **Type Annotations**: Full hints coverage to ensure IDE and code compliance.
+- **DB Refreshes**: Call `await db.refresh(instance)` after commits in endpoints to prevent synchronous lazy-loading exceptions.
+
+---
+
+#### 31.9 Alert Test Report
+- **Total Tests**: 9 cases (All passed successfully).
+- **Project Full Suite Results**: 58 passed, 0 failed.
+- **Scope**: Verifies rules matching, severity levels mapping, coordinates risk calculations, quiet hours comparisons, SLA breaches, Event Bus queues, manual alerts post, dispatcher claims, and preferences updates.
+
+---
+
+#### 31.10 Alert Production Checklist
+- [x] **Database Indexes**: Confirm fk index maps exist.
+- [x] **Config Settings**: Seed real SMTP and Twilio parameters.
+- [x] **lifespan Hooks**: Binds Event Bus loops on FastAPI starts.
+- [x] **Escalation Cronjob**: Setup a beat cron job to run SLA scanner every 5 minutes.
+- [x] **Structured Logging**: Confirm audits stream JSON lines to console.
+
+---
 
 ---
 
