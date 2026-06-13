@@ -54,6 +54,60 @@ class ModelManager:
             version = self._active_run_id or "1.0.0"
             return model, self._active_model_name or "unknown", version
 
+        # Resolve active production model from registry if available
+        try:
+            from sqlalchemy import and_, select
+            from app.models.model_registry import ModelDeployment, ModelVersion, ModelArtifact, RegisteredModel
+            
+            deploy_query = select(ModelDeployment).where(
+                and_(
+                    ModelDeployment.environment == "production",
+                    ModelDeployment.status == "active",
+                    ModelDeployment.deleted_at.is_(None)
+                )
+            ).order_by(ModelDeployment.deployed_at.desc()).limit(1)
+            res_deploy = await db.execute(deploy_query)
+            deploy = res_deploy.scalar_one_or_none()
+            if deploy:
+                version_query = select(ModelVersion).where(
+                    and_(ModelVersion.id == deploy.model_version_id, ModelVersion.deleted_at.is_(None))
+                )
+                res_ver = await db.execute(version_query)
+                version = res_ver.scalar_one_or_none()
+                if version:
+                    # Resolve weights artifact
+                    artifact_query = select(ModelArtifact).where(
+                        and_(
+                            ModelArtifact.model_version_id == version.id,
+                            ModelArtifact.artifact_type == "weights",
+                            ModelArtifact.deleted_at.is_(None)
+                        )
+                    ).limit(1)
+                    res_art = await db.execute(artifact_query)
+                    art = res_art.scalar_one_or_none()
+                    
+                    if art:
+                        # Resolve parent model name
+                        m_query = select(RegisteredModel).where(
+                            and_(RegisteredModel.id == version.model_id, RegisteredModel.deleted_at.is_(None))
+                        )
+                        res_m = await db.execute(m_query)
+                        reg_model = res_m.scalar_one_or_none()
+                        
+                        if reg_model:
+                            model = await self.load_and_set_active_model(
+                                model_name=reg_model.name,
+                                checkpoint_path=art.uri,
+                                run_id=str(version.id)
+                            )
+                            # Set cached active parameters
+                            self._active_model_name = reg_model.name
+                            self._active_checkpoint_path = art.uri
+                            self._active_run_id = version.version
+                            return model, reg_model.name, version.version
+        except Exception as e:
+            logger.warning(f"Could not load active production deployment from model registry: {str(e)}. Falling back to training runs.")
+
         # Resolve latest completed run if no model is loaded
         try:
             run_id, model_name, checkpoint_path = await model_registry_adapter.get_latest_completed_run_checkpoint(db)

@@ -9,6 +9,7 @@ from app.api.v1.alert_controller import router as alert_router
 from app.api.v1.incident_controller import router as incident_router
 from app.api.v1.gis_controller import router as gis_router
 from app.api.v1.analytics_controller import router as analytics_router
+from app.api.v1.model_controller import router as model_router
 
 v1_router = APIRouter()
 v1_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -21,5 +22,7 @@ v1_router.include_router(alert_router, prefix="/alerts", tags=["Fire Detection A
 v1_router.include_router(incident_router, prefix="/incidents", tags=["Incident Management & Emergency Response"])
 v1_router.include_router(gis_router, prefix="/gis", tags=["Geographic Intelligence & Location Management System"])
 v1_router.include_router(analytics_router, prefix="/analytics", tags=["Analytics, Reporting & Business Intelligence Platform"])
+v1_router.include_router(model_router, prefix="/models", tags=["Model Registry, Versioning & Lifecycle Management System"])
+
 
 

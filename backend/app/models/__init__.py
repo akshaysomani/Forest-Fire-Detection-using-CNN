@@ -63,6 +63,16 @@ from app.models.analytics import (
     KPIHistory,
     AnalyticsAuditLog,
 )
+from app.models.model_registry import (
+    RegisteredModel,
+    ModelVersion,
+    ModelArtifact,
+    ModelMetadata,
+    ModelDeployment,
+    ModelApproval,
+    ModelLifecycleEvent,
+    ModelAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -121,5 +131,14 @@ __all__ = [
     "DashboardSnapshot",
     "KPIHistory",
     "AnalyticsAuditLog",
+    "RegisteredModel",
+    "ModelVersion",
+    "ModelArtifact",
+    "ModelMetadata",
+    "ModelDeployment",
+    "ModelApproval",
+    "ModelLifecycleEvent",
+    "ModelAuditLog",
 ]
+
 
