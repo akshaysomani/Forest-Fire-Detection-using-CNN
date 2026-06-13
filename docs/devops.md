@@ -346,8 +346,30 @@ npm run build
 ```
 This confirms that the application has zero TypeScript compiling errors and is ready to deploy to production staging environments.
 
-
 ---
 
+### Phase 5: Multi-Cloud Production Configurations
 
+For rapid containerized deployment, we have provided multi-cloud application specification templates in the root directory:
 
+#### 1. Render Blueprints (`render.yaml`)
+Deploys the Next.js frontend, FastAPI backend, managed PostgreSQL database, and Redis cache instances in one click. Render automatically resolves the dependencies injection and exposes the public port routes.
+
+To deploy on Render:
+1. Connect your GitHub repository to your Render account.
+2. Go to **Blueprints > New Blueprint**.
+3. Select this repository and click **Approve / Deploy**.
+
+#### 2. Fly.io Deployment (`fly.toml`)
+Configured to spin up and scale the FastAPI backend service.
+Deploy using:
+```bash
+fly launch --config fly.toml
+```
+
+#### 3. DigitalOcean App Platform Spec (`.do/deploy.template.yaml`)
+A template to deploy the microservices directly to DigitalOcean App Platform, mapping env variables dynamically.
+Deploy via DO Control Panel or Doctl CLI:
+```bash
+doctl apps create --spec .do/deploy.template.yaml
+```

@@ -1,0 +1,63 @@
+# DigitalOcean App Platform Specification for IgnisAI
+
+name: ignisai-platform
+region: nyc
+services:
+  # 1. FastAPI Backend API
+  - name: backend
+    github:
+      repo: akshaysomani/Forest-Fire-Detection-using-CNN
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: ENV
+        scope: RUN_TIME
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${ignisai-db.DATABASE_URL}
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${ignisai-redis.REDIS_URL}
+      - key: PORT
+        scope: RUN_TIME
+        value: "8000"
+
+  # 2. Next.js Frontend UI
+  - name: frontend
+    github:
+      repo: akshaysomani/Forest-Fire-Detection-using-CNN
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: frontend/Dockerfile
+    source_dir: frontend
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${backend.PUBLIC_URL}
+      - key: PORT
+        scope: RUN_TIME
+        value: "3000"
+
+databases:
+  # Managed PostgreSQL Database
+  - name: ignisai-db
+    engine: PG
+    version: "15"
+    size: db-s-dev-database
+    num_nodes: 1
+
+  # Managed Redis Cache
+  - name: ignisai-redis
+    engine: REDIS
+    version: "7.0"
+    size: redis-s-dev-database
