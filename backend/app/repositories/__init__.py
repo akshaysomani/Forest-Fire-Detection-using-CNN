@@ -21,6 +21,7 @@ from app.repositories.image_repository import (
 )
 from app.repositories.alert_repository import alert_repository
 from app.repositories.incident_repository import incident_repository
+from app.repositories.location_repository import location_repository
 
 __all__ = [
     "BaseRepository",
@@ -42,5 +43,6 @@ __all__ = [
     "image_audit_log_repository",
     "alert_repository",
     "incident_repository",
+    "location_repository",
 ]
 

@@ -44,6 +44,16 @@ from app.models.incident import (
     IncidentStatusHistory,
     IncidentAuditLog,
 )
+from app.models.gis import (
+    Location,
+    Region,
+    Zone,
+    Geofence,
+    IncidentLocation,
+    AlertLocation,
+    LocationHistory,
+    GISAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -87,5 +97,13 @@ __all__ = [
     "IncidentUpdate",
     "IncidentStatusHistory",
     "IncidentAuditLog",
+    "Location",
+    "Region",
+    "Zone",
+    "Geofence",
+    "IncidentLocation",
+    "AlertLocation",
+    "LocationHistory",
+    "GISAuditLog",
 ]
 

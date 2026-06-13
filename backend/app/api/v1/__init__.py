@@ -7,6 +7,7 @@ from app.api.v1.training_controller import router as training_router
 from app.api.v1.prediction_controller import router as prediction_router
 from app.api.v1.alert_controller import router as alert_router
 from app.api.v1.incident_controller import router as incident_router
+from app.api.v1.gis_controller import router as gis_router
 
 v1_router = APIRouter()
 v1_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -17,4 +18,6 @@ v1_router.include_router(training_router, prefix="/training", tags=["CNN Trainin
 v1_router.include_router(prediction_router, prefix="/predictions", tags=["CNN Inference & Prediction Engine"])
 v1_router.include_router(alert_router, prefix="/alerts", tags=["Fire Detection Alert Management System"])
 v1_router.include_router(incident_router, prefix="/incidents", tags=["Incident Management & Emergency Response"])
+v1_router.include_router(gis_router, prefix="/gis", tags=["Geographic Intelligence & Location Management System"])
+
 

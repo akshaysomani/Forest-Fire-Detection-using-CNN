@@ -12,6 +12,12 @@ class QueueManager:
         logger.info("Initializing Alert Event Bus and registering handlers...")
         event_bus.subscribe("alert_generated", handle_alert_generated)
         event_bus.subscribe("alert_escalated", handle_alert_escalated)
+        
+        # GIS / Geofencing event subscribers registration
+        from app.services.gis.location_event_handler import handle_alert_generated_gis, handle_geofence_breach_event
+        event_bus.subscribe("alert_generated", handle_alert_generated_gis)
+        event_bus.subscribe("geofence_breached", handle_geofence_breach_event)
+        
         event_bus.start()
         logger.info("Alert Event Bus successfully started.")
 

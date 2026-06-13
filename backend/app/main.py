@@ -28,6 +28,10 @@ async def lifespan(app: FastAPI):
             from app.services.dataset_service import dataset_service
             await dataset_service.seed_categories_and_labels(db)
 
+            # Seed default regions
+            from app.services.gis.region_service import region_service
+            await region_service.seed_default_regions(db)
+
             # Check if default Super Admin already exists
             admin_query = select(User).where(User.username == settings.DEFAULT_ADMIN_USERNAME)
             res = await db.execute(admin_query)
