@@ -78,6 +78,13 @@ from app.models.mlops import (
     Environment,
     DeploymentJob,
 )
+from app.models.observability import (
+    ObservabilityLog,
+    MetricEntry,
+    TraceSpan,
+    SloCompliance,
+    PerformanceMetric,
+)
 
 __all__ = [
     "BaseModel",
@@ -147,6 +154,12 @@ __all__ = [
     "Release",
     "Environment",
     "DeploymentJob",
+    "ObservabilityLog",
+    "MetricEntry",
+    "TraceSpan",
+    "SloCompliance",
+    "PerformanceMetric",
 ]
+
 
 

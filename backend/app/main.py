@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.role import Role
 from app.services.password_service import password_service
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.observability_middleware import ObservabilityMiddleware
 from sqlalchemy import select
 
 
@@ -111,6 +112,8 @@ app.add_middleware(
     auth_requests_per_minute=5
 )
 
+# Register Observability Middleware (correlation IDs, tracing, request instrumentation)
+app.add_middleware(ObservabilityMiddleware)
 
 # Security Headers Middleware
 @app.middleware("http")
