@@ -68,6 +68,10 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit
 
+      - name: Run Frontend Jest Tests
+        working-directory: frontend
+        run: npm run test
+
       - name: Verify Next.js Build
         working-directory: frontend
         run: npm run build

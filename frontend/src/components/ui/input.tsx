@@ -9,14 +9,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", label, error, ...props }, ref) => {
+    const inputId = props.id || (label ? label.toLowerCase().replace(/[^a-z0-9]/g, "-") : undefined);
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+          <label
+            htmlFor={inputId}
+            className="text-xs font-semibold text-neutral-400 uppercase tracking-wider"
+          >
             {label}
           </label>
         )}
         <input
+          id={inputId}
           type={type}
           className={twMerge(
             clsx(

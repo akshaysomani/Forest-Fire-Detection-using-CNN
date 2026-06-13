@@ -4809,3 +4809,63 @@ If data corruption or hardware failure occurs, follow these steps to restore:
    docker exec -i ignisai_prod_postgres psql -U postgres -d ignisai_prod < /tmp/backup.sql
    ```
 5. Confirm application connectivity and metrics collection return to healthy.
+
+
+---
+
+## IgnisAI - Quality Assurance, Testing Strategy & Quality Audit Manual
+
+This manual documents the Testing Pyramid, Bug Classification Matrix, ML Model validation strategies, and Release Readiness Checklist for the IgnisAI Wildfire Platform.
+
+---
+
+### 📐 1. Quality Assurance Testing Pyramid
+
+```
+       / \
+      /   \      E2E Tests (Playwright / UI Flows)
+     /     \
+    /-------\
+   /         \   Integration & API Tests (Pytest Endpoint / Database Transactions)
+  /           \
+ /-------------\
+/               \ Unit Tests (Jest Component Renderings / Python Logic Checks)
+-----------------
+```
+
+- **Unit Testing**: Focuses on quick, stateless logic assertions (FastAPI schema constraints, custom Next.js state store calculations, inputs validation rules).
+- **Integration Testing**: Confirms boundaries between databases, object storage, and neural prediction pipelines.
+- **E2E & Load Testing**: Automates multi-user login-prediction workflows, and verifies API response duration thresholds under load using k6 performance scripts.
+
+---
+
+### 🐞 2. Bug Classification & Defect Matrix
+
+To standardize release reporting, we group issues into four severity tiers:
+
+| Severity | Description | Criteria | Resolution SLA |
+|---|---|---|---|
+| **P0 - Block** | Complete loss of core business functionality. | Database connectivity fails, JWT authorization bypassed, security alerts broken. | Immediate (Hotfix) |
+| **P1 - Critical** | Significant feature failure with no workaround. | CNN inference failing to upload files, GIS maps crashing on coordinate render. | < 24 Hours |
+| **P2 - Medium** | Feature failure with a documented workaround. | CSV export format parsing errors, historical search filter delays. | Next Sprint Release |
+| **P3 - Minor** | Cosmetic blemishes, styling misalignments. | Font sizing variations, toast alert timeout adjustments. | Future Backlog |
+
+---
+
+### 🤖 3. AI/ML Model Evaluation & Validation Guidelines
+
+AI model promotion (Staging -> Production) requires running validation tests against validation datasets:
+1. **Accuracy Threshold**: The model must exceed **90% accuracy** on balanced wildfire validation sets.
+2. **Noise Robustness**: Evaluate model confidence when images have noise injection or resolution reductions (assert confidence remains within 5% variation).
+3. **Confusion Matrix checks**: Target false negatives rate below **2%** (to prevent missed wildfire sightings, which is the most critical failure mode).
+
+---
+
+### 🏁 4. Release Readiness Quality Gates
+
+Before any tag release can be deployed to the production environment, the following criteria must be met:
+- [x] **Test Pass Rate**: 100% of unit and integration tests must pass.
+- [x] **Code Coverage**: Enforce a minimum of **90% coverage** on core backend schemas, services, and repositories.
+- [x] **Security Scans**: Trivy image security scans must report **zero Critical or High** vulnerability alerts.
+- [x] **Performance Benchmarks**: 95% of API requests must complete in less than **200ms** under steady load (50 VUs).
+- [x] **Accessibility (WCAG 2.2)**: Compliance checks confirm keyboard navigability, high contrast colors, and correct ARIA label mappings.
