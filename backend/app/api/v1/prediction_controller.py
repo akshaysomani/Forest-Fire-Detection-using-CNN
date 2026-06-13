@@ -45,6 +45,7 @@ async def predict_single(
         longitude=longitude
     )
     await db.commit()
+    await db.refresh(detection)
 
     # Re-read/format output
     # Mock probabilities list based on prediction label and confidence

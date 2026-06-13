@@ -25,6 +25,15 @@ from app.models.image import (
     ImageAuditLog,
 )
 from app.models.training import TrainingRun, TrainingCheckpoint
+from app.models.alert import (
+    Alert,
+    AlertEvent,
+    AlertNotification,
+    AlertRecipient,
+    AlertPreference,
+    AlertAcknowledgement,
+    AlertAuditLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -53,4 +62,12 @@ __all__ = [
     "ImageAuditLog",
     "TrainingRun",
     "TrainingCheckpoint",
+    "Alert",
+    "AlertEvent",
+    "AlertNotification",
+    "AlertRecipient",
+    "AlertPreference",
+    "AlertAcknowledgement",
+    "AlertAuditLog",
 ]
+

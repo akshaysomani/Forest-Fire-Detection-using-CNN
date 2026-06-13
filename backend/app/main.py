@@ -57,8 +57,13 @@ async def lifespan(app: FastAPI):
             await db.rollback()
             print(f"Startup seeding error: {e}")
 
+    # Start Event Bus background workers
+    from app.services.alert import queue_manager
+    queue_manager.start_alert_queue()
+
     yield
     # Shutdown actions
+    await queue_manager.stop_alert_queue()
     await engine.dispose()
 
 

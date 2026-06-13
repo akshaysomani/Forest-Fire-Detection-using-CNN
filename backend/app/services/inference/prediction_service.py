@@ -50,6 +50,13 @@ class PredictionService:
         db.add(detection_record)
         await db.flush()  # Populates detection_record.id
 
+        # Trigger alert checks (evaluates if label is fire & confidence >= threshold)
+        try:
+            from app.services.alert import alert_generator
+            await alert_generator.evaluate_detection(db, detection_record)
+        except Exception as alert_err:
+            logger.error(f"Failed during alert evaluation: {alert_err}", exc_info=True)
+
         # 5. Log activity audit log
         try:
             activity_logger.log_activity(
