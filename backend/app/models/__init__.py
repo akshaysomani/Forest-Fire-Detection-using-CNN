@@ -85,6 +85,16 @@ from app.models.observability import (
     SloCompliance,
     PerformanceMetric,
 )
+from app.models.security import (
+    AccessReviewCampaign,
+    AccessReviewDecision,
+    SecretMetadata,
+    SecretRotationLog,
+    SecurityEvent,
+    CompliancePolicy,
+    ComplianceAudit,
+    DataRetentionLog,
+)
 
 __all__ = [
     "BaseModel",
@@ -159,7 +169,16 @@ __all__ = [
     "TraceSpan",
     "SloCompliance",
     "PerformanceMetric",
+    "AccessReviewCampaign",
+    "AccessReviewDecision",
+    "SecretMetadata",
+    "SecretRotationLog",
+    "SecurityEvent",
+    "CompliancePolicy",
+    "ComplianceAudit",
+    "DataRetentionLog",
 ]
+
 
 
 

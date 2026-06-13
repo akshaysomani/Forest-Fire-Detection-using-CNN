@@ -12,6 +12,7 @@ from app.api.v1.analytics_controller import router as analytics_router
 from app.api.v1.model_controller import router as model_router
 from app.api.v1.deployment_controller import router as deployment_router
 from app.api.v1.observability_controller import router as observability_router
+from app.api.v1.security_controller import router as security_router
 
 v1_router = APIRouter()
 v1_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -27,6 +28,8 @@ v1_router.include_router(analytics_router, prefix="/analytics", tags=["Analytics
 v1_router.include_router(model_router, prefix="/models", tags=["Model Registry, Versioning & Lifecycle Management System"])
 v1_router.include_router(deployment_router, prefix="/deployments", tags=["MLOps Automation, CI/CD & Deployment Orchestration Platform"])
 v1_router.include_router(observability_router, prefix="/observability", tags=["Observability, Monitoring & Platform Reliability Engineering"])
+v1_router.include_router(security_router, prefix="/security", tags=["Enterprise Security, Compliance & Governance"])
+
 
 
 

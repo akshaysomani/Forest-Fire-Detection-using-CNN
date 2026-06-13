@@ -60,3 +60,15 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def clear_security_ip_blacklist():
+    """Reset API security block list and rate limit cache before and after every test."""
+    from app.services.security.api_security_service import api_security_service
+    api_security_service._blocked_ips.clear()
+    api_security_service._rate_limits.clear()
+    yield
+    api_security_service._blocked_ips.clear()
+    api_security_service._rate_limits.clear()
+

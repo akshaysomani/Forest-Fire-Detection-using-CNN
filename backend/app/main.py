@@ -11,7 +11,9 @@ from app.models.role import Role
 from app.services.password_service import password_service
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.observability_middleware import ObservabilityMiddleware
+from app.middleware.security_middleware import SecurityMiddleware
 from sqlalchemy import select
+
 
 
 @asynccontextmanager
@@ -115,16 +117,9 @@ app.add_middleware(
 # Register Observability Middleware (correlation IDs, tracing, request instrumentation)
 app.add_middleware(ObservabilityMiddleware)
 
-# Security Headers Middleware
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
-    return response
+# Register Enterprise Security Middleware (IP blocking, threat detection, secure headers)
+app.add_middleware(SecurityMiddleware)
+
 
 
 # Register custom global exception handlers
