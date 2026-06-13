@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - ENV=production
+      - DATABASE_URL=postgresql+asyncpg://postgres:prodsecurepass@postgres_prod:5432/ignisai_prod
+      - REDIS_URL=redis://redis_prod:6379/0
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      - postgres_prod
+      - redis_prod
+
+  postgres_prod:
+    image: postgres:15-alpine
+    container_name: ignisai_prod_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=prodsecurepass
+      - POSTGRES_DB=ignisai_prod
+    volumes:
+      - prod_pgdata:/var/lib/postgresql/data
+      - ./postgres-tuning.conf:/etc/postgresql/postgresql.conf
+    expose:
+      - "5432"
+    restart: always
+
+  redis_prod:
+    image: redis:7-alpine
+    container_name: ignisai_prod_redis
+    expose:
+      - "6379"
+    restart: always
+
+  # Telemetry Monitoring Stack
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: ignisai_prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    expose:
+      - "9090"
+    restart: always
+
+  grafana:
+    image: grafana/grafana:9.5.2
+    container_name: ignisai_grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    expose:
+      - "3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=grafanasecurepass
+    restart: always
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: ignisai_alertmanager
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    expose:
+      - "9093"
+    restart: always
+
+  # Unified Logging Stack
+  loki:
+    image: grafana/loki:2.8.2
+    container_name: ignisai_loki
+    volumes:
+      - ./logging/loki-config.yml:/etc/loki/local-config.yaml:ro
+    expose:
+      - "3100"
+    restart: always
+
+  promtail:
+    image: grafana/promtail:2.8.2
+    container_name: ignisai_promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./logging/promtail-config.yml:/etc/promtail/config.yml:ro
+    restart: always
+
+volumes:
+  prod_pgdata:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

@@ -4702,3 +4702,110 @@ Verify Next.js compiler output via:
 npm run build
 ```
 This confirms that the application has zero TypeScript compiling errors and is ready to deploy to production staging environments.
+
+
+---
+
+## IgnisAI - DevOps, MLOps & Platform Reliability Manual
+
+This manual covers the installation, operations, monitoring, alerts routing, and recovery plans for the IgnisAI Wildfire Operations Platform.
+
+---
+
+### 🚀 1. Production Deployment Guide
+
+#### Deployment via Docker Compose (Staging/Production VM)
+To deploy the entire stack (Frontend, Backend, Nginx reverse-proxy, Database, Redis, and Telemetry monitoring) under a production VM:
+1. Clone the repository and navigate to the root directory.
+2. Verify production environments are populated in `.env`.
+3. Spin up the containers using the compose profiles:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+   ```
+4. Verify all container health checks pass:
+   ```bash
+   docker compose ps
+   ```
+
+#### Deployment via Kubernetes (AWS EKS / Minikube)
+1. Initialize namespace boundaries:
+   ```bash
+   kubectl apply -f k8s/namespace.yaml
+   ```
+2. Seed credentials/secret mappings:
+   ```bash
+   kubectl apply -f k8s/secret.yaml -n ignisai-production
+   ```
+3. Deploy frontend, backend, services, HPAs, and ingress routing rules:
+   ```bash
+   kubectl apply -f k8s/
+   ```
+4. Confirm HPA scaling metrics are scraping correctly:
+   ```bash
+   kubectl get hpa -n ignisai-production
+   ```
+
+---
+
+### 📊 2. SRE Observability & Telemetry Manual
+
+#### Metrics Scraping (Prometheus)
+- **Scrape Targets**: Prometheus evaluates targets listed in [prometheus.yml](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/monitoring/prometheus.yml) scraping hardware telemetry, Next.js page performance, and custom python model statistics.
+- **Visualizations (Grafana)**: Accessible on port `3000` (Staging/Production configurations). Dashboards should monitor CPU load, memory utilization, API requests per second, and model inference duration.
+
+#### Alerting Rules (Alertmanager)
+Rules are defined in [alerts.rules.yml](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/monitoring/alerts.rules.yml):
+- **InstanceDown**: Alerts if any application component is offline for > 1 minute.
+- **CPUOverload**: Alerts if CPU idle capacity is < 20% for 5 minutes.
+- **DatabaseUnavailable**: Triggered instantly if PostgreSQL connection fails.
+- Alerts are formatted and routed to `#ignisai-alerts` Slack channels via webhook integrations configured in [alertmanager.yml](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/monitoring/alertmanager.yml).
+
+#### Centralized Logging (Loki & Promtail)
+- **Log Scrapers**: Promtail scans docker socket events, extracting stderr/stdout streams.
+- **Logs Storage**: Loki ingests the parsed lines into dynamic TSDB indexes. Users can query real-time exceptions using LogQL in Grafana's explore panel.
+
+---
+
+### 🛡️ 3. DevSecOps & Security Policy
+
+#### Container Hardening
+- **Rootless Execution**: Both [frontend/Dockerfile](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/frontend/Dockerfile) and backend `Dockerfile` build on lightweight base environments and enforce execution under non-root users (`nextjs:1001` and `appuser:10001`).
+- **Nginx Security Rules**: Configured inside [nginx.conf](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/nginx/nginx.conf) to enforce HSTS headers, block Clickjacking (`X-Frame-Options: DENY`), prevent MIME sniffing, limit payload sizes, and lock cipher suites to modern TLSv1.2/v1.3 protocols.
+- **Network Segmentation**: In Kubernetes deployments, `backend-database-policy` in [network-policy.yaml](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/k8s/network-policy.yaml) limits PostgreSQL port `5432` ingress strictly to backend pods.
+
+---
+
+### 🗄️ 4. Database Backups & Maintenance
+
+#### AES-256 Automated Backups
+The shell script [backup-postgres.sh](file:///c:/Users/Akshay/OneDrive/Desktop/New%20folder/Forest-Fire-Detection-using-CNN/scripts/backup-postgres.sh) executes Postgres dumps, encrypts the file using AES-256-CBC, and uploads the backup archive to AWS S3.
+- **Cron Scheduling**: Set up a crontab entry to run the script nightly at 02:00:
+  ```cron
+  0 2 * * * /opt/ignisai/scripts/backup-postgres.sh >> /var/log/cron-backups.log 2>&1
+  ```
+- **Retention**: Local encrypted files are kept for 7 days. S3 bucket lifecycles should be set to transition backups to Glacier storage after 30 days.
+
+---
+
+### 🚨 5. Disaster Recovery & Runbooks
+
+#### Runbook 1: Restoring Database from Encrypted S3 Snapshot
+If data corruption or hardware failure occurs, follow these steps to restore:
+1. Download the target encrypted backup from S3:
+   ```bash
+   aws s3 cp s3://ignisai-db-backups/ignisai_backup_20260613_020000.sql.enc /tmp/backup.sql.enc
+   ```
+2. Decrypt the SQL dump file:
+   ```bash
+   openssl enc -d -aes-256-cbc -in /tmp/backup.sql.enc -out /tmp/backup.sql -k SecureDevOpsKey123 -pbkdf2
+   ```
+3. Drop and recreate the production database:
+   ```bash
+   docker exec -it ignisai_prod_postgres psql -U postgres -c "DROP DATABASE ignisai_prod;"
+   ... psql -U postgres -c "CREATE DATABASE ignisai_prod;"
+   ```
+4. Restore the schema and tables:
+   ```bash
+   docker exec -i ignisai_prod_postgres psql -U postgres -d ignisai_prod < /tmp/backup.sql
+   ```
+5. Confirm application connectivity and metrics collection return to healthy.

@@ -1,0 +1,38 @@
+groups:
+  - name: ignisai-system-alerts
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} is offline"
+          description: "An IgnisAI application target has been offline for over 1 minute."
+
+      - alert: CPUOverload
+        expr: node_cpu_seconds_total{mode="idle"} < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Core Load on {{ $labels.instance }}"
+          description: "System idle CPU time is less than 20% for 5 continuous minutes."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory Exhaustion warning"
+          description: "RAM utilization is currently at {{ $value }}% (above 85% threshold)."
+
+      - alert: DatabaseUnavailable
+        expr: pg_up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL Database Down"
+          description: "Direct connection to production PostgreSQL storage engine has failed."

@@ -1,0 +1,75 @@
+---
+- name: Harden OS, Install Docker & Deploy IgnisAI
+  hosts: staging, production
+  become: yes
+  tasks:
+    - name: Run apt-get update and upgrade
+      apt:
+        update_cache: yes
+        upgrade: safe
+
+    - name: Install baseline system packages
+      apt:
+        name:
+          - curl
+          - git
+          - ufw
+          - fail2ban
+          - ca-certificates
+          - gnupg
+        state: present
+
+    - name: Configure firewall rules (UFW)
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '22'
+        - '80'
+        - '443'
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+
+    - name: Install Docker repository GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker CE & Docker Compose Plugin
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Ensure target deployment directory exists
+      file:
+        path: /opt/ignisai
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Pull and deploy Application containers via Compose
+      shell: |
+        docker compose -f /opt/ignisai/docker-compose.yml -f /opt/ignisai/docker-compose.prod.yml pull
+        docker compose -f /opt/ignisai/docker-compose.yml -f /opt/ignisai/docker-compose.prod.yml up -d
+      args:
+        chdir: /opt/ignisai
+      ignore_errors: yes

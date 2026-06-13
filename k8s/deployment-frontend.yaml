@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ignisai-frontend
+  namespace: ignisai-production
+  labels:
+    app: ignisai-frontend
+    tier: ui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ignisai-frontend
+  template:
+    metadata:
+      labels:
+        app: ignisai-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/akshaysomani/forest-fire-detection-using-cnn/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            readOnlyRootFilesystem: false

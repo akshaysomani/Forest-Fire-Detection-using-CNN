@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ignisai-production
+  labels:
+    environment: production
+    security: strict
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ignisai-staging
+  labels:
+    environment: staging

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_dev_storage:/app/storage
+    environment:
+      - ENV=development
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_DIR=/app/storage
+      - DATABASE_URL=sqlite+aiosqlite:////app/storage/app_dev.db
+
+  frontend:
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  backend_dev_storage:
+    driver: local

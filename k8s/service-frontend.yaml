@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ignisai-frontend-service
+  namespace: ignisai-production
+spec:
+  type: ClusterIP
+  selector:
+    app: ignisai-frontend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

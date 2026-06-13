@@ -5,35 +5,45 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: forest_fire_backend
-    ports:
-      - "8000:8000"
+    container_name: ignisai_backend
+    expose:
+      - "8000"
     volumes:
-      - forest_fire_storage:/app/storage
-      - forest_fire_db_data:/app/db_data
+      - backend_storage:/app/storage
     env_file:
       - ./backend/.env
-    environment:
-      - STORAGE_PROVIDER=local
-      - STORAGE_BASE_DIR=/app/storage
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=5)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ignisai_frontend
+    expose:
+      - "3000"
+    restart: always
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: ignisai_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_certs:/etc/nginx/ssl
+      - certbot_webroot:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
     restart: always
 
 volumes:
-  forest_fire_storage:
+  backend_storage:
     driver: local
-  forest_fire_db_data:
+  certbot_certs:
+    driver: local
+  certbot_webroot:
     driver: local
