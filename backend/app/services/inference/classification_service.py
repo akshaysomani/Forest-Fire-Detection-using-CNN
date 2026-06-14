@@ -10,11 +10,7 @@ class ClassificationService:
         # Index 0 is non-fire, Index 1 is fire
         self.classes = ["non-fire", "fire"]
 
-    def resolve_classification(
-        self,
-        probabilities: List[float],
-        threshold: Optional[float] = None
-    ) -> Tuple[str, float]:
+    def resolve_classification(self, probabilities: List[float], threshold: Optional[float] = None) -> Tuple[str, float]:
         """
         Map model probabilities list [P(non-fire), P(fire)] to class string and confidence score.
         If P(fire) exceeds threshold, classifies as 'fire'.

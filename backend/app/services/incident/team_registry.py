@@ -22,7 +22,7 @@ class TeamRegistry:
                 ResponseTeam.status == "Active",
                 ResponseTeam.specialty == specialty,
                 ResponseTeam.current_incident_id.is_(None),
-                ResponseTeam.deleted_at.is_(None)
+                ResponseTeam.deleted_at.is_(None),
             )
         )
         res = await db.execute(query)

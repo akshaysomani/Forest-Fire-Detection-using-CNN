@@ -33,7 +33,7 @@ class ImagePreprocessor:
             "camera_model": None,
             "gps_latitude": None,
             "gps_longitude": None,
-            "exif_raw": {}
+            "exif_raw": {},
         }
         try:
             img = Image.open(io.BytesIO(file_bytes))
@@ -106,6 +106,7 @@ class ImagePreprocessor:
 
     async def resize_image(self, file_bytes: bytes, width: int, height: int, format: str = "PNG") -> bytes:
         """Resize image bytes to target resolution using threadpool."""
+
         def _resize():
             img = Image.open(io.BytesIO(file_bytes))
             # Keep color profiles / transparency
@@ -118,6 +119,7 @@ class ImagePreprocessor:
 
     async def convert_format(self, file_bytes: bytes, target_format: str = "WEBP", quality: int = 85) -> bytes:
         """Convert image bytes format using threadpool."""
+
         def _convert():
             img = Image.open(io.BytesIO(file_bytes))
             out = io.BytesIO()

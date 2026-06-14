@@ -4,6 +4,7 @@ Platform Health Manager - Consolidates all health check results into a unified r
 Combines dependency health checks, system metrics, availability tracking,
 and SLO compliance into a single platform health status.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -40,10 +41,7 @@ class PlatformHealthManager:
         overall_status = self._compute_overall_status(dependencies)
 
         # Record availability ping based on dependencies
-        all_healthy = all(
-            dep.get("status") == "healthy"
-            for dep in dependencies.values()
-        )
+        all_healthy = all(dep.get("status") == "healthy" for dep in dependencies.values())
         availability_tracker.record_ping(success=all_healthy)
 
         return {

@@ -6,7 +6,7 @@ from app.models.security import (
     SecretMetadata,
     SecretRotationLog,
     CompliancePolicy,
-    SecurityEvent
+    SecurityEvent,
 )
 from app.services.security.risk_engine import risk_engine
 from app.services.security.api_security_service import api_security_service
@@ -43,16 +43,23 @@ class GovernanceDashboardService:
         pending_access_reviews_count = len(active_camps)
 
         # Last secret rotation
-        q_rot = select(SecretRotationLog).where(SecretRotationLog.status == "SUCCESS").order_by(desc(SecretRotationLog.rotated_at)).limit(1)
+        q_rot = (
+            select(SecretRotationLog)
+            .where(SecretRotationLog.status == "SUCCESS")
+            .order_by(desc(SecretRotationLog.rotated_at))
+            .limit(1)
+        )
         res_rot = await db.execute(q_rot)
         last_rot_log = res_rot.scalar_one_or_none()
         last_secret_rotation = last_rot_log.rotated_at if last_rot_log else None
 
         # Status Summary
         status_summary = {
-            "system_risk_level": "CRITICAL" if overall_risk_score >= 7.5 else "WARNING" if overall_risk_score >= 4.0 else "HEALTHY",
+            "system_risk_level": (
+                "CRITICAL" if overall_risk_score >= 7.5 else "WARNING" if overall_risk_score >= 4.0 else "HEALTHY"
+            ),
             "active_campaigns_count": len(active_camps),
-            "total_registered_secrets": len((await db.execute(select(SecretMetadata))).scalars().all())
+            "total_registered_secrets": len((await db.execute(select(SecretMetadata))).scalars().all()),
         }
 
         return {
@@ -61,7 +68,7 @@ class GovernanceDashboardService:
             "active_threats_count": active_threats_count,
             "pending_access_reviews_count": pending_access_reviews_count,
             "last_secret_rotation": last_secret_rotation,
-            "status_summary": status_summary
+            "status_summary": status_summary,
         }
 
 

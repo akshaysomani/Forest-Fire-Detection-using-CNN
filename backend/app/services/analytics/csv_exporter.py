@@ -11,7 +11,7 @@ class CSVExporter:
     async def export(self, report_data: Dict[str, Any], file_key: str) -> str:
         """Generate a CSV buffer and save it to storage_service."""
         logger.info(f"Generating CSV export: {file_key}")
-        
+
         output = io.StringIO()
         writer = csv.writer(output)
 

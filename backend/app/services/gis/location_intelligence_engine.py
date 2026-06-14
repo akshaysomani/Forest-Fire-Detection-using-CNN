@@ -10,12 +10,7 @@ logger = logging.getLogger("gis.location_intelligence_engine")
 
 
 class LocationIntelligenceEngine:
-    async def get_coordinates_intelligence(
-        self,
-        db: AsyncSession,
-        latitude: float,
-        longitude: float
-    ) -> Dict[str, Any]:
+    async def get_coordinates_intelligence(self, db: AsyncSession, latitude: float, longitude: float) -> Dict[str, Any]:
         """
         Analyzes point coordinates to gather complete spatial intelligence:
         - Resolves address via reverse geocoding
@@ -23,7 +18,7 @@ class LocationIntelligenceEngine:
         - Scans for active geofence breaches
         """
         logger.info(f"Gathering location intelligence for Lat: {latitude}, Lng: {longitude}")
-        
+
         # 1. Validate coordinates
         location_validator.validate_coordinates(latitude, longitude)
 
@@ -53,7 +48,7 @@ class LocationIntelligenceEngine:
             "zone": zone_name,
             "zone_risk_level": zone_risk_level,
             "breached_geofences": breached_names,
-            "is_breached": len(breached_names) > 0
+            "is_breached": len(breached_names) > 0,
         }
 
 

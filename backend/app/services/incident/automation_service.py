@@ -28,12 +28,7 @@ class AutomationService:
         """
         logger.debug("Running background auto-dispatch checks...")
         # 1. Get all incidents in Open status
-        query = select(Incident).where(
-            and_(
-                Incident.status == "Open",
-                Incident.deleted_at.is_(None)
-            )
-        )
+        query = select(Incident).where(and_(Incident.status == "Open", Incident.deleted_at.is_(None)))
         res = await db.execute(query)
         open_incidents = res.scalars().all()
 
@@ -41,10 +36,7 @@ class AutomationService:
         for incident in open_incidents:
             # Check if this incident has any pending or accepted assignments
             check_assign_q = select(IncidentAssignment).where(
-                and_(
-                    IncidentAssignment.incident_id == incident.id,
-                    IncidentAssignment.status.in_(["Pending", "Accepted"])
-                )
+                and_(IncidentAssignment.incident_id == incident.id, IncidentAssignment.status.in_(["Pending", "Accepted"]))
             )
             assign_res = await db.execute(check_assign_q)
             if assign_res.scalar_one_or_none():

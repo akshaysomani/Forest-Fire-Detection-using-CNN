@@ -61,10 +61,7 @@ class ReportScheduler:
             try:
                 # Find all scheduled report templates
                 query = select(ReportDefinition).where(
-                    and_(
-                        ReportDefinition.is_scheduled == True,
-                        ReportDefinition.deleted_at.is_(None)
-                    )
+                    and_(ReportDefinition.is_scheduled == True, ReportDefinition.deleted_at.is_(None))
                 )
                 res = await db.execute(query)
                 definitions = res.scalars().all()
@@ -82,7 +79,7 @@ class ReportScheduler:
                             export_format="PDF",
                             parameters=df.parameters,
                             definition_id=df.id,
-                            user_id=None
+                            user_id=None,
                         )
                     except Exception as e:
                         logger.error(f"Failed to execute scheduled report definition {df.id}: {e}")

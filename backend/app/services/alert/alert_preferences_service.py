@@ -32,7 +32,7 @@ class AlertPreferencesService:
                     min_severity="High" if channel == "email" else "Medium",
                     enabled=True,
                     quiet_hours_start=None,
-                    quiet_hours_end=None
+                    quiet_hours_end=None,
                 )
                 db.add(default_pref)
                 preferences.append(default_pref)
@@ -40,17 +40,9 @@ class AlertPreferencesService:
 
         return preferences
 
-    async def get_user_preference_for_channel(
-        self,
-        db: AsyncSession,
-        user_id: uuid.UUID,
-        channel: str
-    ) -> AlertPreference:
+    async def get_user_preference_for_channel(self, db: AsyncSession, user_id: uuid.UUID, channel: str) -> AlertPreference:
         """Fetch preference details for a specific channel."""
-        query = select(AlertPreference).where(
-            AlertPreference.user_id == user_id,
-            AlertPreference.channel == channel
-        )
+        query = select(AlertPreference).where(AlertPreference.user_id == user_id, AlertPreference.channel == channel)
         result = await db.execute(query)
         pref = result.scalar_one_or_none()
 
@@ -61,7 +53,7 @@ class AlertPreferencesService:
                 min_severity="High" if channel == "email" else "Medium",
                 enabled=True,
                 quiet_hours_start=None,
-                quiet_hours_end=None
+                quiet_hours_end=None,
             )
             db.add(pref)
             await db.flush()
@@ -69,10 +61,7 @@ class AlertPreferencesService:
         return pref
 
     async def update_user_preferences(
-        self,
-        db: AsyncSession,
-        user_id: uuid.UUID,
-        preferences_update: List[Dict[str, Any]]
+        self, db: AsyncSession, user_id: uuid.UUID, preferences_update: List[Dict[str, Any]]
     ) -> List[AlertPreference]:
         """
         Updates batch preferences configuration for a user.
@@ -129,7 +118,9 @@ class AlertPreferencesService:
                 # Midnight crossing quiet window, e.g. 22:00 to 06:00
                 return curr_mins >= start_mins or curr_mins <= end_mins
         except Exception as e:
-            logger.error(f"Error parsing quiet hours strings: start={pref.quiet_hours_start}, end={pref.quiet_hours_end}. Error: {e}")
+            logger.error(
+                f"Error parsing quiet hours strings: start={pref.quiet_hours_start}, end={pref.quiet_hours_end}. Error: {e}"
+            )
             return False
 
 

@@ -5,6 +5,7 @@ Provides a centralized logging formatter that outputs structured JSON log lines
 with automatic correlation ID injection from the current request context.
 Uses Python's contextvars for async-safe propagation across the request lifecycle.
 """
+
 import json
 import logging
 import uuid

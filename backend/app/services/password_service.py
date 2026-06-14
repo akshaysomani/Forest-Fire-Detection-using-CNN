@@ -19,22 +19,14 @@ class PasswordService:
     def generate_action_token(email: str, action: str, expires_in_minutes: int = 60) -> str:
         """Generates a secure, signed JWT action token (for email verification or password resets)."""
         expire = datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes)
-        payload = {
-            "sub": email,
-            "action": action,
-            "exp": expire
-        }
+        payload = {"sub": email, "action": action, "exp": expire}
         return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
     @staticmethod
     def verify_action_token(token: str, expected_action: str) -> str | None:
         """Verifies the action token and returns the email (subject) if valid, else None."""
         try:
-            payload = jwt.decode(
-                token,
-                settings.JWT_SECRET_KEY,
-                algorithms=[settings.JWT_ALGORITHM]
-            )
+            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
             if payload.get("action") != expected_action:
                 return None
             return payload.get("sub")

@@ -20,7 +20,7 @@ class DatasetPreparation:
         val_ratio: float = 0.1,
         test_ratio: float = 0.1,
         seed: int = 42,
-        min_files: int = 10
+        min_files: int = 10,
     ) -> Dict[str, Any]:
         """
         Orchestrate dataset preparation:
@@ -37,7 +37,7 @@ class DatasetPreparation:
                 and_(
                     DatasetVersion.dataset_id == dataset_id,
                     DatasetVersion.version_str == version_str,
-                    DatasetVersion.deleted_at.is_(None)
+                    DatasetVersion.deleted_at.is_(None),
                 )
             )
             version_res = await db.execute(version_query)
@@ -45,22 +45,30 @@ class DatasetPreparation:
             if not version:
                 raise ValueError(f"Dataset version '{version_str}' was not found.")
 
-            files_query = select(DatasetFile).where(
-                and_(
-                    DatasetFile.dataset_id == dataset_id,
-                    DatasetFile.version_id == version.id,
-                    DatasetFile.deleted_at.is_(None)
+            files_query = (
+                select(DatasetFile)
+                .where(
+                    and_(
+                        DatasetFile.dataset_id == dataset_id,
+                        DatasetFile.version_id == version.id,
+                        DatasetFile.deleted_at.is_(None),
+                    )
                 )
-            ).options(selectinload(DatasetFile.label))
+                .options(selectinload(DatasetFile.label))
+            )
         else:
             # Get active files (where version_id is None)
-            files_query = select(DatasetFile).where(
-                and_(
-                    DatasetFile.dataset_id == dataset_id,
-                    DatasetFile.version_id.is_(None),
-                    DatasetFile.deleted_at.is_(None)
+            files_query = (
+                select(DatasetFile)
+                .where(
+                    and_(
+                        DatasetFile.dataset_id == dataset_id,
+                        DatasetFile.version_id.is_(None),
+                        DatasetFile.deleted_at.is_(None),
+                    )
                 )
-            ).options(selectinload(DatasetFile.label))
+                .options(selectinload(DatasetFile.label))
+            )
 
         res = await db.execute(files_query)
         files = list(res.scalars().all())
@@ -75,19 +83,10 @@ class DatasetPreparation:
 
         # Split
         train_files, val_files, test_files = dataset_splitter.split_dataset(
-            files=files,
-            train_ratio=train_ratio,
-            val_ratio=val_ratio,
-            test_ratio=test_ratio,
-            seed=seed
+            files=files, train_ratio=train_ratio, val_ratio=val_ratio, test_ratio=test_ratio, seed=seed
         )
 
-        return {
-            "train_files": train_files,
-            "val_files": val_files,
-            "test_files": test_files,
-            "statistics": stats
-        }
+        return {"train_files": train_files, "val_files": val_files, "test_files": test_files, "statistics": stats}
 
 
 dataset_preparation = DatasetPreparation()

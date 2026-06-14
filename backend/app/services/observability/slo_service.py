@@ -4,6 +4,7 @@ SLO Service - Evaluates Service Level Objectives and persists compliance records
 Computes daily/weekly success rates from PerformanceMetric data,
 evaluates SLO compliance against SLI targets, and tracks remaining error budgets.
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
@@ -39,9 +40,7 @@ class SLOService:
         total_result = await db.execute(total_q)
         total = total_result.scalar() or 0
 
-        success_q = select(func.count(PerformanceMetric.id)).where(
-            and_(*conditions, PerformanceMetric.status_code < 500)
-        )
+        success_q = select(func.count(PerformanceMetric.id)).where(and_(*conditions, PerformanceMetric.status_code < 500))
         success_result = await db.execute(success_q)
         success = success_result.scalar() or 0
 
@@ -94,9 +93,7 @@ class SLOService:
         total_result = await db.execute(total_q)
         total = total_result.scalar() or 0
 
-        non_error_q = select(func.count(PerformanceMetric.id)).where(
-            and_(*conditions, PerformanceMetric.status_code < 500)
-        )
+        non_error_q = select(func.count(PerformanceMetric.id)).where(and_(*conditions, PerformanceMetric.status_code < 500))
         non_error_result = await db.execute(non_error_q)
         non_errors = non_error_result.scalar() or 0
 
@@ -168,12 +165,7 @@ class SLOService:
         if slo_name:
             conditions.append(SloCompliance.slo_name == slo_name)
 
-        query = (
-            select(SloCompliance)
-            .where(and_(*conditions))
-            .order_by(desc(SloCompliance.timestamp))
-            .limit(limit)
-        )
+        query = select(SloCompliance).where(and_(*conditions)).order_by(desc(SloCompliance.timestamp)).limit(limit)
         result = await db.execute(query)
         return list(result.scalars().all())
 

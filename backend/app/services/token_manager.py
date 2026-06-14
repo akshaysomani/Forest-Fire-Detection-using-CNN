@@ -20,7 +20,7 @@ class TokenManager:
         db: AsyncSession,
         user_id: uuid.UUID,
         parent_token_hash: str | None = None,
-        expires_delta: timedelta | None = None
+        expires_delta: timedelta | None = None,
     ) -> tuple[str, RefreshToken]:
         """Creates a new refresh token string and commits its hash to the database."""
         jti = uuid.uuid4()
@@ -38,17 +38,13 @@ class TokenManager:
             token_hash=token_hash,
             parent_token_hash=parent_token_hash,
             expires_at=expires_at,
-            is_revoked=False
+            is_revoked=False,
         )
         db.add(db_token)
         await db.flush()
         return token_str, db_token
 
-    async def rotate_refresh_token(
-        self,
-        db: AsyncSession,
-        refresh_token_str: str
-    ) -> tuple[str, str]:
+    async def rotate_refresh_token(self, db: AsyncSession, refresh_token_str: str) -> tuple[str, str]:
         """Rotates a refresh token. Implements security checks to detect token reuse attacks.
 
         Returns:
@@ -71,7 +67,11 @@ class TokenManager:
         db_token = result.scalar_one_or_none()
 
         # Security check: Token does not exist or has already been revoked
-        if not db_token or db_token.is_revoked or db_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        if (
+            not db_token
+            or db_token.is_revoked
+            or db_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
+        ):
             if db_token and db_token.is_revoked:
                 # Potential Token Reuse Attack!
                 # Revoke all descendants and ancestors of this rotation chain to protect user
@@ -86,13 +86,12 @@ class TokenManager:
 
         # Generate a new refresh token with rotation
         new_refresh_token_str, new_db_token = await self.create_refresh_token_record(
-            db,
-            user_id=user_id,
-            parent_token_hash=token_hash
+            db, user_id=user_id, parent_token_hash=token_hash
         )
 
         # Update user session association if exists
         from app.models.session import UserSession
+
         session_query = select(UserSession).where(UserSession.refresh_token_id == db_token.id)
         session_result = await db.execute(session_query)
         session = session_result.scalar_one_or_none()
@@ -104,6 +103,7 @@ class TokenManager:
         # Create new access token
         # Get user email
         from app.models.user import User
+
         user_query = select(User).where(User.id == user_id)
         user_result = await db.execute(user_query)
         user = user_result.scalar_one_or_none()
@@ -128,6 +128,7 @@ class TokenManager:
 
             # Deactivate any associated sessions
             from app.models.session import UserSession
+
             session_stmt = update(UserSession).where(UserSession.refresh_token_id == db_token.id).values(is_active=False)
             await db.execute(session_stmt)
             await db.flush()
@@ -140,6 +141,7 @@ class TokenManager:
 
         # Deactivate all active sessions for the user
         from app.models.session import UserSession
+
         session_stmt = update(UserSession).where(UserSession.user_id == user_id).values(is_active=False)
         await db.execute(session_stmt)
         await db.flush()

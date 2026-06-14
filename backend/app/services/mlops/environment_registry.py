@@ -10,18 +10,14 @@ from app.services.mlops.environment_manager import environment_manager
 class EnvironmentRegistry:
     @staticmethod
     async def get_environment(db: AsyncSession, env_id: uuid.UUID) -> Optional[Environment]:
-        query = select(Environment).where(
-            and_(Environment.id == env_id, Environment.deleted_at.is_(None))
-        )
+        query = select(Environment).where(and_(Environment.id == env_id, Environment.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     @staticmethod
     async def get_environment_by_name(db: AsyncSession, name: str) -> Optional[Environment]:
         clean_name = name.strip().lower()
-        query = select(Environment).where(
-            and_(Environment.name == clean_name, Environment.deleted_at.is_(None))
-        )
+        query = select(Environment).where(and_(Environment.name == clean_name, Environment.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
@@ -31,7 +27,7 @@ class EnvironmentRegistry:
         name: str,
         description: Optional[str] = None,
         config_schema: Optional[Dict[str, Any]] = None,
-        config_data: Optional[Dict[str, Any]] = None
+        config_data: Optional[Dict[str, Any]] = None,
     ) -> Environment:
         clean_name = name.strip().lower()
         if not clean_name:
@@ -52,7 +48,7 @@ class EnvironmentRegistry:
             description=description,
             config_schema=config_schema or {},
             config_data=config_data or {},
-            status="healthy"
+            status="healthy",
         )
         db.add(env)
         await db.commit()

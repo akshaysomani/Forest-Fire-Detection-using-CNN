@@ -24,15 +24,13 @@ class ReportingService:
             parameters=data.parameters,
             schedule_cron=data.schedule_cron,
             is_scheduled=data.is_scheduled,
-            created_by=user_id
+            created_by=user_id,
         )
         db.add(definition)
-        
+
         # Audit log
         audit = AnalyticsAuditLog(
-            user_id=user_id,
-            action="create_report_definition",
-            details={"name": data.name, "report_type": data.report_type}
+            user_id=user_id, action="create_report_definition", details={"name": data.name, "report_type": data.report_type}
         )
         db.add(audit)
         await db.flush()
@@ -46,12 +44,7 @@ class ReportingService:
 
     async def get_definition(self, db: AsyncSession, id: uuid.UUID) -> ReportDefinition:
         """Retrieve a specific report definition by ID."""
-        query = select(ReportDefinition).where(
-            and_(
-                ReportDefinition.id == id,
-                ReportDefinition.deleted_at.is_(None)
-            )
-        )
+        query = select(ReportDefinition).where(and_(ReportDefinition.id == id, ReportDefinition.deleted_at.is_(None)))
         res = await db.execute(query)
         definition = res.scalar_one_or_none()
         if not definition:
@@ -65,11 +58,7 @@ class ReportingService:
         db.add(definition)
 
         # Audit log
-        audit = AnalyticsAuditLog(
-            user_id=user_id,
-            action="delete_report_definition",
-            details={"definition_id": str(id)}
-        )
+        audit = AnalyticsAuditLog(user_id=user_id, action="delete_report_definition", details={"definition_id": str(id)})
         db.add(audit)
         await db.flush()
 
@@ -82,7 +71,7 @@ class ReportingService:
             export_format="PDF",
             parameters=definition.parameters,
             definition_id=definition.id,
-            user_id=user_id
+            user_id=user_id,
         )
 
     async def generate_report(
@@ -92,7 +81,7 @@ class ReportingService:
         export_format: str,
         parameters: Dict[str, Any],
         definition_id: uuid.UUID = None,
-        user_id: uuid.UUID = None
+        user_id: uuid.UUID = None,
     ) -> ReportExecution:
         """Core report generation pipeline. Calculates metrics and formats a download file."""
         logger.info(f"Initiating report execution for {report_type} in {export_format} format...")
@@ -105,7 +94,7 @@ class ReportingService:
             executed_by=user_id,
             status="running",
             format=export_format.upper(),
-            parameters=parameters
+            parameters=parameters,
         )
         db.add(execution)
         await db.flush()
@@ -121,7 +110,7 @@ class ReportingService:
             execution.file_path = file_path
             execution.status = "completed"
             execution.execution_time_ms = int((time.time() - start_time) * 1000)
-            
+
             # Audit log
             audit = AnalyticsAuditLog(
                 user_id=user_id,
@@ -130,8 +119,8 @@ class ReportingService:
                     "report_type": report_type,
                     "format": export_format,
                     "execution_id": str(execution.id),
-                    "execution_time_ms": execution.execution_time_ms
-                }
+                    "execution_time_ms": execution.execution_time_ms,
+                },
             )
             db.add(audit)
             db.add(execution)

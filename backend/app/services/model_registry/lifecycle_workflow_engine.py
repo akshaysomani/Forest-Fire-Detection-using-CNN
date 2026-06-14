@@ -14,11 +14,7 @@ logger = logging.getLogger("model_registry.lifecycle_workflow_engine")
 class LifecycleWorkflowEngine:
     @staticmethod
     async def trigger_transition(
-        db: AsyncSession,
-        model_version_id: uuid.UUID,
-        target_state: str,
-        user_id: uuid.UUID,
-        notes: Optional[str] = None
+        db: AsyncSession, model_version_id: uuid.UUID, target_state: str, user_id: uuid.UUID, notes: Optional[str] = None
     ) -> ModelVersion:
         """
         Transitions the model version state if valid.
@@ -43,13 +39,18 @@ class LifecycleWorkflowEngine:
             # Verify weights artifact exists
             # Verify weights artifact exists
             from app.models.model_registry import ModelArtifact
-            art_query = select(ModelArtifact).where(
-                and_(
-                    ModelArtifact.model_version_id == model_version_id,
-                    ModelArtifact.artifact_type == "weights",
-                    ModelArtifact.deleted_at.is_(None)
+
+            art_query = (
+                select(ModelArtifact)
+                .where(
+                    and_(
+                        ModelArtifact.model_version_id == model_version_id,
+                        ModelArtifact.artifact_type == "weights",
+                        ModelArtifact.deleted_at.is_(None),
+                    )
                 )
-            ).limit(1)
+                .limit(1)
+            )
             res_art = await db.execute(art_query)
             has_weights = res_art.scalar_one_or_none() is not None
             if not has_weights:
@@ -59,20 +60,22 @@ class LifecycleWorkflowEngine:
             # Promotion to production requires an approved ModelApproval request
             # if the model wasn't already in Approved or Staging status.
             if old_status not in ("Approved", "Staging"):
-                approval_query = select(ModelApproval).where(
-                    and_(
-                        ModelApproval.model_version_id == model_version_id,
-                        ModelApproval.target_stage == "Production",
-                        ModelApproval.status == "approved",
-                        ModelApproval.deleted_at.is_(None)
+                approval_query = (
+                    select(ModelApproval)
+                    .where(
+                        and_(
+                            ModelApproval.model_version_id == model_version_id,
+                            ModelApproval.target_stage == "Production",
+                            ModelApproval.status == "approved",
+                            ModelApproval.deleted_at.is_(None),
+                        )
                     )
-                ).limit(1)
+                    .limit(1)
+                )
                 res_approval = await db.execute(approval_query)
                 approval = res_approval.scalar_one_or_none()
                 if not approval:
-                    raise ValidationException(
-                        "Model version promotion to Production requires an approved review workflow."
-                    )
+                    raise ValidationException("Model version promotion to Production requires an approved review workflow.")
 
         # 4. Perform Transition
         version.status = new_status
@@ -85,7 +88,7 @@ class LifecycleWorkflowEngine:
             from_state=old_status,
             to_state=new_status,
             triggered_by=user_id,
-            notes=notes
+            notes=notes,
         )
 
         # 6. Log Audit Trail
@@ -94,11 +97,7 @@ class LifecycleWorkflowEngine:
             action="transition_state",
             performed_by=user_id,
             model_version_id=model_version_id,
-            details={
-                "from_state": old_status,
-                "to_state": new_status,
-                "notes": notes
-            }
+            details={"from_state": old_status, "to_state": new_status, "notes": notes},
         )
 
         return version

@@ -5,6 +5,7 @@ infrastructure, and executive summaries.
 Orchestrates all observability services to produce comprehensive
 dashboard views for different stakeholder levels.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -94,9 +95,7 @@ class ObservabilityDashboardManager:
             "overall_status": health.get("status", "unknown"),
             "api_status": health.get("api_status", "unknown"),
             "slo_compliant": slo_results.get("overall_compliant", False),
-            "availability_24h": availability_tracker.get_availability_percentage(
-                window_minutes=1440
-            ),
+            "availability_24h": availability_tracker.get_availability_percentage(window_minutes=1440),
             "throughput_24h": apm,
             "error_budgets": slo_results.get("error_budgets", {}),
         }

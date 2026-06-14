@@ -10,18 +10,14 @@ logger = logging.getLogger("gis.spatial_integration_manager")
 
 class SpatialIntegrationManager:
     async def process_new_fire_coordinates(
-        self,
-        db: AsyncSession,
-        alert_id: uuid.UUID,
-        latitude: float,
-        longitude: float
+        self, db: AsyncSession, alert_id: uuid.UUID, latitude: float, longitude: float
     ) -> None:
         """
         Coordinates fire alert location mapping. If the alert is linked to an
         active incident, also links the incident to that same location coordinate reference.
         """
         logger.info(f"Processing GIS integration for alert {alert_id} at ({latitude}, {longitude})")
-        
+
         # 1. Map alert to location
         await fire_location_service.map_alert_to_location(db, alert_id, latitude, longitude)
 

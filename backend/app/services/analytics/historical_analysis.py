@@ -15,12 +15,7 @@ class HistoricalAnalysis:
     async def get_seasonal_trends(self, db: AsyncSession, days: int = 365) -> Dict[str, int]:
         """Aggregate fire alerts counts grouped by calendar seasons."""
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        query = select(Alert.created_at).where(
-            and_(
-                Alert.created_at >= cutoff,
-                Alert.deleted_at.is_(None)
-            )
-        )
+        query = select(Alert.created_at).where(and_(Alert.created_at >= cutoff, Alert.deleted_at.is_(None)))
         res = await db.execute(query)
         dates = res.scalars().all()
 
@@ -35,30 +30,26 @@ class HistoricalAnalysis:
                 seasons["Autumn"] += 1
             else:
                 seasons["Winter"] += 1
-                
+
         return seasons
 
     async def get_regional_trends(self, db: AsyncSession, days: int = 90) -> Dict[str, int]:
         """Count alerts raised in each registered Region."""
         # Simple count of detections with locations grouped by Region
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        
+
         # We query regions and join alerts mapped to locations within boundary.
         # If boundary GeoJSON checks are complex, we fallback to grouping alerts by their locations.
-        query = select(Region.name, func.count(Alert.id)).select_from(Alert).join(
-            AlertLocation, Alert.id == AlertLocation.alert_id
-        ).join(
-            Location, AlertLocation.location_id == Location.id
-        ).join(
-            Zone, Zone.id == Location.id  # simplified matching or fallback region mappings
-        ).join(
-            Region, Zone.region_id == Region.id
-        ).where(
-            and_(
-                Alert.created_at >= cutoff,
-                Alert.deleted_at.is_(None)
-            )
-        ).group_by(Region.name)
+        query = (
+            select(Region.name, func.count(Alert.id))
+            .select_from(Alert)
+            .join(AlertLocation, Alert.id == AlertLocation.alert_id)
+            .join(Location, AlertLocation.location_id == Location.id)
+            .join(Zone, Zone.id == Location.id)  # simplified matching or fallback region mappings
+            .join(Region, Zone.region_id == Region.id)
+            .where(and_(Alert.created_at >= cutoff, Alert.deleted_at.is_(None)))
+            .group_by(Region.name)
+        )
 
         try:
             res = await db.execute(query)

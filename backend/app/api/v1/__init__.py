@@ -26,11 +26,10 @@ v1_router.include_router(incident_router, prefix="/incidents", tags=["Incident M
 v1_router.include_router(gis_router, prefix="/gis", tags=["Geographic Intelligence & Location Management System"])
 v1_router.include_router(analytics_router, prefix="/analytics", tags=["Analytics, Reporting & Business Intelligence Platform"])
 v1_router.include_router(model_router, prefix="/models", tags=["Model Registry, Versioning & Lifecycle Management System"])
-v1_router.include_router(deployment_router, prefix="/deployments", tags=["MLOps Automation, CI/CD & Deployment Orchestration Platform"])
-v1_router.include_router(observability_router, prefix="/observability", tags=["Observability, Monitoring & Platform Reliability Engineering"])
+v1_router.include_router(
+    deployment_router, prefix="/deployments", tags=["MLOps Automation, CI/CD & Deployment Orchestration Platform"]
+)
+v1_router.include_router(
+    observability_router, prefix="/observability", tags=["Observability, Monitoring & Platform Reliability Engineering"]
+)
 v1_router.include_router(security_router, prefix="/security", tags=["Enterprise Security, Compliance & Governance"])
-
-
-
-
-

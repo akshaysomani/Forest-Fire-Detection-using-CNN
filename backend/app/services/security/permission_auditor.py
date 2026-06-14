@@ -37,13 +37,15 @@ class PermissionAuditor:
                 inactive_days = (now_utc - created_at_aware).days
 
             if inactive_days > 90 and user.is_active:
-                orphaned_accounts.append({
-                    "user_id": str(user.id),
-                    "username": user.username,
-                    "email": user.email,
-                    "inactive_days": inactive_days,
-                    "last_login": user.last_login_at.isoformat() if user.last_login_at else None
-                })
+                orphaned_accounts.append(
+                    {
+                        "user_id": str(user.id),
+                        "username": user.username,
+                        "email": user.email,
+                        "inactive_days": inactive_days,
+                        "last_login": user.last_login_at.isoformat() if user.last_login_at else None,
+                    }
+                )
 
             # Check for excessive privileges (non-admin, non-officer having > 5 permissions)
             user_roles = [r.name for r in user.roles]
@@ -55,29 +57,28 @@ class PermissionAuditor:
                     permissions.add(perm.name)
 
             if len(permissions) > 5 and not is_privileged_role:
-                excess_privileges.append({
-                    "user_id": str(user.id),
-                    "username": user.username,
-                    "email": user.email,
-                    "roles": user_roles,
-                    "permission_count": len(permissions),
-                    "permissions": list(permissions)
-                })
+                excess_privileges.append(
+                    {
+                        "user_id": str(user.id),
+                        "username": user.username,
+                        "email": user.email,
+                        "roles": user_roles,
+                        "permission_count": len(permissions),
+                        "permissions": list(permissions),
+                    }
+                )
 
             # Check for unverified users with privileged roles
             if not user.is_verified and is_privileged_role:
-                unverified_privileged_users.append({
-                    "user_id": str(user.id),
-                    "username": user.username,
-                    "email": user.email,
-                    "roles": user_roles
-                })
+                unverified_privileged_users.append(
+                    {"user_id": str(user.id), "username": user.username, "email": user.email, "roles": user_roles}
+                )
 
         findings = {
             "orphaned_accounts": orphaned_accounts,
             "excess_privileges": excess_privileges,
             "unverified_privileged_users": unverified_privileged_users,
-            "total_issues_found": len(orphaned_accounts) + len(excess_privileges) + len(unverified_privileged_users)
+            "total_issues_found": len(orphaned_accounts) + len(excess_privileges) + len(unverified_privileged_users),
         }
 
         # Save to ComplianceAudit log
@@ -86,7 +87,7 @@ class PermissionAuditor:
             checked_by_id=current_user_id,
             status="FAIL" if findings["total_issues_found"] > 0 else "PASS",
             findings=f"Identity access audit found {findings['total_issues_found']} potential issue(s).",
-            details_json=findings
+            details_json=findings,
         )
         db.add(audit)
 
@@ -97,7 +98,7 @@ class PermissionAuditor:
                 severity="WARNING" if findings["total_issues_found"] < 5 else "HIGH",
                 description=f"Identity and permission audit identified {findings['total_issues_found']} governance discrepancies.",
                 user_id=current_user_id,
-                details_json={"findings_summary": findings}
+                details_json={"findings_summary": findings},
             )
             db.add(event)
 

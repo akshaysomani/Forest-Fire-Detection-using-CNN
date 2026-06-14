@@ -13,7 +13,7 @@ class XLSXExporter:
     async def export(self, report_data: Dict[str, Any], file_key: str) -> str:
         """Generate an Excel workbook using openpyxl and save to storage_service."""
         logger.info(f"Generating XLSX export: {file_key}")
-        
+
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Report Metrics"
@@ -23,15 +23,15 @@ class XLSXExporter:
         section_font = Font(name="Segoe UI", size=12, bold=True)
         header_font = Font(name="Segoe UI", size=11, bold=True, color="FFFFFF")
         data_font = Font(name="Segoe UI", size=11)
-        
+
         header_fill = PatternFill(start_color="2E7D32", end_color="2E7D32", fill_type="solid")  # Green
         summary_fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")  # Light green tint
-        
+
         thin_border = Border(
-            left=Side(style='thin', color='DDDDDD'),
-            right=Side(style='thin', color='DDDDDD'),
-            top=Side(style='thin', color='DDDDDD'),
-            bottom=Side(style='thin', color='DDDDDD')
+            left=Side(style="thin", color="DDDDDD"),
+            right=Side(style="thin", color="DDDDDD"),
+            top=Side(style="thin", color="DDDDDD"),
+            bottom=Side(style="thin", color="DDDDDD"),
         )
 
         # Title
@@ -44,22 +44,24 @@ class XLSXExporter:
         # Summary Header
         ws.cell(row=row_idx, column=1, value="Summary Indicators").font = section_font
         row_idx += 1
-        
+
         summary = report_data.get("summary", {})
         for key, val in summary.items():
-            ws.cell(row=row_idx, column=1, value=key.replace("_", " ").title()).font = Font(name="Segoe UI", size=11, bold=True)
+            ws.cell(row=row_idx, column=1, value=key.replace("_", " ").title()).font = Font(
+                name="Segoe UI", size=11, bold=True
+            )
             ws.cell(row=row_idx, column=2, value=val).font = data_font
             ws.cell(row=row_idx, column=1).fill = summary_fill
             ws.cell(row=row_idx, column=2).fill = summary_fill
             ws.cell(row=row_idx, column=1).border = thin_border
             ws.cell(row=row_idx, column=2).border = thin_border
             row_idx += 1
-            
+
         row_idx += 2
         # Data Header
         ws.cell(row=row_idx, column=1, value="Detailed Records").font = section_font
         row_idx += 1
-        
+
         data_list = report_data.get("data", [])
         if data_list:
             headers = list(data_list[0].keys())
@@ -84,7 +86,9 @@ class XLSXExporter:
                         cell.alignment = Alignment(horizontal="right")
                 row_idx += 1
         else:
-            ws.cell(row=row_idx, column=1, value="No records matches report filters.").font = Font(name="Segoe UI", size=11, italic=True)
+            ws.cell(row=row_idx, column=1, value="No records matches report filters.").font = Font(
+                name="Segoe UI", size=11, italic=True
+            )
 
         # Autofit columns
         for col in ws.columns:

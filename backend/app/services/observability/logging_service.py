@@ -4,6 +4,7 @@ Logging Service - Centralized log storage, retrieval, and retention management.
 Provides database-backed log querying with filtering by level, logger name,
 correlation ID, and time ranges. Supports retention pruning for compliance.
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
@@ -98,13 +99,10 @@ class LoggingService:
         Returns the number of records pruned.
         """
         cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
-        query = (
-            select(ObservabilityLog)
-            .where(
-                and_(
-                    ObservabilityLog.timestamp < cutoff,
-                    ObservabilityLog.deleted_at.is_(None),
-                )
+        query = select(ObservabilityLog).where(
+            and_(
+                ObservabilityLog.timestamp < cutoff,
+                ObservabilityLog.deleted_at.is_(None),
             )
         )
         result = await db.execute(query)
@@ -128,9 +126,7 @@ class LoggingService:
         # Count per level
         level_counts = {}
         for level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-            level_q = select(func.count(ObservabilityLog.id)).where(
-                and_(*conditions, ObservabilityLog.level == level)
-            )
+            level_q = select(func.count(ObservabilityLog.id)).where(and_(*conditions, ObservabilityLog.level == level))
             level_result = await db.execute(level_q)
             level_counts[level.lower()] = level_result.scalar() or 0
 

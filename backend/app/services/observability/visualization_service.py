@@ -4,6 +4,7 @@ Visualization Service - Returns chart data structures for frontend plotting.
 Provides high-level methods to generate visualization-ready data
 for the observability dashboard, combining metrics, logs, and traces.
 """
+
 import logging
 from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,17 +31,17 @@ class VisualizationService:
         """
         Generate time-series chart data for a specific metric.
         """
-        result = await metrics_service.query_metrics(
-            db=db, name=metric_name, skip=skip, limit=limit
-        )
+        result = await metrics_service.query_metrics(db=db, name=metric_name, skip=skip, limit=limit)
 
         items = result.get("items", [])
         chart_data = []
         for item in items:
-            chart_data.append({
-                "timestamp": item.timestamp,
-                "value": item.value,
-            })
+            chart_data.append(
+                {
+                    "timestamp": item.timestamp,
+                    "value": item.value,
+                }
+            )
 
         return dashboard_adapter.format_metric_timeseries(chart_data)
 
@@ -59,6 +60,7 @@ class VisualizationService:
     ) -> Dict[str, Any]:
         """Generate endpoint performance summary table data."""
         from app.services.observability.performance_monitor import performance_monitor
+
         summaries = await performance_monitor.get_endpoint_summary(db, hours=hours)
         return dashboard_adapter.format_performance_summary(summaries)
 

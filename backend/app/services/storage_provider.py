@@ -49,46 +49,46 @@ class LocalStorageProvider(StorageProvider):
 
     async def save_file(self, file_data: bytes, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 f.write(file_data)
             return destination_path
-            
+
         return await run_in_threadpool(_write)
 
     async def save_stream(self, file_stream: BinaryIO, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write_stream():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 shutil.copyfileobj(file_stream, f)
             return destination_path
-            
+
         return await run_in_threadpool(_write_stream)
 
     async def read_file(self, source_path: str) -> bytes:
         full_path = self._get_full_path(source_path)
-        
+
         def _read():
             if not os.path.exists(full_path):
                 raise FileNotFoundError(f"File not found at: {source_path}")
             with open(full_path, "rb") as f:
                 return f.read()
-                
+
         return await run_in_threadpool(_read)
 
     async def delete_file(self, file_path: str) -> bool:
         full_path = self._get_full_path(file_path)
-        
+
         def _delete():
             if os.path.exists(full_path):
                 os.remove(full_path)
                 return True
             return False
-            
+
         return await run_in_threadpool(_delete)
 
     async def exists(self, file_path: str) -> bool:
@@ -102,6 +102,7 @@ class LocalStorageProvider(StorageProvider):
 
 class S3StorageProvider(StorageProvider):
     """Simulated AWS S3 Storage Provider that writes to a local subfolder for testing."""
+
     def __init__(self, bucket_name: str, base_dir: str = "./storage/s3"):
         self.bucket_name = bucket_name
         self.base_dir = os.path.abspath(os.path.join(base_dir, bucket_name))
@@ -113,46 +114,46 @@ class S3StorageProvider(StorageProvider):
 
     async def save_file(self, file_data: bytes, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 f.write(file_data)
             return f"s3://{self.bucket_name}/{destination_path}"
-            
+
         return await run_in_threadpool(_write)
 
     async def save_stream(self, file_stream: BinaryIO, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write_stream():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 shutil.copyfileobj(file_stream, f)
             return f"s3://{self.bucket_name}/{destination_path}"
-            
+
         return await run_in_threadpool(_write_stream)
 
     async def read_file(self, source_path: str) -> bytes:
         full_path = self._get_full_path(source_path)
-        
+
         def _read():
             if not os.path.exists(full_path):
                 raise FileNotFoundError(f"S3 Object not found: {source_path}")
             with open(full_path, "rb") as f:
                 return f.read()
-                
+
         return await run_in_threadpool(_read)
 
     async def delete_file(self, file_path: str) -> bool:
         full_path = self._get_full_path(file_path)
-        
+
         def _delete():
             if os.path.exists(full_path):
                 os.remove(full_path)
                 return True
             return False
-            
+
         return await run_in_threadpool(_delete)
 
     async def exists(self, file_path: str) -> bool:
@@ -165,6 +166,7 @@ class S3StorageProvider(StorageProvider):
 
 class GCSStorageProvider(StorageProvider):
     """Simulated Google Cloud Storage Provider that writes to a local subfolder for testing."""
+
     def __init__(self, bucket_name: str, base_dir: str = "./storage/gcs"):
         self.bucket_name = bucket_name
         self.base_dir = os.path.abspath(os.path.join(base_dir, bucket_name))
@@ -176,46 +178,46 @@ class GCSStorageProvider(StorageProvider):
 
     async def save_file(self, file_data: bytes, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 f.write(file_data)
             return f"gs://{self.bucket_name}/{destination_path}"
-            
+
         return await run_in_threadpool(_write)
 
     async def save_stream(self, file_stream: BinaryIO, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write_stream():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 shutil.copyfileobj(file_stream, f)
             return f"gs://{self.bucket_name}/{destination_path}"
-            
+
         return await run_in_threadpool(_write_stream)
 
     async def read_file(self, source_path: str) -> bytes:
         full_path = self._get_full_path(source_path)
-        
+
         def _read():
             if not os.path.exists(full_path):
                 raise FileNotFoundError(f"GCS Object not found: {source_path}")
             with open(full_path, "rb") as f:
                 return f.read()
-                
+
         return await run_in_threadpool(_read)
 
     async def delete_file(self, file_path: str) -> bool:
         full_path = self._get_full_path(file_path)
-        
+
         def _delete():
             if os.path.exists(full_path):
                 os.remove(full_path)
                 return True
             return False
-            
+
         return await run_in_threadpool(_delete)
 
     async def exists(self, file_path: str) -> bool:
@@ -228,6 +230,7 @@ class GCSStorageProvider(StorageProvider):
 
 class AzureBlobStorageProvider(StorageProvider):
     """Simulated Azure Blob Storage Provider that writes to a local subfolder for testing."""
+
     def __init__(self, container_name: str, base_dir: str = "./storage/azure"):
         self.container_name = container_name
         self.base_dir = os.path.abspath(os.path.join(base_dir, container_name))
@@ -239,46 +242,46 @@ class AzureBlobStorageProvider(StorageProvider):
 
     async def save_file(self, file_data: bytes, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 f.write(file_data)
             return f"azure://{self.container_name}/{destination_path}"
-            
+
         return await run_in_threadpool(_write)
 
     async def save_stream(self, file_stream: BinaryIO, destination_path: str) -> str:
         full_path = self._get_full_path(destination_path)
-        
+
         def _write_stream():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "wb") as f:
                 shutil.copyfileobj(file_stream, f)
             return f"azure://{self.container_name}/{destination_path}"
-            
+
         return await run_in_threadpool(_write_stream)
 
     async def read_file(self, source_path: str) -> bytes:
         full_path = self._get_full_path(source_path)
-        
+
         def _read():
             if not os.path.exists(full_path):
                 raise FileNotFoundError(f"Azure Blob not found: {source_path}")
             with open(full_path, "rb") as f:
                 return f.read()
-                
+
         return await run_in_threadpool(_read)
 
     async def delete_file(self, file_path: str) -> bool:
         full_path = self._get_full_path(file_path)
-        
+
         def _delete():
             if os.path.exists(full_path):
                 os.remove(full_path)
                 return True
             return False
-            
+
         return await run_in_threadpool(_delete)
 
     async def exists(self, file_path: str) -> bool:

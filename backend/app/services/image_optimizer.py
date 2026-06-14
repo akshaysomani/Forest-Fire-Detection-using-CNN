@@ -5,19 +5,16 @@ from fastapi.concurrency import run_in_threadpool
 
 class ImageOptimizer:
     @staticmethod
-    async def optimize_and_compress(
-        file_bytes: bytes,
-        quality: int = 80,
-        target_format: str = "WEBP"
-    ) -> bytes:
+    async def optimize_and_compress(file_bytes: bytes, quality: int = 80, target_format: str = "WEBP") -> bytes:
         """
         Optimize and compress image bytes.
         Strips EXIF data and metadata to minimize file footprint.
         Runs in background thread pool.
         """
+
         def _optimize():
             img = Image.open(io.BytesIO(file_bytes))
-            
+
             # Convert RGBA/LA modes to RGB if target format does not support transparency
             if target_format.upper() in ("JPEG", "JPG") and img.mode in ("RGBA", "LA", "P"):
                 img = img.convert("RGB")

@@ -23,12 +23,12 @@ class ZoneDetector:
                 boundary = region.boundary
                 if not boundary or "coordinates" not in boundary:
                     continue
-                
+
                 # Extract exterior ring of GeoJSON Polygon
                 coords = boundary["coordinates"]
                 if not coords or len(coords) == 0:
                     continue
-                
+
                 outer_ring = coords[0]  # First list represents exterior ring
                 if boundary_engine.is_point_in_polygon(latitude, longitude, outer_ring):
                     logger.info(f"Point ({latitude}, {longitude}) detected inside region '{region.name}'")
@@ -52,14 +52,16 @@ class ZoneDetector:
                 boundary = zone.boundary
                 if not boundary or "coordinates" not in boundary:
                     continue
-                
+
                 coords = boundary["coordinates"]
                 if not coords or len(coords) == 0:
                     continue
-                
+
                 outer_ring = coords[0]
                 if boundary_engine.is_point_in_polygon(latitude, longitude, outer_ring):
-                    logger.info(f"Point ({latitude}, {longitude}) detected inside zone '{zone.name}' (Risk: {zone.risk_level})")
+                    logger.info(
+                        f"Point ({latitude}, {longitude}) detected inside zone '{zone.name}' (Risk: {zone.risk_level})"
+                    )
                     return zone
             except Exception as e:
                 logger.error(f"Error checking containment in zone {zone.id}: {str(e)}")

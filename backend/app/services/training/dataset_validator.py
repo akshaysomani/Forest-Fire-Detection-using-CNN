@@ -15,7 +15,10 @@ class DatasetValidator:
         4. Validates that the physical file actually exists in storage.
         """
         if len(files) < min_files:
-            return False, f"Dataset has insufficient images. Found {len(files)}, but at least {min_files} are required for training."
+            return (
+                False,
+                f"Dataset has insufficient images. Found {len(files)}, but at least {min_files} are required for training.",
+            )
 
         labels = set()
         missing_labels_count = 0
@@ -27,10 +30,16 @@ class DatasetValidator:
                 labels.add(f.label_id)
 
         if missing_labels_count > 0:
-            return False, f"Dataset contains {missing_labels_count} unlabeled images. All images must be labeled before training."
+            return (
+                False,
+                f"Dataset contains {missing_labels_count} unlabeled images. All images must be labeled before training.",
+            )
 
         if len(labels) < 2:
-            return False, f"Dataset lacks class diversity. Found {len(labels)} class(es), but classification requires at least 2 distinct labels (e.g., Fire and Non-Fire)."
+            return (
+                False,
+                f"Dataset lacks class diversity. Found {len(labels)} class(es), but classification requires at least 2 distinct labels (e.g., Fire and Non-Fire).",
+            )
 
         # Verify storage existence for all files
         for f in files:

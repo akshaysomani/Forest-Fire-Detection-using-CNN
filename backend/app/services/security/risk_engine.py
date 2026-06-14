@@ -36,7 +36,9 @@ class RiskEngine:
             score += 1.0
 
         # Fetch recent user security events
-        q_events = select(SecurityEvent).where(SecurityEvent.user_id == user_id, SecurityEvent.severity.in_(["HIGH", "CRITICAL"]))
+        q_events = select(SecurityEvent).where(
+            SecurityEvent.user_id == user_id, SecurityEvent.severity.in_(["HIGH", "CRITICAL"])
+        )
         res_events = await db.execute(q_events)
         high_severity_events = res_events.scalars().all()
         score += min(len(high_severity_events) * 2.0, 4.0)
@@ -61,11 +63,13 @@ class RiskEngine:
 
         # Blocked IPs
         from app.services.security.api_security_service import api_security_service
+
         blocked_ips = api_security_service.get_blocked_ips()
         score += min(len(blocked_ips) * 0.5, 3.0)
 
         # Active Incidents
         from app.services.security.security_incident_tracker import security_incident_tracker
+
         active_incidents = await security_incident_tracker.get_active_incidents(db)
         score += min(len(active_incidents) * 1.5, 4.0)
 
@@ -73,4 +77,5 @@ class RiskEngine:
 
 
 from datetime import datetime
+
 risk_engine = RiskEngine()

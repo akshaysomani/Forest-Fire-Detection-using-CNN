@@ -18,11 +18,11 @@ class IncidentScheduler:
         """Binds event subscribers and launches the background scheduler loop."""
         if self._running:
             return
-        
+
         self._running = True
         logger.info("Subscribing EmergencyWorkflowEngine to Alert Event Bus...")
         event_bus.subscribe("alert_generated", emergency_workflow_engine.handle_alert_generated)
-        
+
         logger.info(f"Launching Incident Scheduler background loop (Interval: {self._check_interval}s)...")
         self._task = asyncio.create_task(self._loop())
 
@@ -30,7 +30,7 @@ class IncidentScheduler:
         """Stops the scheduler and cancels the background task."""
         if not self._running:
             return
-        
+
         self._running = False
         logger.info("Stopping Incident Scheduler background loop...")
         if self._task:
@@ -58,10 +58,10 @@ class IncidentScheduler:
             try:
                 # 1. Run SLA check & automatic escalation
                 await automation_service.run_sla_and_escalation_checks(db)
-                
+
                 # 2. Run auto-dispatch check for open incidents
                 await automation_service.run_auto_dispatch_checks(db)
-                
+
                 await db.commit()
             except Exception as e:
                 await db.rollback()

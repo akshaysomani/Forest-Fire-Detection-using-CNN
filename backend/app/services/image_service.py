@@ -31,7 +31,7 @@ class ImageService:
         md5_hash: str,
         owner_id: uuid.UUID,
         upload_source: str,
-        mime_type: str | None = None
+        mime_type: str | None = None,
     ) -> Image:
         # Check for duplication globally
         existing = await image_repository.get_by_md5(db, md5_hash)
@@ -51,7 +51,7 @@ class ImageService:
             md5_hash=md5_hash,
             owner_id=owner_id,
             upload_source=upload_source,
-            status="active"
+            status="active",
         )
         db.add(db_obj)
         await db.flush()
@@ -73,11 +73,9 @@ class ImageService:
         owner_id: uuid.UUID | None = None,
         upload_source: str | None = None,
         status: str | None = None,
-        search_query: str | None = None
+        search_query: str | None = None,
     ) -> Sequence[Image]:
-        return await image_repository.list_images(
-            db, skip, limit, owner_id, upload_source, status, search_query
-        )
+        return await image_repository.list_images(db, skip, limit, owner_id, upload_source, status, search_query)
 
     async def count_images(
         self,
@@ -85,11 +83,9 @@ class ImageService:
         owner_id: uuid.UUID | None = None,
         upload_source: str | None = None,
         status: str | None = None,
-        search_query: str | None = None
+        search_query: str | None = None,
     ) -> int:
-        return await image_repository.count_images(
-            db, owner_id, upload_source, status, search_query
-        )
+        return await image_repository.count_images(db, owner_id, upload_source, status, search_query)
 
     async def advanced_search(
         self,
@@ -126,7 +122,7 @@ class ImageService:
             end_date=end_date,
             camera_model=camera_model,
             upload_source=upload_source,
-            status=status
+            status=status,
         )
 
     async def count_advanced_search(
@@ -160,7 +156,7 @@ class ImageService:
             end_date=end_date,
             camera_model=camera_model,
             upload_source=upload_source,
-            status=status
+            status=status,
         )
 
     async def delete_image(self, db: AsyncSession, id: uuid.UUID, user_id: uuid.UUID) -> bool:
@@ -186,7 +182,7 @@ class ImageService:
         captured_at: datetime | None = None,
         camera_make: str | None = None,
         camera_model: str | None = None,
-        extra_metadata: dict | None = None
+        extra_metadata: dict | None = None,
     ) -> ImageMetadata:
         metadata = await image_metadata_repository.get_by_image_id(db, image_id)
         if metadata:
@@ -211,7 +207,7 @@ class ImageService:
                 captured_at=captured_at,
                 camera_make=camera_make,
                 camera_model=camera_model,
-                extra_metadata=extra_metadata
+                extra_metadata=extra_metadata,
             )
             db.add(metadata)
 
@@ -226,7 +222,7 @@ class ImageService:
         purpose: str,
         file_path: str,
         size_bytes: int,
-        md5_hash: str
+        md5_hash: str,
     ) -> ImageVersion:
         version = ImageVersion(
             image_id=image_id,
@@ -234,7 +230,7 @@ class ImageService:
             purpose=purpose,
             file_path=file_path,
             size_bytes=size_bytes,
-            md5_hash=md5_hash
+            md5_hash=md5_hash,
         )
         db.add(version)
         await db.flush()
@@ -248,7 +244,7 @@ class ImageService:
         provider: str,
         bucket_or_container: str,
         file_key_or_path: str,
-        is_primary: bool = False
+        is_primary: bool = False,
     ) -> ImageStorageLocation:
         # If is_primary=True, deactivate other primary markers for the same image
         if is_primary:
@@ -264,7 +260,7 @@ class ImageService:
             provider=provider,
             bucket_or_container=bucket_or_container,
             file_key_or_path=file_key_or_path,
-            is_primary=is_primary
+            is_primary=is_primary,
         )
         db.add(location)
         await db.flush()
@@ -277,36 +273,27 @@ class ImageService:
         user_id: uuid.UUID | None,
         access_type: str,
         ip_address: str | None = None,
-        user_agent: str | None = None
+        user_agent: str | None = None,
     ) -> ImageAccessLog:
         # Import timezone locally if not imported globally
         from datetime import timezone
+
         log = ImageAccessLog(
             image_id=image_id,
             user_id=user_id,
             accessed_at=datetime.now(timezone.utc),
             access_type=access_type,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         db.add(log)
         await db.flush()
         return log
 
     async def log_audit(
-        self,
-        db: AsyncSession,
-        image_id: uuid.UUID,
-        user_id: uuid.UUID | None,
-        action: str,
-        changes: dict | None = None
+        self, db: AsyncSession, image_id: uuid.UUID, user_id: uuid.UUID | None, action: str, changes: dict | None = None
     ) -> ImageAuditLog:
-        log = ImageAuditLog(
-            image_id=image_id,
-            user_id=user_id,
-            action=action,
-            changes=changes
-        )
+        log = ImageAuditLog(image_id=image_id, user_id=user_id, action=action, changes=changes)
         db.add(log)
         await db.flush()
         return log

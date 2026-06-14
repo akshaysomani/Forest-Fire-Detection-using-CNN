@@ -10,12 +10,7 @@ logger = logging.getLogger("alert.alert_engine")
 
 class AlertEngine:
     async def trigger_detection_alert(
-        self,
-        db: AsyncSession,
-        detection_id: uuid.UUID,
-        severity: str,
-        message: str,
-        payload: Dict[str, Any]
+        self, db: AsyncSession, detection_id: uuid.UUID, severity: str, message: str, payload: Dict[str, Any]
     ) -> Alert:
         """
         Creates Alert and AlertEvent database models, logs the activity,
@@ -24,33 +19,19 @@ class AlertEngine:
         logger.info(f"Triggering alert for detection: {detection_id} with severity: {severity}")
 
         # 1. Create the Alert record
-        alert = Alert(
-            detection_id=detection_id,
-            severity=severity,
-            status="active",
-            message=message
-        )
+        alert = Alert(detection_id=detection_id, severity=severity, status="active", message=message)
         db.add(alert)
         await db.flush()  # Populates alert.id
 
         # 2. Log the event details in AlertEvent
-        alert_event = AlertEvent(
-            alert_id=alert.id,
-            event_type="fire_prediction",
-            payload=payload
-        )
+        alert_event = AlertEvent(alert_id=alert.id, event_type="fire_prediction", payload=payload)
         db.add(alert_event)
 
         # 3. Write record into AlertAuditLog
         audit_log = AlertAuditLog(
             alert_id=alert.id,
             action="alert_generated",
-            details={
-                "severity": severity,
-                "detection_id": str(detection_id),
-                "message": message,
-                "payload": payload
-            }
+            details={"severity": severity, "detection_id": str(detection_id), "message": message, "payload": payload},
         )
         db.add(audit_log)
         await db.flush()
@@ -61,7 +42,7 @@ class AlertEngine:
             "alert_id": str(alert.id),
             "detection_id": str(detection_id),
             "severity": severity,
-            "message": message
+            "message": message,
         }
         await event_bus.publish("alert_generated", event_payload)
         logger.debug(f"Alert {alert.id} event published to Event Bus.")

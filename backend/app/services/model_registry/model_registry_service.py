@@ -8,7 +8,15 @@ from app.services.model_registry.version_manager import version_manager
 from app.services.model_registry.artifact_manager import artifact_manager
 from app.services.model_registry.model_comparator import model_comparator
 from app.core.exceptions import EntityNotFoundException, ValidationException
-from app.models.model_registry import RegisteredModel, ModelVersion, ModelArtifact, ModelMetadata, ModelDeployment, ModelApproval, ModelLifecycleEvent
+from app.models.model_registry import (
+    RegisteredModel,
+    ModelVersion,
+    ModelArtifact,
+    ModelMetadata,
+    ModelDeployment,
+    ModelApproval,
+    ModelLifecycleEvent,
+)
 from app.models.training import TrainingRun, TrainingCheckpoint
 
 logger = logging.getLogger("model_registry.model_registry_service")
@@ -17,10 +25,7 @@ logger = logging.getLogger("model_registry.model_registry_service")
 class ModelRegistryService:
     @staticmethod
     async def register_model(
-        db: AsyncSession,
-        name: str,
-        description: Optional[str] = None,
-        user_id: Optional[uuid.UUID] = None
+        db: AsyncSession, name: str, description: Optional[str] = None, user_id: Optional[uuid.UUID] = None
     ) -> RegisteredModel:
         """Registers a new model definition family."""
         name_clean = name.strip().lower()
@@ -31,18 +36,13 @@ class ModelRegistryService:
         if existing:
             raise ValidationException(f"Model family with name '{name_clean}' is already registered.")
 
-        model = await model_repository.create_model(
-            db=db,
-            name=name_clean,
-            description=description,
-            created_by=user_id
-        )
+        model = await model_repository.create_model(db=db, name=name_clean, description=description, created_by=user_id)
 
         await model_repository.create_audit_log(
             db=db,
             action="register_model_family",
             performed_by=user_id or uuid.UUID(int=0),
-            details={"model_id": str(model.id), "name": name_clean}
+            details={"model_id": str(model.id), "name": name_clean},
         )
         return model
 
@@ -55,7 +55,7 @@ class ModelRegistryService:
         description: Optional[str] = None,
         release_notes: Optional[str] = None,
         user_id: Optional[uuid.UUID] = None,
-        increment_type: str = "patch"
+        increment_type: str = "patch",
     ) -> ModelVersion:
         """
         Registers a new version of a model.
@@ -74,22 +74,21 @@ class ModelRegistryService:
             run = await db.get(TrainingRun, training_run_id)
             if not run or run.deleted_at is not None:
                 raise EntityNotFoundException(f"Training run '{training_run_id}' not found.")
-            
+
             # Fetch hyperparams
             hyperparameters = run.hyperparameters or {}
-            
+
             # Resolve metrics from latest or best checkpoint
             checkpoint_query = select(TrainingCheckpoint).where(
-                and_(
-                    TrainingCheckpoint.run_id == training_run_id,
-                    TrainingCheckpoint.deleted_at.is_(None)
-                )
+                and_(TrainingCheckpoint.run_id == training_run_id, TrainingCheckpoint.deleted_at.is_(None))
             )
             if checkpoint_id:
                 checkpoint_query = checkpoint_query.where(TrainingCheckpoint.id == checkpoint_id)
             else:
                 # Prefer best checkpoint
-                checkpoint_query = checkpoint_query.order_by(TrainingCheckpoint.is_best.desc(), TrainingCheckpoint.epoch.desc())
+                checkpoint_query = checkpoint_query.order_by(
+                    TrainingCheckpoint.is_best.desc(), TrainingCheckpoint.epoch.desc()
+                )
 
             checkpoint_query = checkpoint_query.limit(1)
             res_cp = await db.execute(checkpoint_query)
@@ -102,7 +101,7 @@ class ModelRegistryService:
                     "val_accuracy": cp.val_accuracy,
                     "accuracy": cp.val_accuracy,
                     "loss": cp.val_loss,
-                    "epoch": cp.epoch
+                    "epoch": cp.epoch,
                 }
 
         # 2. Resolve version string
@@ -120,17 +119,14 @@ class ModelRegistryService:
             description=description,
             release_notes=release_notes,
             metrics=metrics,
-            hyperparameters=hyperparameters
+            hyperparameters=hyperparameters,
         )
 
         # 4. Auto-register artifacts from training run
         if training_run_id:
             try:
                 await artifact_manager.auto_register_training_run_artifacts(
-                    db=db,
-                    model_version_id=version.id,
-                    training_run_id=training_run_id,
-                    created_by=user_id
+                    db=db, model_version_id=version.id, training_run_id=training_run_id, created_by=user_id
                 )
             except Exception as e:
                 logger.error(f"Artifact auto-registration encountered an issue: {str(e)}")
@@ -143,7 +139,7 @@ class ModelRegistryService:
             action="register_model_version",
             performed_by=user_id or uuid.UUID(int=0),
             model_version_id=version.id,
-            details={"version": version_str, "status": "Draft"}
+            details={"version": version_str, "status": "Draft"},
         )
 
         # 6. Log dynamic lifecycle event
@@ -153,44 +149,40 @@ class ModelRegistryService:
             from_state="Draft",
             to_state="Draft",
             triggered_by=user_id or uuid.UUID(int=0),
-            notes="Initial version registration."
+            notes="Initial version registration.",
         )
 
         return version
 
     @staticmethod
-    async def get_model_version_details(
-        db: AsyncSession,
-        version_id: uuid.UUID
-    ) -> ModelVersion:
+    async def get_model_version_details(db: AsyncSession, version_id: uuid.UUID) -> ModelVersion:
         """
         Retrieves detailed model version information including
         nested artifacts, deployments, approvals, and lifecycle event histories.
         """
         from sqlalchemy.orm import selectinload
-        query = select(ModelVersion).options(
-            selectinload(ModelVersion.artifacts),
-            selectinload(ModelVersion.deployments),
-            selectinload(ModelVersion.approvals),
-            selectinload(ModelVersion.lifecycle_events),
-            selectinload(ModelVersion.metadata_items)
-        ).where(
-            and_(ModelVersion.id == version_id, ModelVersion.deleted_at.is_(None))
+
+        query = (
+            select(ModelVersion)
+            .options(
+                selectinload(ModelVersion.artifacts),
+                selectinload(ModelVersion.deployments),
+                selectinload(ModelVersion.approvals),
+                selectinload(ModelVersion.lifecycle_events),
+                selectinload(ModelVersion.metadata_items),
+            )
+            .where(and_(ModelVersion.id == version_id, ModelVersion.deleted_at.is_(None)))
         )
         res = await db.execute(query)
         version = res.scalar_one_or_none()
-        
+
         if not version:
             raise EntityNotFoundException(f"Model version '{version_id}' not found.")
-            
+
         return version
 
     @staticmethod
-    async def compare_versions(
-        db: AsyncSession,
-        version_id_a: uuid.UUID,
-        version_id_b: uuid.UUID
-    ) -> Dict[str, Any]:
+    async def compare_versions(db: AsyncSession, version_id_a: uuid.UUID, version_id_b: uuid.UUID) -> Dict[str, Any]:
         """Compares two model versions compiling metrics and configurations differences."""
         version_a = await model_repository.get_version(db, version_id_a)
         version_b = await model_repository.get_version(db, version_id_b)

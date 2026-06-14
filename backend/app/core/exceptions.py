@@ -84,14 +84,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def base_api_exception_handler(request: Request, exc: BaseAPIException):
         return JSONResponse(
             status_code=exc.status_code,
-            content={
-                "success": False,
-                "error": {
-                    "code": exc.error_code,
-                    "message": exc.message,
-                    "details": exc.details
-                }
-            }
+            content={"success": False, "error": {"code": exc.error_code, "message": exc.message, "details": exc.details}},
         )
 
     @app.exception_handler(RequestValidationError)
@@ -108,9 +101,9 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": "One or more validation errors occurred.",
-                    "details": details
-                }
-            }
+                    "details": details,
+                },
+            },
         )
 
     @app.exception_handler(Exception)
@@ -120,9 +113,6 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "success": False,
-                "error": {
-                    "code": "INTERNAL_SERVER_ERROR",
-                    "message": "An internal server error occurred."
-                }
-            }
+                "error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal server error occurred."},
+            },
         )

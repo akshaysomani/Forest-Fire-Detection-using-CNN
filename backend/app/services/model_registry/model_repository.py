@@ -11,7 +11,7 @@ from app.models.model_registry import (
     ModelDeployment,
     ModelApproval,
     ModelLifecycleEvent,
-    ModelAuditLog
+    ModelAuditLog,
 )
 
 
@@ -19,22 +19,20 @@ class ModelRepository:
     # --- Registered Model ---
     @staticmethod
     async def get_model(db: AsyncSession, model_id: uuid.UUID) -> Optional[RegisteredModel]:
-        query = select(RegisteredModel).where(
-            and_(RegisteredModel.id == model_id, RegisteredModel.deleted_at.is_(None))
-        )
+        query = select(RegisteredModel).where(and_(RegisteredModel.id == model_id, RegisteredModel.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     @staticmethod
     async def get_model_by_name(db: AsyncSession, name: str) -> Optional[RegisteredModel]:
-        query = select(RegisteredModel).where(
-            and_(RegisteredModel.name == name, RegisteredModel.deleted_at.is_(None))
-        )
+        query = select(RegisteredModel).where(and_(RegisteredModel.name == name, RegisteredModel.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     @staticmethod
-    async def create_model(db: AsyncSession, name: str, description: Optional[str] = None, created_by: Optional[uuid.UUID] = None) -> RegisteredModel:
+    async def create_model(
+        db: AsyncSession, name: str, description: Optional[str] = None, created_by: Optional[uuid.UUID] = None
+    ) -> RegisteredModel:
         model = RegisteredModel(name=name, description=description, created_by=created_by)
         db.add(model)
         await db.commit()
@@ -45,23 +43,24 @@ class ModelRepository:
     async def list_models(db: AsyncSession, skip: int = 0, limit: int = 20) -> Tuple[List[RegisteredModel], int]:
         query = select(RegisteredModel).where(RegisteredModel.deleted_at.is_(None)).offset(skip).limit(limit)
         count_query = select(func.count()).select_from(RegisteredModel).where(RegisteredModel.deleted_at.is_(None))
-        
+
         res = await db.execute(query)
         models = list(res.scalars().all())
-        
+
         count_res = await db.execute(count_query)
         total = count_res.scalar() or 0
-        
+
         return models, total
 
     # --- Model Version ---
     @staticmethod
     async def get_version(db: AsyncSession, version_id: uuid.UUID) -> Optional[ModelVersion]:
         from sqlalchemy.orm import selectinload
-        query = select(ModelVersion).options(
-            selectinload(ModelVersion.artifacts)
-        ).where(
-            and_(ModelVersion.id == version_id, ModelVersion.deleted_at.is_(None))
+
+        query = (
+            select(ModelVersion)
+            .options(selectinload(ModelVersion.artifacts))
+            .where(and_(ModelVersion.id == version_id, ModelVersion.deleted_at.is_(None)))
         )
         res = await db.execute(query)
         return res.scalar_one_or_none()
@@ -69,20 +68,19 @@ class ModelRepository:
     @staticmethod
     async def get_version_by_number(db: AsyncSession, model_id: uuid.UUID, version_str: str) -> Optional[ModelVersion]:
         query = select(ModelVersion).where(
-            and_(
-                ModelVersion.model_id == model_id,
-                ModelVersion.version == version_str,
-                ModelVersion.deleted_at.is_(None)
-            )
+            and_(ModelVersion.model_id == model_id, ModelVersion.version == version_str, ModelVersion.deleted_at.is_(None))
         )
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     @staticmethod
     async def get_latest_version(db: AsyncSession, model_id: uuid.UUID) -> Optional[ModelVersion]:
-        query = select(ModelVersion).where(
-            and_(ModelVersion.model_id == model_id, ModelVersion.deleted_at.is_(None))
-        ).order_by(ModelVersion.created_at.desc()).limit(1)
+        query = (
+            select(ModelVersion)
+            .where(and_(ModelVersion.model_id == model_id, ModelVersion.deleted_at.is_(None)))
+            .order_by(ModelVersion.created_at.desc())
+            .limit(1)
+        )
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
@@ -98,7 +96,7 @@ class ModelRepository:
         description: Optional[str] = None,
         release_notes: Optional[str] = None,
         metrics: Optional[Dict[str, Any]] = None,
-        hyperparameters: Optional[Dict[str, Any]] = None
+        hyperparameters: Optional[Dict[str, Any]] = None,
     ) -> ModelVersion:
         version = ModelVersion(
             model_id=model_id,
@@ -110,7 +108,7 @@ class ModelRepository:
             description=description,
             release_notes=release_notes,
             metrics=metrics,
-            hyperparameters=hyperparameters
+            hyperparameters=hyperparameters,
         )
         db.add(version)
         await db.commit()
@@ -118,21 +116,29 @@ class ModelRepository:
         return version
 
     @staticmethod
-    async def list_versions(db: AsyncSession, model_id: uuid.UUID, skip: int = 0, limit: int = 20) -> Tuple[List[ModelVersion], int]:
-        query = select(ModelVersion).where(
-            and_(ModelVersion.model_id == model_id, ModelVersion.deleted_at.is_(None))
-        ).order_by(ModelVersion.created_at.desc()).offset(skip).limit(limit)
-        
-        count_query = select(func.count()).select_from(ModelVersion).where(
-            and_(ModelVersion.model_id == model_id, ModelVersion.deleted_at.is_(None))
+    async def list_versions(
+        db: AsyncSession, model_id: uuid.UUID, skip: int = 0, limit: int = 20
+    ) -> Tuple[List[ModelVersion], int]:
+        query = (
+            select(ModelVersion)
+            .where(and_(ModelVersion.model_id == model_id, ModelVersion.deleted_at.is_(None)))
+            .order_by(ModelVersion.created_at.desc())
+            .offset(skip)
+            .limit(limit)
         )
-        
+
+        count_query = (
+            select(func.count())
+            .select_from(ModelVersion)
+            .where(and_(ModelVersion.model_id == model_id, ModelVersion.deleted_at.is_(None)))
+        )
+
         res = await db.execute(query)
         versions = list(res.scalars().all())
-        
+
         count_res = await db.execute(count_query)
         total = count_res.scalar() or 0
-        
+
         return versions, total
 
     # --- Model Artifact ---
@@ -145,7 +151,7 @@ class ModelRepository:
         uri: str,
         file_size: Optional[int] = None,
         checksum: Optional[str] = None,
-        created_by: Optional[uuid.UUID] = None
+        created_by: Optional[uuid.UUID] = None,
     ) -> ModelArtifact:
         artifact = ModelArtifact(
             model_version_id=model_version_id,
@@ -154,7 +160,7 @@ class ModelRepository:
             uri=uri,
             file_size=file_size,
             checksum=checksum,
-            created_by=created_by
+            created_by=created_by,
         )
         db.add(artifact)
         await db.commit()
@@ -164,18 +170,9 @@ class ModelRepository:
     # --- Model Metadata ---
     @staticmethod
     async def create_metadata(
-        db: AsyncSession,
-        model_version_id: uuid.UUID,
-        key: str,
-        value: str,
-        value_type: str = "string"
+        db: AsyncSession, model_version_id: uuid.UUID, key: str, value: str, value_type: str = "string"
     ) -> ModelMetadata:
-        meta = ModelMetadata(
-            model_version_id=model_version_id,
-            key=key,
-            value=value,
-            value_type=value_type
-        )
+        meta = ModelMetadata(model_version_id=model_version_id, key=key, value=value, value_type=value_type)
         db.add(meta)
         await db.commit()
         await db.refresh(meta)
@@ -193,14 +190,19 @@ class ModelRepository:
         if not vids:
             return None
 
-        query = select(ModelDeployment).where(
-            and_(
-                ModelDeployment.model_version_id.in_(vids),
-                ModelDeployment.environment == environment.lower().strip(),
-                ModelDeployment.status == "active",
-                ModelDeployment.deleted_at.is_(None)
+        query = (
+            select(ModelDeployment)
+            .where(
+                and_(
+                    ModelDeployment.model_version_id.in_(vids),
+                    ModelDeployment.environment == environment.lower().strip(),
+                    ModelDeployment.status == "active",
+                    ModelDeployment.deleted_at.is_(None),
+                )
             )
-        ).order_by(ModelDeployment.deployed_at.desc()).limit(1)
+            .order_by(ModelDeployment.deployed_at.desc())
+            .limit(1)
+        )
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
@@ -211,7 +213,7 @@ class ModelRepository:
         environment: str,
         status: str = "active",
         deployed_by: Optional[uuid.UUID] = None,
-        metrics: Optional[Dict[str, Any]] = None
+        metrics: Optional[Dict[str, Any]] = None,
     ) -> ModelDeployment:
         # First, deactivate any active deployments in the same environment for the same model family
         version = await ModelRepository.get_version(db, model_version_id)
@@ -220,7 +222,7 @@ class ModelRepository:
                 and_(
                     ModelDeployment.environment == environment.lower().strip(),
                     ModelDeployment.status == "active",
-                    ModelDeployment.deleted_at.is_(None)
+                    ModelDeployment.deleted_at.is_(None),
                 )
             )
             res_active = await db.execute(active_deploys_query)
@@ -238,7 +240,7 @@ class ModelRepository:
             environment=environment.lower().strip(),
             status=status,
             deployed_by=deployed_by,
-            metrics=metrics
+            metrics=metrics,
         )
         db.add(deployment)
         await db.commit()
@@ -256,23 +258,26 @@ class ModelRepository:
             return None
 
         # Previous deployment is inactive but wasn't failed, or is just the next newest deployment in line
-        query = select(ModelDeployment).where(
-            and_(
-                ModelDeployment.model_version_id.in_(vids),
-                ModelDeployment.environment == environment.lower().strip(),
-                ModelDeployment.status != "active",
-                ModelDeployment.deleted_at.is_(None)
+        query = (
+            select(ModelDeployment)
+            .where(
+                and_(
+                    ModelDeployment.model_version_id.in_(vids),
+                    ModelDeployment.environment == environment.lower().strip(),
+                    ModelDeployment.status != "active",
+                    ModelDeployment.deleted_at.is_(None),
+                )
             )
-        ).order_by(ModelDeployment.deployed_at.desc()).limit(1)
+            .order_by(ModelDeployment.deployed_at.desc())
+            .limit(1)
+        )
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     # --- Model Approval ---
     @staticmethod
     async def get_approval(db: AsyncSession, approval_id: uuid.UUID) -> Optional[ModelApproval]:
-        query = select(ModelApproval).where(
-            and_(ModelApproval.id == approval_id, ModelApproval.deleted_at.is_(None))
-        )
+        query = select(ModelApproval).where(and_(ModelApproval.id == approval_id, ModelApproval.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
@@ -282,14 +287,14 @@ class ModelRepository:
         model_version_id: uuid.UUID,
         requested_by: uuid.UUID,
         target_stage: str,
-        request_notes: Optional[str] = None
+        request_notes: Optional[str] = None,
     ) -> ModelApproval:
         approval = ModelApproval(
             model_version_id=model_version_id,
             requested_by=requested_by,
             target_stage=target_stage,
             request_notes=request_notes,
-            status="pending"
+            status="pending",
         )
         db.add(approval)
         await db.commit()
@@ -304,14 +309,10 @@ class ModelRepository:
         from_state: str,
         to_state: str,
         triggered_by: uuid.UUID,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> ModelLifecycleEvent:
         event = ModelLifecycleEvent(
-            model_version_id=model_version_id,
-            from_state=from_state,
-            to_state=to_state,
-            triggered_by=triggered_by,
-            notes=notes
+            model_version_id=model_version_id, from_state=from_state, to_state=to_state, triggered_by=triggered_by, notes=notes
         )
         db.add(event)
         await db.commit()
@@ -326,14 +327,14 @@ class ModelRepository:
         performed_by: uuid.UUID,
         model_version_id: Optional[uuid.UUID] = None,
         details: Optional[Dict[str, Any]] = None,
-        client_ip: Optional[str] = None
+        client_ip: Optional[str] = None,
     ) -> ModelAuditLog:
         log = ModelAuditLog(
             action=action,
             performed_by=performed_by,
             model_version_id=model_version_id,
             details=details or {},
-            client_ip=client_ip
+            client_ip=client_ip,
         )
         db.add(log)
         await db.commit()

@@ -54,7 +54,9 @@ class AlertPreferenceResponse(BaseModel):
 
 class AlertPreferenceUpdate(BaseModel):
     channel: str = Field(..., description="Target notification channel (email, in_app, sms)")
-    min_severity: Optional[str] = Field(None, description="Minimum severity level (Critical, High, Medium, Low, Informational)")
+    min_severity: Optional[str] = Field(
+        None, description="Minimum severity level (Critical, High, Medium, Low, Informational)"
+    )
     enabled: Optional[bool] = Field(None, description="Enable or disable notifications on this channel")
     quiet_hours_start: Optional[str] = Field(None, description="Quiet hours start time (HH:MM format)")
     quiet_hours_end: Optional[str] = Field(None, description="Quiet hours end time (HH:MM format)")

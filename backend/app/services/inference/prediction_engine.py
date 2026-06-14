@@ -16,11 +16,7 @@ logger = logging.getLogger("inference.prediction_engine")
 
 class PredictionEngine:
     @staticmethod
-    async def predict_single_image(
-        db: AsyncSession,
-        file_bytes: bytes,
-        filename: str
-    ) -> Dict[str, Any]:
+    async def predict_single_image(db: AsyncSession, file_bytes: bytes, filename: str) -> Dict[str, Any]:
         """
         Run inference pipeline on a single image.
         1. Validate inputs
@@ -51,7 +47,7 @@ class PredictionEngine:
         # 6. Extract classification labels and scores
         # probabilities has shape (1, num_classes)
         prob_list = probabilities[0].tolist()
-        
+
         # Call classification service to resolve label and confidence
         label, confidence = classification_service.resolve_classification(prob_list)
 
@@ -60,7 +56,7 @@ class PredictionEngine:
 
         # 8. Map to standardized schema structure
         processing_duration = time.perf_counter() - start_time
-        
+
         result = prediction_mapper.format_prediction_output(
             model_name=model_name,
             model_version=model_version,
@@ -69,7 +65,7 @@ class PredictionEngine:
             confidence=confidence,
             probabilities=prob_list,
             risk_level=risk_level,
-            processing_duration=processing_duration
+            processing_duration=processing_duration,
         )
 
         logger.info(

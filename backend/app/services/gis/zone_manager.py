@@ -19,7 +19,7 @@ class ZoneManager:
         type_: str,
         boundary: dict,
         risk_level: str = "Low",
-        user_id: Optional[uuid.UUID] = None
+        user_id: Optional[uuid.UUID] = None,
     ) -> Zone:
         """Create a new monitoring zone or protected area within a region."""
         logger.info(f"Creating zone: {name} (Code: {code}, Region: {region_id})")
@@ -34,14 +34,7 @@ class ZoneManager:
         if not boundary or "coordinates" not in boundary:
             raise ValidationException("Zone boundary must contain a valid GeoJSON coordinates dictionary.")
 
-        zone = Zone(
-            name=name,
-            code=code,
-            region_id=region_id,
-            type=type_,
-            boundary=boundary,
-            risk_level=risk_level
-        )
+        zone = Zone(name=name, code=code, region_id=region_id, type=type_, boundary=boundary, risk_level=risk_level)
         db.add(zone)
         await db.flush()
 
@@ -49,12 +42,7 @@ class ZoneManager:
         audit = GISAuditLog(
             user_id=user_id,
             action="zone_created",
-            details={
-                "zone_id": str(zone.id),
-                "name": name,
-                "code": code,
-                "region_id": str(region_id)
-            }
+            details={"zone_id": str(zone.id), "name": name, "code": code, "region_id": str(region_id)},
         )
         db.add(audit)
         await db.flush()

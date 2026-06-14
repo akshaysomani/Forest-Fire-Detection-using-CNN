@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional, Tuple
 
 class CacheManager:
     """Simple in-memory Key-Value Cache manager with TTL support."""
+
     def __init__(self):
         self._cache: Dict[str, Tuple[Any, float]] = {}
 

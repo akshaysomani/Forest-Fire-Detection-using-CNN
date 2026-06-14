@@ -37,5 +37,5 @@ __all__ = [
     "strategic_analytics",
     "analytics_monitor",
     "analytics_metrics",
-    "analytics_observability_service"
+    "analytics_observability_service",
 ]

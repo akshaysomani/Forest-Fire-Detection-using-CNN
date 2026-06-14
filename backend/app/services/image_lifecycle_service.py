@@ -102,13 +102,14 @@ class ImageLifecycleService:
 
         # 4. Log audit log (Since image is cascade-deleted, we log user activity generally in audit table)
         from app.services.activity_service import activity_service
+
         await activity_service.track_activity(
             db=db,
             action="image.permanent_delete",
             user_id=user_id,
             resource_type="image",
             resource_id=str(image_id),
-            details={"filename": image.filename}
+            details={"filename": image.filename},
         )
         return True
 

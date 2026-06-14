@@ -30,10 +30,7 @@ class NotificationService:
 
         for user in users:
             # Create a recipient link for tracking
-            recipient = AlertRecipient(
-                alert_id=alert.id,
-                user_id=user.id
-            )
+            recipient = AlertRecipient(alert_id=alert.id, user_id=user.id)
             db.add(recipient)
 
             # Retrieve user preference settings
@@ -42,10 +39,7 @@ class NotificationService:
             for pref in preferences:
                 # Check if notification is enabled and meets severity / quiet hours criteria
                 should_notify = await preference_manager.should_notify_user(
-                    db=db,
-                    user_id=user.id,
-                    channel=pref.channel,
-                    alert_severity=alert.severity
+                    db=db, user_id=user.id, channel=pref.channel, alert_severity=alert.severity
                 )
 
                 if not should_notify:
@@ -58,7 +52,7 @@ class NotificationService:
                             recipient_id=user.id,
                             channel=pref.channel,
                             status="pending",
-                            error_message="Quiet hours active"
+                            error_message="Quiet hours active",
                         )
                         db.add(notification)
                         notifications_created.append(notification)
@@ -66,10 +60,7 @@ class NotificationService:
 
                 # Create the notification log
                 notification = AlertNotification(
-                    alert_id=alert.id,
-                    recipient_id=user.id,
-                    channel=pref.channel,
-                    status="pending"
+                    alert_id=alert.id, recipient_id=user.id, channel=pref.channel, status="pending"
                 )
                 db.add(notification)
                 await db.flush()  # Populates notification.id
@@ -84,10 +75,7 @@ class NotificationService:
 
                 # Trigger Delivery Manager
                 success = await delivery_manager.deliver(
-                    channel=pref.channel,
-                    destination=destination,
-                    message=alert.message,
-                    subject=subject
+                    channel=pref.channel, destination=destination, message=alert.message, subject=subject
                 )
 
                 # Update status based on delivery result
@@ -110,8 +98,8 @@ class NotificationService:
                         "notification_id": str(notification.id),
                         "channel": pref.channel,
                         "destination": destination,
-                        "success": success
-                    }
+                        "success": success,
+                    },
                 )
                 db.add(audit)
 

@@ -7,13 +7,10 @@ from app.services.model_registry.artifact_storage_service import artifact_storag
 
 class ModelGovernanceEngine:
     ACCURACY_THRESHOLD = 0.80  # Default accuracy threshold (80%)
-    LOSS_SANITY_LIMIT = 2.0   # Maximum validation loss
+    LOSS_SANITY_LIMIT = 2.0  # Maximum validation loss
 
     @classmethod
-    def evaluate_governance_policies(
-        cls,
-        version: ModelVersion
-    ) -> Tuple[bool, List[str]]:
+    def evaluate_governance_policies(cls, version: ModelVersion) -> Tuple[bool, List[str]]:
         """
         Runs automated compliance policy checks on a model version.
         Returns a tuple of (is_compliant, failure_messages).
@@ -21,7 +18,7 @@ class ModelGovernanceEngine:
         failures = []
 
         metrics = version.metrics or {}
-        
+
         # 1. Validation Accuracy Gate
         accuracy = metrics.get("accuracy") or metrics.get("val_accuracy")
         if accuracy is None:
@@ -31,7 +28,7 @@ class ModelGovernanceEngine:
             acc_val = float(accuracy)
             if acc_val > 1.0:
                 acc_val = acc_val / 100.0
-            
+
             if acc_val < cls.ACCURACY_THRESHOLD:
                 failures.append(
                     f"Validation accuracy ({acc_val * 100:.1f}%) is below the required governance threshold ({cls.ACCURACY_THRESHOLD * 100:.1f}%)."

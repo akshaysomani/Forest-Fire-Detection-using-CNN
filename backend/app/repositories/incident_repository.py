@@ -24,7 +24,7 @@ class IncidentRepository(BaseRepository[Incident]):
         severity: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        include_deleted: bool = False
+        include_deleted: bool = False,
     ) -> Tuple[Sequence[Incident], int]:
         """
         Retrieves a filtered, paginated list of incidents and the total matching record count.
@@ -62,25 +62,18 @@ class IncidentRepository(BaseRepository[Incident]):
         """
         Retrieves a single incident with preloaded assignments, updates, and status history.
         """
-        query = select(self.model).where(
-            and_(
-                self.model.id == incident_id,
-                self.model.deleted_at.is_(None)
+        query = (
+            select(self.model)
+            .where(and_(self.model.id == incident_id, self.model.deleted_at.is_(None)))
+            .options(
+                selectinload(self.model.assignments), selectinload(self.model.updates), selectinload(self.model.status_history)
             )
-        ).options(
-            selectinload(self.model.assignments),
-            selectinload(self.model.updates),
-            selectinload(self.model.status_history)
         )
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     async def get_audit_history(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        incident_id: Optional[uuid.UUID] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, incident_id: Optional[uuid.UUID] = None
     ) -> Tuple[Sequence[IncidentAuditLog], int]:
         """
         Fetch paginated audit log entries for incidents with filter query and count.

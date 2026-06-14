@@ -20,11 +20,11 @@ class LocationService:
         address: Optional[str] = None,
         elevation: Optional[float] = None,
         description: Optional[str] = None,
-        user_id: Optional[uuid.UUID] = None
+        user_id: Optional[uuid.UUID] = None,
     ) -> Location:
         """Creates a new Location record after validating coordinates."""
         logger.info(f"Creating location: {name} (Lat: {latitude}, Lng: {longitude})")
-        
+
         # Validate coordinates WGS84
         location_validator.validate_coordinates(latitude, longitude)
 
@@ -33,12 +33,7 @@ class LocationService:
             address = self.reverse_geocode(latitude, longitude)
 
         location = Location(
-            name=name,
-            latitude=latitude,
-            longitude=longitude,
-            address=address,
-            elevation=elevation,
-            description=description
+            name=name, latitude=latitude, longitude=longitude, address=address, elevation=elevation, description=description
         )
         db.add(location)
         await db.flush()
@@ -47,12 +42,7 @@ class LocationService:
         audit = GISAuditLog(
             user_id=user_id,
             action="location_created",
-            details={
-                "location_id": str(location.id),
-                "name": name,
-                "latitude": latitude,
-                "longitude": longitude
-            }
+            details={"location_id": str(location.id), "name": name, "latitude": latitude, "longitude": longitude},
         )
         db.add(audit)
         await db.flush()
@@ -67,7 +57,7 @@ class LocationService:
         # Return format based on lat/lng zones
         lat_short = round(latitude, 2)
         lng_short = round(longitude, 2)
-        
+
         if latitude > 30.0 and longitude < -100.0:
             return f"Northwest Ranger Division [Sectors: {lat_short}N, {abs(lng_short)}W]"
         elif latitude > 0.0 and longitude > 70.0:

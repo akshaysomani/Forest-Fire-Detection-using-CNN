@@ -4,6 +4,7 @@ Trace Collector - Batches completed trace span records for async database persis
 Buffers finished spans in memory and provides a flush method to persist
 them to the TraceSpan database table. Designed for efficient batch writes.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any
@@ -28,9 +29,7 @@ class TraceCollector:
         self._buffer.append(span_data)
 
         if len(self._buffer) >= self._max_buffer_size:
-            logger.debug(
-                f"Trace collector buffer at {self._max_buffer_size}, consider flushing."
-            )
+            logger.debug(f"Trace collector buffer at {self._max_buffer_size}, consider flushing.")
 
     async def flush(self, db: AsyncSession) -> int:
         """
@@ -118,12 +117,14 @@ class TraceCollector:
         result = await db.execute(query)
         traces = []
         for row in result.all():
-            traces.append({
-                "trace_id": row.trace_id,
-                "start_time": row.start_time.isoformat() if row.start_time else None,
-                "span_count": row.span_count,
-                "total_duration_ms": round(float(row.total_duration_ms or 0), 2),
-            })
+            traces.append(
+                {
+                    "trace_id": row.trace_id,
+                    "start_time": row.start_time.isoformat() if row.start_time else None,
+                    "span_count": row.span_count,
+                    "total_duration_ms": round(float(row.total_duration_ms or 0), 2),
+                }
+            )
         return traces
 
     @property

@@ -11,32 +11,29 @@ class DataClassificationService:
                 "email": "CONFIDENTIAL",
                 "hashed_password": "RESTRICTED",
                 "profile_image_url": "CONFIDENTIAL",
-                "last_login_at": "INTERNAL"
+                "last_login_at": "INTERNAL",
             },
             "incident": {
                 "id": "INTERNAL",
                 "title": "INTERNAL",
                 "description": "INTERNAL",
                 "status": "INTERNAL",
-                "severity": "INTERNAL"
+                "severity": "INTERNAL",
             },
             "gis": {
                 "id": "INTERNAL",
                 "latitude": "CONFIDENTIAL",
                 "longitude": "CONFIDENTIAL",
                 "address": "CONFIDENTIAL",
-                "elevation": "INTERNAL"
+                "elevation": "INTERNAL",
             },
-            "secret": {
-                "key": "RESTRICTED",
-                "value": "RESTRICTED"
-            },
+            "secret": {"key": "RESTRICTED", "value": "RESTRICTED"},
             "alert": {
                 "id": "INTERNAL",
                 "message": "INTERNAL",
                 "recipient_phone": "CONFIDENTIAL",
-                "recipient_email": "CONFIDENTIAL"
-            }
+                "recipient_email": "CONFIDENTIAL",
+            },
         }
 
     def get_field_classification(self, table: str, field: str) -> str:

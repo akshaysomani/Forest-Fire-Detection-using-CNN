@@ -9,18 +9,14 @@ from app.core.exceptions import ValidationException, EntityNotFoundException
 class ReleaseRegistry:
     @staticmethod
     async def get_release(db: AsyncSession, release_id: uuid.UUID) -> Optional[Release]:
-        query = select(Release).where(
-            and_(Release.id == release_id, Release.deleted_at.is_(None))
-        )
+        query = select(Release).where(and_(Release.id == release_id, Release.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     @staticmethod
     async def get_release_by_version(db: AsyncSession, version: str) -> Optional[Release]:
         clean_ver = version.strip().lower()
-        query = select(Release).where(
-            and_(Release.version == clean_ver, Release.deleted_at.is_(None))
-        )
+        query = select(Release).where(and_(Release.version == clean_ver, Release.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
@@ -31,7 +27,7 @@ class ReleaseRegistry:
         description: Optional[str] = None,
         model_version_id: Optional[uuid.UUID] = None,
         release_notes: Optional[str] = None,
-        created_by: Optional[uuid.UUID] = None
+        created_by: Optional[uuid.UUID] = None,
     ) -> Release:
         clean_ver = version.strip().lower()
         if not clean_ver:
@@ -50,7 +46,7 @@ class ReleaseRegistry:
             model_version_id=model_version_id,
             status="active",
             created_by=creator_id,
-            release_notes=release_notes
+            release_notes=release_notes,
         )
         db.add(release)
         await db.commit()
@@ -59,7 +55,9 @@ class ReleaseRegistry:
 
     @staticmethod
     async def list_releases(db: AsyncSession, skip: int = 0, limit: int = 20) -> Tuple[List[Release], int]:
-        query = select(Release).where(Release.deleted_at.is_(None)).order_by(Release.created_at.desc()).offset(skip).limit(limit)
+        query = (
+            select(Release).where(Release.deleted_at.is_(None)).order_by(Release.created_at.desc()).offset(skip).limit(limit)
+        )
         count_query = select(func.count()).select_from(Release).where(Release.deleted_at.is_(None))
 
         res = await db.execute(query)

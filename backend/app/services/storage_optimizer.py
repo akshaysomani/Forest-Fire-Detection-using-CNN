@@ -26,23 +26,24 @@ class StorageOptimizer:
         Resolution tuning: downscale oversized image inputs to a sensible ceiling (e.g. 1920px width/height)
         while maintaining aspect ratio. Saves storage space on high-resolution camera feeds.
         """
+
         def _tune():
             img = Image.open(io.BytesIO(file_bytes))
             width, height = img.size
-            
+
             if width > max_dimension or height > max_dimension:
                 # Calculate scale ratio
                 ratio = min(max_dimension / width, max_dimension / height)
                 new_w = int(width * ratio)
                 new_h = int(height * ratio)
                 tuned_img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-                
+
                 out = io.BytesIO()
                 # Maintain original format
                 img_format = img.format or "PNG"
                 tuned_img.save(out, format=img_format)
                 return out.getvalue()
-                
+
             return file_bytes
 
         return await run_in_threadpool(_tune)

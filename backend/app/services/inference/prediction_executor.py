@@ -8,7 +8,9 @@ logger = logging.getLogger("inference.prediction_executor")
 
 class PredictionExecutor:
     @staticmethod
-    def execute_inference(model: nn.Module, input_tensor: torch.Tensor, device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
+    def execute_inference(
+        model: nn.Module, input_tensor: torch.Tensor, device: torch.device
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Execute forward pass of the neural network on the specified device.
         Ensures execution occurs in evaluation mode with gradient calculation disabled.
@@ -16,7 +18,7 @@ class PredictionExecutor:
         """
         # 1. Ensure model is in evaluation mode (disable dropout, batchnorm updates)
         model.eval()
-        
+
         # 2. Push input tensor to target hardware (GPU or CPU fallback)
         tensor_on_device = input_tensor.to(device)
 
@@ -24,14 +26,14 @@ class PredictionExecutor:
         with torch.no_grad():
             try:
                 logits = model(tensor_on_device)
-                
+
                 # Apply softmax to calculate confidence probabilities for each class
                 probabilities = torch.softmax(logits, dim=1)
-                
+
                 return logits.cpu(), probabilities.cpu()
             except Exception as e:
                 logger.error(f"Execution forward pass failed on device '{device}': {e}")
-                
+
                 # Automatic CPU Fallback if GPU execution fails
                 if device.type == "cuda":
                     logger.warning("CUDA execution failed. Falling back to CPU for inference.")

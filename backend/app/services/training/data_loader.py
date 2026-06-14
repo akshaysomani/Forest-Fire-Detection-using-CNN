@@ -60,23 +60,12 @@ class ForestFireDataset(Dataset):
 
 
 def get_data_loader(
-    files: list[DatasetFile],
-    batch_size: int = 32,
-    transform=None,
-    label_map=None,
-    shuffle: bool = True,
-    num_workers: int = 0
+    files: list[DatasetFile], batch_size: int = 32, transform=None, label_map=None, shuffle: bool = True, num_workers: int = 0
 ) -> DataLoader:
     """Construct a PyTorch DataLoader wrapper."""
     dataset = ForestFireDataset(files, transform=transform, label_map=label_map)
-    
+
     # Enable pinned memory if CUDA GPU is active for faster host-to-device transfers
     pin_memory = torch.cuda.is_available()
 
-    return DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=num_workers,
-        pin_memory=pin_memory
-    )
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, pin_memory=pin_memory)

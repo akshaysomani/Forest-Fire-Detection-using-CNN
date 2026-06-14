@@ -5,6 +5,7 @@ Automatically generates/propagates correlation IDs, sets context variables,
 records request performance metrics (latency, status, path), and logs
 structured request/response information.
 """
+
 import time
 import logging
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -88,9 +89,7 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
 
             # Log the request (skip health check endpoints to reduce noise)
             if request.url.path not in ("/health", "/api/v1/openapi.json"):
-                logger.info(
-                    f"{request.method} {request.url.path} -> {status_code} ({latency_ms}ms)"
-                )
+                logger.info(f"{request.method} {request.url.path} -> {status_code} ({latency_ms}ms)")
 
         # Inject correlation ID into response headers
         response.headers["X-Correlation-ID"] = correlation_id

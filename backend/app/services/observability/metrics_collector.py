@@ -5,6 +5,7 @@ and application-level statistics for the observability platform.
 Integrates with the existing SystemMetrics service for hardware telemetry
 and the MetricsRegistry for in-memory application counters.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -32,12 +33,8 @@ class MetricsCollector:
 
             # Update gauges in the in-memory registry
             metrics_registry.set_gauge("system.cpu_usage_percent", cpu_usage)
-            metrics_registry.set_gauge(
-                "system.memory_usage_percent", memory_usage.get("percentage_used", 0.0)
-            )
-            metrics_registry.set_gauge(
-                "system.storage_usage_percent", storage_usage.get("percentage_used", 0.0)
-            )
+            metrics_registry.set_gauge("system.memory_usage_percent", memory_usage.get("percentage_used", 0.0))
+            metrics_registry.set_gauge("system.storage_usage_percent", storage_usage.get("percentage_used", 0.0))
 
             return {
                 "cpu_usage_percent": cpu_usage,

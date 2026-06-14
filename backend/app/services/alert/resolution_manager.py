@@ -11,11 +11,7 @@ logger = logging.getLogger("alert.resolution_manager")
 
 class ResolutionManager:
     async def resolve_alert(
-        self,
-        db: AsyncSession,
-        alert_id: uuid.UUID,
-        user_id: uuid.UUID,
-        notes: Optional[str] = None
+        self, db: AsyncSession, alert_id: uuid.UUID, user_id: uuid.UUID, notes: Optional[str] = None
     ) -> Alert:
         """
         Mark an alert as resolved and record notes about the action/remedial steps.
@@ -37,23 +33,11 @@ class ResolutionManager:
         db.add(alert)
 
         # 3. Create acknowledgement entry
-        ack = AlertAcknowledgement(
-            alert_id=alert.id,
-            user_id=user_id,
-            action="resolve",
-            notes=notes
-        )
+        ack = AlertAcknowledgement(alert_id=alert.id, user_id=user_id, action="resolve", notes=notes)
         db.add(ack)
 
         # 4. Save Audit trail
-        audit = AlertAuditLog(
-            alert_id=alert.id,
-            user_id=user_id,
-            action="alert_resolved",
-            details={
-                "notes": notes
-            }
-        )
+        audit = AlertAuditLog(alert_id=alert.id, user_id=user_id, action="alert_resolved", details={"notes": notes})
         db.add(audit)
 
         await db.flush()

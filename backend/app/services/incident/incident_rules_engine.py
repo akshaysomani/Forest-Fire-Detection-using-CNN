@@ -6,10 +6,7 @@ logger = logging.getLogger("incident.incident_rules_engine")
 
 class IncidentRulesEngine:
     def __init__(self):
-        self._rules = {
-            "auto_spawn_severities": ["Critical", "High"],
-            "restricted_coordinate_zones": False
-        }
+        self._rules = {"auto_spawn_severities": ["Critical", "High"], "restricted_coordinate_zones": False}
 
     def get_rules(self) -> Dict[str, Any]:
         return self._rules

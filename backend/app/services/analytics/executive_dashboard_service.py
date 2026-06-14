@@ -23,7 +23,7 @@ class ExecutiveDashboardService:
                 "kpis": kpis,
                 "regional_risk_index": regional_risk,
                 "fire_hazard_level": hazard_level,
-                "active_responders_ratio": responders_ratio
+                "active_responders_ratio": responders_ratio,
             }
 
         if bypass_cache:

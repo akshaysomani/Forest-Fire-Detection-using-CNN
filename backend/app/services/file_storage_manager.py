@@ -19,11 +19,7 @@ from app.repositories.image_repository import (
 
 class FileStorageManager:
     async def migrate_image(
-        self,
-        db: AsyncSession,
-        image_id: uuid.UUID,
-        target_provider: str,
-        target_bucket_or_container: str
+        self, db: AsyncSession, image_id: uuid.UUID, target_provider: str, target_bucket_or_container: str
     ) -> Dict[str, Any]:
         """
         Migrate an image and all its preprocessed versions from their current storage provider
@@ -43,10 +39,12 @@ class FileStorageManager:
 
         # 2. Get provider instances
         from app.services.storage_service import StorageService
+
         current_service = storage_service  # default configured service
-        
+
         # Instantiate temporary target provider
         from app.core.config import settings
+
         target_provider_inst = None
         if target_provider == "local":
             target_provider_inst = LocalStorageProvider(base_dir=settings.STORAGE_BASE_DIR)
@@ -90,16 +88,16 @@ class FileStorageManager:
                     ver_bytes = await current_service.read_file(ver_loc.file_key_or_path)
                     ver_key = f"images/{str(image_id)}/versions/{ver.purpose}_{image.filename}"
                     await target_provider_inst.save_file(ver_bytes, ver_key)
-                    
+
                     ver_loc.provider = target_provider
                     ver_loc.bucket_or_container = target_bucket_or_container
                     ver_loc.file_key_or_path = ver_key
                     db.add(ver_loc)
-                    
+
                     # Update file_path in version record
                     ver.file_path = ver_key
                     db.add(ver)
-                    
+
                     migrated_versions.append(ver.purpose)
                 except Exception as e:
                     # Log failure but continue
@@ -111,7 +109,7 @@ class FileStorageManager:
             "image_id": str(image_id),
             "new_provider": target_provider,
             "new_path": new_path,
-            "migrated_versions": migrated_versions
+            "migrated_versions": migrated_versions,
         }
 
     async def verify_integrity_all(self, db: AsyncSession) -> Dict[str, Any]:
@@ -128,12 +126,14 @@ class FileStorageManager:
             if loc:
                 exists = await storage_service.exists(loc.file_key_or_path)
                 if not exists:
-                    missing_images.append({
-                        "image_id": str(img.id),
-                        "filename": img.filename,
-                        "expected_path": loc.file_key_or_path,
-                        "provider": loc.provider
-                    })
+                    missing_images.append(
+                        {
+                            "image_id": str(img.id),
+                            "filename": img.filename,
+                            "expected_path": loc.file_key_or_path,
+                            "provider": loc.provider,
+                        }
+                    )
                 else:
                     verified_count += 1
 
@@ -141,7 +141,7 @@ class FileStorageManager:
             "total_checked": len(images),
             "verified_count": verified_count,
             "missing_count": len(missing_images),
-            "missing_files": missing_images
+            "missing_files": missing_images,
         }
 
 

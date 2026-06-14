@@ -20,20 +20,11 @@ class ThreatAnalyzer:
 
         # Fetch recent threat events (last 7 days)
         threshold = datetime.utcnow() - timedelta(days=7)
-        q = select(SecurityEvent).where(
-            SecurityEvent.event_type == "THREAT_BLOCKED",
-            SecurityEvent.timestamp > threshold
-        )
+        q = select(SecurityEvent).where(SecurityEvent.event_type == "THREAT_BLOCKED", SecurityEvent.timestamp > threshold)
         res = await db.execute(q)
         threat_events = res.scalars().all()
 
-        threat_summary = {
-            "SQL_INJECTION": 0,
-            "XSS": 0,
-            "PATH_TRAVERSAL": 0,
-            "RATE_LIMIT_ABUSE": 0,
-            "OTHER": 0
-        }
+        threat_summary = {"SQL_INJECTION": 0, "XSS": 0, "PATH_TRAVERSAL": 0, "RATE_LIMIT_ABUSE": 0, "OTHER": 0}
 
         recent_threats_list = []
         high_severity_count = 0
@@ -54,35 +45,39 @@ class ThreatAnalyzer:
             if e.severity in ["HIGH", "CRITICAL"]:
                 high_severity_count += 1
 
-            recent_threats_list.append({
-                "ip_address": e.ip_address,
-                "threat_type": t_type,
-                "severity": e.severity,
-                "timestamp": e.timestamp.isoformat(),
-                "description": e.description
-            })
+            recent_threats_list.append(
+                {
+                    "ip_address": e.ip_address,
+                    "threat_type": t_type,
+                    "severity": e.severity,
+                    "timestamp": e.timestamp.isoformat(),
+                    "description": e.description,
+                }
+            )
 
         # Format threat response matching schema
         threat_indicators = []
         for ip in blocked_ips:
             # Match recent event for metadata or default
             matching_event = next((e for e in recent_threats_list if e["ip_address"] == ip), None)
-            threat_indicators.append({
-                "ip_address": ip,
-                "threat_type": matching_event["threat_type"] if matching_event else "UNKNOWN_EXPLOIT",
-                "severity": matching_event["severity"] if matching_event else "CRITICAL",
-                "score": 8.5 if matching_event else 7.0,
-                "first_seen": datetime.utcnow() - timedelta(hours=2),
-                "last_seen": datetime.utcnow(),
-                "request_count": 5,
-                "blocked": True
-            })
+            threat_indicators.append(
+                {
+                    "ip_address": ip,
+                    "threat_type": matching_event["threat_type"] if matching_event else "UNKNOWN_EXPLOIT",
+                    "severity": matching_event["severity"] if matching_event else "CRITICAL",
+                    "score": 8.5 if matching_event else 7.0,
+                    "first_seen": datetime.utcnow() - timedelta(hours=2),
+                    "last_seen": datetime.utcnow(),
+                    "request_count": 5,
+                    "blocked": True,
+                }
+            )
 
         return {
             "threats": threat_indicators,
             "total_threats": len(threat_indicators),
             "blocked_ips_count": len(blocked_ips),
-            "high_severity_count": high_severity_count
+            "high_severity_count": high_severity_count,
         }
 
 

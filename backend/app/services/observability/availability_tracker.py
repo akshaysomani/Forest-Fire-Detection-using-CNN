@@ -4,6 +4,7 @@ Availability Tracker - Tracks real-time API availability and uptime percentages.
 Provides methods to record ping results and calculate rolling
 availability windows for the platform's core services.
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
@@ -24,16 +25,18 @@ class AvailabilityTracker:
 
     def record_ping(self, success: bool, service: str = "api", latency_ms: float = 0.0) -> None:
         """Record an availability ping result."""
-        self._pings.append({
-            "timestamp": datetime.now(timezone.utc),
-            "success": success,
-            "service": service,
-            "latency_ms": latency_ms,
-        })
+        self._pings.append(
+            {
+                "timestamp": datetime.now(timezone.utc),
+                "success": success,
+                "service": service,
+                "latency_ms": latency_ms,
+            }
+        )
 
         # Trim history
         if len(self._pings) > self._max_history:
-            self._pings = self._pings[-self._max_history:]
+            self._pings = self._pings[-self._max_history :]
 
         # Update gauge
         availability = self.get_availability_percentage()
@@ -49,11 +52,7 @@ class AvailabilityTracker:
         Returns 100.0 if no pings recorded (assume healthy until proven otherwise).
         """
         cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
-        relevant = [
-            p for p in self._pings
-            if p["timestamp"] >= cutoff
-            and (service is None or p["service"] == service)
-        ]
+        relevant = [p for p in self._pings if p["timestamp"] >= cutoff and (service is None or p["service"] == service)]
 
         if not relevant:
             return 100.0

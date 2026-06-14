@@ -19,7 +19,7 @@ class PredictionService:
         user_id: uuid.UUID,
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
-        image_path: Optional[str] = None
+        image_path: Optional[str] = None,
     ) -> Detection:
         """
         Run inference on the image bytes, save the output record to the database,
@@ -27,7 +27,7 @@ class PredictionService:
         """
         # 1. Run prediction engine
         prediction_data = await prediction_engine.predict_single_image(db, file_bytes, filename)
-        
+
         # 2. If image_path is not provided, use default placeholder/virtual path
         resolved_image_path = image_path or f"detections/{uuid.uuid4()}_{filename}"
 
@@ -43,7 +43,7 @@ class PredictionService:
             latitude=latitude,
             longitude=longitude,
             is_verified_fire=None,
-            alert_sent=False
+            alert_sent=False,
         )
 
         # 4. Save to database using repository
@@ -53,6 +53,7 @@ class PredictionService:
         # Trigger alert checks (evaluates if label is fire & confidence >= threshold)
         try:
             from app.services.alert import alert_generator
+
             await alert_generator.evaluate_detection(db, detection_record)
         except Exception as alert_err:
             logger.error(f"Failed during alert evaluation: {alert_err}", exc_info=True)
@@ -68,14 +69,14 @@ class PredictionService:
                     "filename": filename,
                     "prediction_label": detection_record.prediction_label,
                     "confidence": detection_record.confidence,
-                    "model": detection_record.model_name
-                }
+                    "model": detection_record.model_name,
+                },
             )
         except Exception as log_err:
             logger.warning(f"Failed to write activity audit record: {log_err}")
 
         logger.info(f"Detection record '{detection_record.id}' successfully saved in database.")
-        
+
         return detection_record
 
 

@@ -17,7 +17,7 @@ class DatasetSnapshotService:
         version_str: str,
         files: Sequence[DatasetFile],
         creator_username: str,
-        description: str | None = None
+        description: str | None = None,
     ) -> Tuple[str, int, int, dict]:
         """
         Bundle files into a ZIP archive and save to storage:
@@ -60,18 +60,21 @@ class DatasetSnapshotService:
                     zipf.writestr(zip_entry_path, file_bytes)
                     file_count += 1
 
-                    metadata_files_list.append({
-                        "id": str(db_file.id),
-                        "filename": db_file.filename,
-                        "md5_hash": db_file.md5_hash,
-                        "file_size": db_file.file_size,
-                        "label": db_file.label.name if db_file.label else None,
-                        "width": db_file.metadata_json.get("width") if db_file.metadata_json else None,
-                        "height": db_file.metadata_json.get("height") if db_file.metadata_json else None,
-                    })
+                    metadata_files_list.append(
+                        {
+                            "id": str(db_file.id),
+                            "filename": db_file.filename,
+                            "md5_hash": db_file.md5_hash,
+                            "file_size": db_file.file_size,
+                            "label": db_file.label.name if db_file.label else None,
+                            "width": db_file.metadata_json.get("width") if db_file.metadata_json else None,
+                            "height": db_file.metadata_json.get("height") if db_file.metadata_json else None,
+                        }
+                    )
 
                 # 2. Add metadata.json to zip
                 from datetime import timezone
+
                 meta_payload = {
                     "dataset_id": str(dataset_id),
                     "version": version_str,
@@ -80,7 +83,7 @@ class DatasetSnapshotService:
                     "description": description or "",
                     "file_count": file_count,
                     "class_distribution": class_distribution,
-                    "files": metadata_files_list
+                    "files": metadata_files_list,
                 }
                 zipf.writestr("metadata.json", json.dumps(meta_payload, indent=2))
 
@@ -89,7 +92,7 @@ class DatasetSnapshotService:
                 zip_bytes = f.read()
 
             size_bytes = len(zip_bytes)
-            
+
             # 4. Upload to storage
             storage_dest = f"datasets/{str(dataset_id)}/snapshots/{zip_filename}"
             await storage_service.save_file(zip_bytes, storage_dest)

@@ -20,12 +20,16 @@ class ReportGenerator:
     async def generate_report_data(self, db: AsyncSession, report_type: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Compile raw reporting data based on report type and filter parameters."""
         logger.info(f"Generating report data for type: {report_type}")
-        
+
         # Parse date filters
         start_date_str = parameters.get("start_date")
         end_date_str = parameters.get("end_date")
-        
-        start_dt = datetime.fromisoformat(start_date_str.replace("Z", "+00:00")) if start_date_str else datetime.now(timezone.utc) - datetime.timedelta(days=30)
+
+        start_dt = (
+            datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+            if start_date_str
+            else datetime.now(timezone.utc) - datetime.timedelta(days=30)
+        )
         end_dt = datetime.fromisoformat(end_date_str.replace("Z", "+00:00")) if end_date_str else datetime.now(timezone.utc)
 
         result = {
@@ -33,15 +37,12 @@ class ReportGenerator:
             "report_type": report_type,
             "parameters": parameters,
             "summary": {},
-            "data": []
+            "data": [],
         }
 
         if report_type == "fire_detections":
             query = select(Detection).where(
-                and_(
-                    Detection.created_at.between(start_dt, end_dt),
-                    Detection.deleted_at.is_(None)
-                )
+                and_(Detection.created_at.between(start_dt, end_dt), Detection.deleted_at.is_(None))
             )
             if "confidence" in parameters:
                 query = query.where(Detection.confidence >= float(parameters["confidence"]))
@@ -49,15 +50,15 @@ class ReportGenerator:
                 query = query.where(Detection.prediction_label == parameters["prediction_label"])
             if "model_name" in parameters:
                 query = query.where(Detection.model_name == parameters["model_name"])
-            
+
             res = await db.execute(query)
             rows = res.scalars().all()
-            
+
             result["summary"] = {
                 "total_records": len(rows),
                 "fire_count": sum(1 for r in rows if r.prediction_label == "fire"),
                 "non_fire_count": sum(1 for r in rows if r.prediction_label == "non-fire"),
-                "average_confidence": round(sum(r.confidence for r in rows) / len(rows), 4) if rows else 0.0
+                "average_confidence": round(sum(r.confidence for r in rows) / len(rows), 4) if rows else 0.0,
             }
             result["data"] = [
                 {
@@ -69,31 +70,26 @@ class ReportGenerator:
                     "is_verified_fire": r.is_verified_fire,
                     "latitude": r.latitude,
                     "longitude": r.longitude,
-                    "created_at": r.created_at.isoformat()
+                    "created_at": r.created_at.isoformat(),
                 }
                 for r in rows
             ]
 
         elif report_type == "incidents":
-            query = select(Incident).where(
-                and_(
-                    Incident.created_at.between(start_dt, end_dt),
-                    Incident.deleted_at.is_(None)
-                )
-            )
+            query = select(Incident).where(and_(Incident.created_at.between(start_dt, end_dt), Incident.deleted_at.is_(None)))
             if "status" in parameters:
                 query = query.where(Incident.status == parameters["status"])
             if "severity" in parameters:
                 query = query.where(Incident.severity == parameters["severity"])
-                
+
             res = await db.execute(query)
             rows = res.scalars().all()
-            
+
             result["summary"] = {
                 "total_incidents": len(rows),
                 "active_count": sum(1 for r in rows if r.status not in ["Resolved", "Closed"]),
                 "resolved_count": sum(1 for r in rows if r.status in ["Resolved", "Closed"]),
-                "critical_count": sum(1 for r in rows if r.severity == "Critical")
+                "critical_count": sum(1 for r in rows if r.severity == "Critical"),
             }
             result["data"] = [
                 {
@@ -103,30 +99,25 @@ class ReportGenerator:
                     "severity": r.severity,
                     "latitude": r.latitude,
                     "longitude": r.longitude,
-                    "created_at": r.created_at.isoformat()
+                    "created_at": r.created_at.isoformat(),
                 }
                 for r in rows
             ]
 
         elif report_type == "alerts":
-            query = select(Alert).where(
-                and_(
-                    Alert.created_at.between(start_dt, end_dt),
-                    Alert.deleted_at.is_(None)
-                )
-            )
+            query = select(Alert).where(and_(Alert.created_at.between(start_dt, end_dt), Alert.deleted_at.is_(None)))
             if "status" in parameters:
                 query = query.where(Alert.status == parameters["status"])
             if "severity" in parameters:
                 query = query.where(Alert.severity == parameters["severity"])
-                
+
             res = await db.execute(query)
             rows = res.scalars().all()
-            
+
             result["summary"] = {
                 "total_alerts": len(rows),
                 "active_alerts": sum(1 for r in rows if r.status == "active"),
-                "acknowledged_alerts": sum(1 for r in rows if r.status == "acknowledged")
+                "acknowledged_alerts": sum(1 for r in rows if r.status == "acknowledged"),
             }
             result["data"] = [
                 {
@@ -134,7 +125,7 @@ class ReportGenerator:
                     "severity": r.severity,
                     "status": r.status,
                     "message": r.message,
-                    "created_at": r.created_at.isoformat()
+                    "created_at": r.created_at.isoformat(),
                 }
                 for r in rows
             ]
@@ -151,7 +142,7 @@ class ReportGenerator:
             result["summary"] = {
                 "total_regions": len(regions),
                 "total_zones": len(zones),
-                "extreme_risk_zones": sum(1 for z in zones if z.risk_level == "Extreme")
+                "extreme_risk_zones": sum(1 for z in zones if z.risk_level == "Extreme"),
             }
             result["data"] = [
                 {
@@ -160,26 +151,24 @@ class ReportGenerator:
                     "name": z.name,
                     "code": z.code,
                     "risk_level": z.risk_level,
-                    "region_name": z.region.name if z.region else None
+                    "region_name": z.region.name if z.region else None,
                 }
                 for z in zones
             ]
 
         elif report_type == "user_activity":
-            query = select(AuditLog).where(
-                AuditLog.created_at.between(start_dt, end_dt)
-            )
+            query = select(AuditLog).where(AuditLog.created_at.between(start_dt, end_dt))
             if "user_id" in parameters:
                 query = query.where(AuditLog.user_id == uuid.UUID(parameters["user_id"]))
             if "action" in parameters:
                 query = query.where(AuditLog.action == parameters["action"])
-                
+
             res = await db.execute(query)
             rows = res.scalars().all()
-            
+
             result["summary"] = {
                 "total_activities": len(rows),
-                "login_actions": sum(1 for r in rows if r.action == "user.login")
+                "login_actions": sum(1 for r in rows if r.action == "user.login"),
             }
             result["data"] = [
                 {
@@ -188,7 +177,7 @@ class ReportGenerator:
                     "action": r.action,
                     "ip_address": r.ip_address,
                     "resource_type": r.resource_type,
-                    "created_at": r.created_at.isoformat()
+                    "created_at": r.created_at.isoformat(),
                 }
                 for r in rows
             ]
@@ -203,24 +192,12 @@ class ReportGenerator:
                 "cpu_usage_percent": cpu,
                 "ram_usage_percent": ram["percentage_used"],
                 "disk_usage_percent": disk["percentage_used"],
-                "active_sessions": active_sessions
+                "active_sessions": active_sessions,
             }
             result["data"] = [
-                {
-                    "metric": "cpu",
-                    "value": cpu,
-                    "details": {}
-                },
-                {
-                    "metric": "ram",
-                    "value": ram["percentage_used"],
-                    "details": ram
-                },
-                {
-                    "metric": "disk",
-                    "value": disk["percentage_used"],
-                    "details": disk
-                }
+                {"metric": "cpu", "value": cpu, "details": {}},
+                {"metric": "ram", "value": ram["percentage_used"], "details": ram},
+                {"metric": "disk", "value": disk["percentage_used"], "details": disk},
             ]
         else:
             raise ValueError(f"Unknown report type: {report_type}")

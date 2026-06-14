@@ -10,15 +10,11 @@ logger = logging.getLogger("mlops.release_tracking_service")
 class ReleaseTrackingService:
     @staticmethod
     async def audit_deployment_job(
-        db: AsyncSession,
-        job: DeploymentJob,
-        action: str,
-        performed_by: uuid.UUID,
-        details: dict
+        db: AsyncSession, job: DeploymentJob, action: str, performed_by: uuid.UUID, details: dict
     ) -> None:
         """Records an administrative audit log for deployment state changes."""
         from app.models.model_registry import ModelAuditLog
-        
+
         # Log to the model registry audit logs for traceability
         await model_repository.create_audit_log(
             db=db,
@@ -29,8 +25,8 @@ class ReleaseTrackingService:
                 "deployment_job_id": str(job.id),
                 "environment_id": str(job.environment_id),
                 "status": job.status,
-                **details
-            }
+                **details,
+            },
         )
         logger.info(f"Audited deployment action '{action}' on environment '{job.environment_id}' successfully.")
 

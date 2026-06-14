@@ -6,12 +6,7 @@ logger = logging.getLogger("inference.prediction_metrics")
 
 class PredictionMetrics:
     @staticmethod
-    def calculate_precision_recall_f1(
-        tp: int,
-        fp: int,
-        tn: int,
-        fn: int
-    ) -> Dict[str, Any]:
+    def calculate_precision_recall_f1(tp: int, fp: int, tn: int, fn: int) -> Dict[str, Any]:
         """
         Compute standard model evaluation metrics from a confusion matrix.
         """
@@ -21,16 +16,11 @@ class PredictionMetrics:
         accuracy = ((tp + tn) / (tp + fp + tn + fn)) if (tp + fp + tn + fn) > 0 else 0.0
 
         return {
-            "confusion_matrix": {
-                "true_positives": tp,
-                "false_positives": fp,
-                "true_negatives": tn,
-                "false_negatives": fn
-            },
+            "confusion_matrix": {"true_positives": tp, "false_positives": fp, "true_negatives": tn, "false_negatives": fn},
             "accuracy": accuracy,
             "precision": precision,
             "recall": recall,
-            "f1_score": f1_score
+            "f1_score": f1_score,
         }
 
 

@@ -19,7 +19,7 @@ class DatasetService:
             "Validation Datasets": "Datasets reserved for hyperparameter tuning and validation.",
             "Test Datasets": "Datasets reserved strictly for testing and benchmarking models.",
             "Training Datasets": "Large-scale datasets designed for CNN model training.",
-            "Research Datasets": "Experimental datasets for academic and exploratory studies."
+            "Research Datasets": "Experimental datasets for academic and exploratory studies.",
         }
 
         for name, desc in categories_def.items():
@@ -35,7 +35,7 @@ class DatasetService:
             "Smoke": "Smoke plumes or hazy atmospheric columns signaling fire.",
             "Controlled Burn": "Planned forest management fires or agricultural burns.",
             "Human Activity": "Human presence, vehicles, machinery, structures in forestry.",
-            "Unknown": "Unresolved or ambiguous image features needing review."
+            "Unknown": "Unresolved or ambiguous image features needing review.",
         }
 
         for name, desc in labels_def.items():
@@ -64,7 +64,7 @@ class DatasetService:
             category_id=obj_in.category_id,
             tags=obj_in.tags,
             user_id=user_id,
-            status="active"
+            status="active",
         )
         db.add(db_obj)
         await db.flush()
@@ -74,13 +74,14 @@ class DatasetService:
             dataset_id=db_obj.id,
             user_id=user_id,
             action="dataset.create",
-            details={"name": db_obj.name, "category": category.name}
+            details={"name": db_obj.name, "category": category.name},
         )
         db.add(audit_log)
         await db.flush()
 
         # Refetch the dataset with eager loaded relationships to populate columns and avoid lazy loading
         from sqlalchemy.orm import selectinload
+
         query = select(Dataset).where(Dataset.id == db_obj.id).options(selectinload(Dataset.category))
         res = await db.execute(query)
         return res.scalar_one()
@@ -95,7 +96,7 @@ class DatasetService:
         db_obj = await self.get_dataset(db, id)
 
         update_data = obj_in.model_dump(exclude_unset=True)
-        
+
         if "name" in update_data and update_data["name"] != db_obj.name:
             existing = await dataset_repository.get_by_name(db, update_data["name"])
             if existing:
@@ -113,34 +114,25 @@ class DatasetService:
         db.add(db_obj)
 
         # Log audit
-        audit_log = DatasetAuditLog(
-            dataset_id=db_obj.id,
-            user_id=user_id,
-            action="dataset.update",
-            details=update_data
-        )
+        audit_log = DatasetAuditLog(dataset_id=db_obj.id, user_id=user_id, action="dataset.update", details=update_data)
         db.add(audit_log)
         await db.flush()
 
         # Refetch the dataset with eager loaded relationships to populate columns and avoid lazy loading
         from sqlalchemy.orm import selectinload
+
         query = select(Dataset).where(Dataset.id == db_obj.id).options(selectinload(Dataset.category))
         res = await db.execute(query)
         return res.scalar_one()
 
     async def delete_dataset(self, db: AsyncSession, id: uuid.UUID, user_id: uuid.UUID) -> bool:
         db_obj = await self.get_dataset(db, id)
-        
+
         # Soft delete the dataset
         await dataset_repository.soft_delete(db, id)
 
         # Log audit
-        audit_log = DatasetAuditLog(
-            dataset_id=id,
-            user_id=user_id,
-            action="dataset.delete",
-            details={"name": db_obj.name}
-        )
+        audit_log = DatasetAuditLog(dataset_id=id, user_id=user_id, action="dataset.delete", details={"name": db_obj.name})
         db.add(audit_log)
         await db.flush()
         return True

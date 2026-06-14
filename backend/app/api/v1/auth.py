@@ -13,7 +13,7 @@ from app.schemas.user import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
-    VerifyEmailRequest
+    VerifyEmailRequest,
 )
 from app.schemas.token import TokenResponse, TokenRefreshRequest, TokenLogoutRequest
 from app.schemas.session import SessionResponse
@@ -31,26 +31,19 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     new_user = await user_service.register_user(db, user_in.model_dump())
     await db.commit()
     from app.repositories.user_repository import user_repository
+
     refreshed_user = await user_repository.get_user_with_roles_and_permissions(db, new_user.id)
     return refreshed_user
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(
-    request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db)
-):
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """Logs in a user, tracking the active session and device details."""
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     user = await user_service.authenticate_user(
-        db,
-        identifier=form_data.username,
-        password=form_data.password,
-        ip_address=ip_address,
-        user_agent=user_agent
+        db, identifier=form_data.username, password=form_data.password, ip_address=ip_address, user_agent=user_agent
     )
 
     # Generate rotation token pairs
@@ -61,21 +54,14 @@ async def login(
 
     # Save user session
     await session_service.create_session(
-        db,
-        user_id=user.id,
-        refresh_token_id=db_token.id,
-        ip_address=ip_address,
-        user_agent=user_agent
+        db, user_id=user.id, refresh_token_id=db_token.id, ip_address=ip_address, user_agent=user_agent
     )
 
     access_token_str = jwt_service.create_access_token(user_id=user.id, email=user.email)
 
     await db.commit()
 
-    return TokenResponse(
-        access_token=access_token_str,
-        refresh_token=refresh_token_str
-    )
+    return TokenResponse(access_token=access_token_str, refresh_token=refresh_token_str)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -88,15 +74,9 @@ async def logout(logout_in: TokenLogoutRequest, db: AsyncSession = Depends(get_d
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(refresh_in: TokenRefreshRequest, db: AsyncSession = Depends(get_db)):
     """Rotates the refresh token and issues a new access/refresh pair (RTR)."""
-    access_token, refresh_token = await token_manager.rotate_refresh_token(
-        db,
-        refresh_in.refresh_token
-    )
+    access_token, refresh_token = await token_manager.rotate_refresh_token(db, refresh_in.refresh_token)
     await db.commit()
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token
-    )
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
@@ -129,18 +109,15 @@ async def get_profile(current_user: User = Depends(get_current_active_user)):
 
 @router.put("/profile", response_model=UserResponse)
 async def update_profile(
-    profile_in: UserUpdate,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    profile_in: UserUpdate, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """Updates selected user profile details."""
     updated_user = await user_service.update_profile(
-        db,
-        user_id=current_user.id,
-        profile_in=profile_in.model_dump(exclude_unset=True)
+        db, user_id=current_user.id, profile_in=profile_in.model_dump(exclude_unset=True)
     )
     await db.commit()
     from app.repositories.user_repository import user_repository
+
     refreshed_user = await user_repository.get_user_with_roles_and_permissions(db, updated_user.id)
     return refreshed_user
 
@@ -149,31 +126,22 @@ async def update_profile(
 async def change_password(
     password_in: ChangePasswordRequest,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Updates the user password and terminates all active sessions for security."""
-    await user_service.change_password(
-        db,
-        user_id=current_user.id,
-        data=password_in.model_dump()
-    )
+    await user_service.change_password(db, user_id=current_user.id, data=password_in.model_dump())
     await db.commit()
 
 
 @router.get("/sessions", response_model=List[SessionResponse])
-async def get_sessions(
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
-):
+async def get_sessions(current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
     """Returns a list of all active sessions and devices for the authenticated user."""
     return await session_service.get_active_sessions(db, current_user.id)
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_session(
-    session_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    session_id: uuid.UUID, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """Deactivates a specific session, forcing logout on that device."""
     revoked = await session_service.revoke_session(db, session_id, current_user.id)

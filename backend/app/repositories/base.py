@@ -19,11 +19,7 @@ class BaseRepository(Generic[ModelType]):
         return result.scalar_one_or_none()
 
     async def get_multi(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        include_deleted: bool = False
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> Sequence[ModelType]:
         query = select(self.model)
         if not include_deleted:
@@ -62,6 +58,9 @@ class BaseRepository(Generic[ModelType]):
         db.add(db_obj)
         await db.flush()
         return True
+
+
 class BaseAssociationRepository:
     """Helper for complex association operations if needed."""
+
     pass

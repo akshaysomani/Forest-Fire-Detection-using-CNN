@@ -19,7 +19,7 @@ class GeofenceService:
         geometry: dict,
         description: Optional[str] = None,
         is_active: bool = True,
-        user_id: Optional[uuid.UUID] = None
+        user_id: Optional[uuid.UUID] = None,
     ) -> Geofence:
         """Create a new Geofence (Circular or Polygon)."""
         logger.info(f"Creating geofence: {name} (Type: {type_})")
@@ -35,25 +35,13 @@ class GeofenceService:
             if "coordinates" not in geometry:
                 raise ValidationException("Polygon geometry must contain 'coordinates' list.")
 
-        geofence = Geofence(
-            name=name,
-            description=description,
-            type=type_,
-            geometry=geometry,
-            is_active=is_active
-        )
+        geofence = Geofence(name=name, description=description, type=type_, geometry=geometry, is_active=is_active)
         db.add(geofence)
         await db.flush()
 
         # Audit log
         audit = GISAuditLog(
-            user_id=user_id,
-            action="geofence_created",
-            details={
-                "geofence_id": str(geofence.id),
-                "name": name,
-                "type": type_
-            }
+            user_id=user_id, action="geofence_created", details={"geofence_id": str(geofence.id), "name": name, "type": type_}
         )
         db.add(audit)
         await db.flush()
@@ -74,23 +62,14 @@ class GeofenceService:
         return list(res.scalars().all())
 
     async def check_point_breaches(
-        self,
-        db: AsyncSession,
-        latitude: float,
-        longitude: float,
-        user_id: Optional[uuid.UUID] = None
+        self, db: AsyncSession, latitude: float, longitude: float, user_id: Optional[uuid.UUID] = None
     ) -> List[Geofence]:
         """
         Evaluates active coordinates against all active geofences.
         Records a GISAuditLog entry for each breached geofence.
         Returns a list of breached geofences.
         """
-        query = select(Geofence).where(
-            and_(
-                Geofence.is_active == True,
-                Geofence.deleted_at.is_(None)
-            )
-        )
+        query = select(Geofence).where(and_(Geofence.is_active == True, Geofence.deleted_at.is_(None)))
         res = await db.execute(query)
         geofences = res.scalars().all()
 
@@ -125,8 +104,8 @@ class GeofenceService:
                             "geofence_id": str(gf.id),
                             "geofence_name": gf.name,
                             "latitude": latitude,
-                            "longitude": longitude
-                        }
+                            "longitude": longitude,
+                        },
                     )
                     db.add(audit)
 

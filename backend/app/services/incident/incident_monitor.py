@@ -11,7 +11,7 @@ class IncidentMonitor:
             "total_escalations": 0,
             "scheduler_runs": 0,
             "scheduler_errors": 0,
-            "sla_breaches_detected": 0
+            "sla_breaches_detected": 0,
         }
 
     def increment(self, name: str, value: int = 1):

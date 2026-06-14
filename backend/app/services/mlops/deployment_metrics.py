@@ -12,10 +12,7 @@ class DeploymentMetrics:
         """Returns the ratio of rolled back deployment jobs to total deployments."""
         total_query = select(func.count(DeploymentJob.id)).where(DeploymentJob.deleted_at.is_(None))
         rollback_query = select(func.count(DeploymentJob.id)).where(
-            and_(
-                DeploymentJob.rollback_job_id.is_not(None),
-                DeploymentJob.deleted_at.is_(None)
-            )
+            and_(DeploymentJob.rollback_job_id.is_not(None), DeploymentJob.deleted_at.is_(None))
         )
 
         res_total = await db.execute(total_query)
@@ -36,16 +33,10 @@ class DeploymentMetrics:
         Expected scale: 0.0 to 1.0.
         """
         total_query = select(func.count(DeploymentJob.id)).where(
-            and_(
-                DeploymentJob.status.in_(["succeeded", "failed"]),
-                DeploymentJob.deleted_at.is_(None)
-            )
+            and_(DeploymentJob.status.in_(["succeeded", "failed"]), DeploymentJob.deleted_at.is_(None))
         )
         succeeded_query = select(func.count(DeploymentJob.id)).where(
-            and_(
-                DeploymentJob.status == "succeeded",
-                DeploymentJob.deleted_at.is_(None)
-            )
+            and_(DeploymentJob.status == "succeeded", DeploymentJob.deleted_at.is_(None))
         )
 
         res_total = await db.execute(total_query)

@@ -10,8 +10,10 @@ from app.models.permission import Permission
 class PermissionService:
     async def get_user_permissions(self, db: AsyncSession, user_id: uuid.UUID) -> set[str]:
         """Aggregate all permissions from all roles assigned to the user."""
-        query = select(User).where(User.id == user_id, User.deleted_at.is_(None)).options(
-            selectinload(User.roles).selectinload(Role.permissions)
+        query = (
+            select(User)
+            .where(User.id == user_id, User.deleted_at.is_(None))
+            .options(selectinload(User.roles).selectinload(Role.permissions))
         )
         result = await db.execute(query)
         user = result.scalar_one_or_none()
@@ -45,7 +47,7 @@ class PermissionService:
             "manage_platform_settings": "Can configure site settings and models",
             "access_audit_logs": "Can view system security audit trails",
             "view_alerts": "Can receive emergency active fire alerts",
-            "analyze_data": "Can run spatial analytical scripts on fire data"
+            "analyze_data": "Can run spatial analytical scripts on fire data",
         }
 
         db_permissions = {}
@@ -66,7 +68,7 @@ class PermissionService:
             "Forest Officer": ["upload_images", "view_predictions", "view_reports", "view_alerts"],
             "Emergency Response Officer": ["view_predictions", "view_reports", "view_alerts"],
             "Research Analyst": ["view_predictions", "view_reports", "analyze_data"],
-            "Viewer": ["view_predictions", "view_reports"]
+            "Viewer": ["view_predictions", "view_reports"],
         }
 
         for role_name, perm_names in roles_def.items():

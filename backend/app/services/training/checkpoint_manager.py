@@ -15,7 +15,7 @@ class CheckpointManager:
         val_loss: float,
         val_accuracy: float,
         hyperparameters: Dict[str, Any],
-        is_best: bool = False
+        is_best: bool = False,
     ) -> str:
         """
         Serialize model and optimizer states to bytes and save via storage_service.
@@ -29,7 +29,7 @@ class CheckpointManager:
             "optimizer_state_dict": optimizer.state_dict(),
             "val_loss": val_loss,
             "val_accuracy": val_accuracy,
-            "hyperparameters": hyperparameters
+            "hyperparameters": hyperparameters,
         }
 
         buffer = io.BytesIO()
@@ -48,10 +48,7 @@ class CheckpointManager:
 
     @staticmethod
     async def load_checkpoint(
-        storage_path: str,
-        model: nn.Module,
-        optimizer: torch.optim.Optimizer | None = None,
-        device: torch.device | None = None
+        storage_path: str, model: nn.Module, optimizer: torch.optim.Optimizer | None = None, device: torch.device | None = None
     ) -> Tuple[int, float, float, Dict[str, Any]]:
         """
         Load checkpoint from storage and restore model and optimizer state.

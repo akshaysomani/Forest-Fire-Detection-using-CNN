@@ -13,10 +13,7 @@ logger = logging.getLogger("mlops.promotion_manager")
 class PromotionManager:
     @staticmethod
     async def promote_deployment(
-        db: AsyncSession,
-        deployment_job_id: uuid.UUID,
-        target_environment_id: uuid.UUID,
-        promoted_by: uuid.UUID
+        db: AsyncSession, deployment_job_id: uuid.UUID, target_environment_id: uuid.UUID, promoted_by: uuid.UUID
     ) -> DeploymentJob:
         """
         Promotes a successfully deployed model version from a source environment
@@ -43,10 +40,7 @@ class PromotionManager:
 
         # Trigger deployment on the target environment
         promotion_job = await model_deployment_service.deploy_to_environment(
-            db=db,
-            environment_id=target_environment_id,
-            model_version_id=source_job.model_version_id,
-            deployed_by=promoted_by
+            db=db, environment_id=target_environment_id, model_version_id=source_job.model_version_id, deployed_by=promoted_by
         )
 
         return promotion_job

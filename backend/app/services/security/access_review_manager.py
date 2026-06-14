@@ -12,7 +12,9 @@ from app.core.exceptions import ValidationException
 
 
 class AccessReviewManager:
-    async def create_campaign(self, db: AsyncSession, name: str, target_role: Optional[str] = None, current_user_id: Optional[uuid.UUID] = None) -> AccessReviewCampaign:
+    async def create_campaign(
+        self, db: AsyncSession, name: str, target_role: Optional[str] = None, current_user_id: Optional[uuid.UUID] = None
+    ) -> AccessReviewCampaign:
         """Create a new access certification campaign."""
         # Ensure there are no other active campaigns with same name
         q = select(AccessReviewCampaign).where(AccessReviewCampaign.name == name, AccessReviewCampaign.status == "ACTIVE")
@@ -20,12 +22,7 @@ class AccessReviewManager:
         if res.scalar_one_or_none():
             raise ValidationException(f"An active access review campaign with name '{name}' already exists.")
 
-        campaign = AccessReviewCampaign(
-            name=name,
-            status="ACTIVE",
-            target_role=target_role,
-            created_by_id=current_user_id
-        )
+        campaign = AccessReviewCampaign(name=name, status="ACTIVE", target_role=target_role, created_by_id=current_user_id)
         db.add(campaign)
         await db.flush()
 
@@ -35,7 +32,7 @@ class AccessReviewManager:
             severity="INFO",
             description=f"Access review campaign '{name}' (Target Role: {target_role or 'ALL'}) started by user ID {current_user_id}",
             user_id=current_user_id,
-            details_json={"campaign_id": str(campaign.id), "campaign_name": name, "target_role": target_role}
+            details_json={"campaign_id": str(campaign.id), "campaign_name": name, "target_role": target_role},
         )
         db.add(event)
         return campaign
@@ -48,7 +45,7 @@ class AccessReviewManager:
         role_id: uuid.UUID,
         reviewer_id: uuid.UUID,
         decision_type: str,  # 'CERTIFIED' or 'REVOKED'
-        justification: Optional[str] = None
+        justification: Optional[str] = None,
     ) -> AccessReviewDecision:
         """Submit a reviewer decision for a user role assignment."""
         # Validate campaign is active
@@ -83,7 +80,7 @@ class AccessReviewManager:
         q_decision = select(AccessReviewDecision).where(
             AccessReviewDecision.campaign_id == campaign_id,
             AccessReviewDecision.user_id == user_id,
-            AccessReviewDecision.role_id == role_id
+            AccessReviewDecision.role_id == role_id,
         )
         res_dec = await db.execute(q_decision)
         existing = res_dec.scalar_one_or_none()
@@ -101,7 +98,7 @@ class AccessReviewManager:
                 role_id=role_id,
                 reviewer_id=reviewer_id,
                 decision=decision_type,
-                justification=justification
+                justification=justification,
             )
             db.add(decision)
 
@@ -124,14 +121,16 @@ class AccessReviewManager:
                 "target_user_id": str(user_id),
                 "role_name": role.name,
                 "decision": decision_type,
-                "justification": justification
-            }
+                "justification": justification,
+            },
         )
         db.add(event)
 
         return decision
 
-    async def complete_campaign(self, db: AsyncSession, campaign_id: uuid.UUID, current_user_id: Optional[uuid.UUID] = None) -> AccessReviewCampaign:
+    async def complete_campaign(
+        self, db: AsyncSession, campaign_id: uuid.UUID, current_user_id: Optional[uuid.UUID] = None
+    ) -> AccessReviewCampaign:
         """Mark access review campaign as completed."""
         q = select(AccessReviewCampaign).where(AccessReviewCampaign.id == campaign_id)
         res = await db.execute(q)
@@ -153,7 +152,7 @@ class AccessReviewManager:
             severity="INFO",
             description=f"Access review campaign '{campaign.name}' has been marked as COMPLETED by user ID {current_user_id}",
             user_id=current_user_id,
-            details_json={"campaign_id": str(campaign_id), "campaign_name": campaign.name}
+            details_json={"campaign_id": str(campaign_id), "campaign_name": campaign.name},
         )
         db.add(event)
         return campaign

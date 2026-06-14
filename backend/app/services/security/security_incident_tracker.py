@@ -19,11 +19,7 @@ class SecurityIncidentTracker:
 
         # Update event metadata to record escalation details
         details = event.details_json or {}
-        details["escalation"] = {
-            "escalated_at": datetime.utcnow().isoformat(),
-            "reason": escalation_reason,
-            "status": "OPEN"
-        }
+        details["escalation"] = {"escalated_at": datetime.utcnow().isoformat(), "reason": escalation_reason, "status": "OPEN"}
         event.details_json = details
         db.add(event)
         await db.flush()
@@ -31,12 +27,10 @@ class SecurityIncidentTracker:
 
     async def get_active_incidents(self, db: AsyncSession) -> List[SecurityEvent]:
         """Fetch open threats and security incidents (severity HIGH/CRITICAL)."""
-        q = select(SecurityEvent).where(
-            SecurityEvent.severity.in_(["HIGH", "CRITICAL"])
-        )
+        q = select(SecurityEvent).where(SecurityEvent.severity.in_(["HIGH", "CRITICAL"]))
         res = await db.execute(q)
         events = res.scalars().all()
-        
+
         # Filter for unresolved ones in python for json structure simplicity
         active = []
         for e in events:
@@ -46,7 +40,9 @@ class SecurityIncidentTracker:
                 active.append(e)
         return active
 
-    async def resolve_incident(self, db: AsyncSession, event_id: uuid.UUID, comment: str, resolver_id: Optional[uuid.UUID] = None) -> SecurityEvent:
+    async def resolve_incident(
+        self, db: AsyncSession, event_id: uuid.UUID, comment: str, resolver_id: Optional[uuid.UUID] = None
+    ) -> SecurityEvent:
         """Mark an active security incident as resolved with justification."""
         q = select(SecurityEvent).where(SecurityEvent.id == event_id)
         res = await db.execute(q)
@@ -59,14 +55,15 @@ class SecurityIncidentTracker:
         details["resolution"] = {
             "resolved_at": datetime.utcnow().isoformat(),
             "resolved_by": str(resolver_id) if resolver_id else "SYSTEM",
-            "comment": comment
+            "comment": comment,
         }
         if "escalation" in details:
             details["escalation"]["status"] = "RESOLVED"
-        
+
         # If it was an IP block, we can unblock the IP if resolved
         if event.event_type == "THREAT_BLOCKED" and event.ip_address:
             from app.services.security.api_security_service import api_security_service
+
             api_security_service.unblock_ip(event.ip_address)
             details["ip_unblocked"] = True
 

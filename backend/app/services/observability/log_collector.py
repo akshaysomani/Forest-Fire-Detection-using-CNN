@@ -4,6 +4,7 @@ Log Collector - Intercepts Python logging records and persists them to the datab
 Provides an async-compatible handler that batches log records for efficient
 database writes via the LoggingService.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
@@ -42,10 +43,7 @@ class LogCollector:
         self._buffer.append(entry)
 
         if len(self._buffer) >= self._max_buffer_size:
-            logger.debug(
-                f"Log collector buffer reached {self._max_buffer_size}, "
-                "consider flushing to database."
-            )
+            logger.debug(f"Log collector buffer reached {self._max_buffer_size}, " "consider flushing to database.")
 
     async def flush(self, db) -> int:
         """

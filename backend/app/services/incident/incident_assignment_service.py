@@ -14,11 +14,7 @@ logger = logging.getLogger("incident.incident_assignment_service")
 
 class IncidentAssignmentService:
     async def assign_team(
-        self,
-        db: AsyncSession,
-        incident_id: uuid.UUID,
-        team_id: uuid.UUID,
-        assigned_by: Optional[uuid.UUID] = None
+        self, db: AsyncSession, incident_id: uuid.UUID, team_id: uuid.UUID, assigned_by: Optional[uuid.UUID] = None
     ) -> IncidentAssignment:
         """
         Dispatches a team to an active incident. Creates a pending IncidentAssignment.
@@ -46,7 +42,7 @@ class IncidentAssignmentService:
             and_(
                 IncidentAssignment.incident_id == incident_id,
                 IncidentAssignment.team_id == team_id,
-                IncidentAssignment.status.in_(["Pending", "Accepted"])
+                IncidentAssignment.status.in_(["Pending", "Accepted"]),
             )
         )
         existing_res = await db.execute(existing_q)
@@ -59,7 +55,7 @@ class IncidentAssignmentService:
             team_id=team_id,
             assigned_by=assigned_by,
             assigned_at=datetime.now(timezone.utc),
-            status="Pending"
+            status="Pending",
         )
         db.add(assignment)
         await db.flush()
@@ -71,8 +67,8 @@ class IncidentAssignmentService:
             payload={
                 "team_id": str(team_id),
                 "team_name": team.name,
-                "assigned_by": str(assigned_by) if assigned_by else "system"
-            }
+                "assigned_by": str(assigned_by) if assigned_by else "system",
+            },
         )
         db.add(event)
 
@@ -80,10 +76,7 @@ class IncidentAssignmentService:
             incident_id=incident_id,
             user_id=assigned_by,
             action="incident_assignment_created",
-            details={
-                "team_id": str(team_id),
-                "assigned_by": str(assigned_by) if assigned_by else "system"
-            }
+            details={"team_id": str(team_id), "assigned_by": str(assigned_by) if assigned_by else "system"},
         )
         db.add(audit)
         await db.flush()
@@ -91,12 +84,7 @@ class IncidentAssignmentService:
         logger.info(f"Successfully created assignment {assignment.id} in Pending state.")
         return assignment
 
-    async def accept_assignment(
-        self,
-        db: AsyncSession,
-        assignment_id: uuid.UUID,
-        user_id: uuid.UUID
-    ) -> IncidentAssignment:
+    async def accept_assignment(self, db: AsyncSession, assignment_id: uuid.UUID, user_id: uuid.UUID) -> IncidentAssignment:
         """
         Accepts a pending dispatch assignment. Sets team current_incident_id
         and transitions the incident status.
@@ -134,7 +122,7 @@ class IncidentAssignmentService:
                 incident_id=incident.id,
                 new_status=target_status,
                 user_id=user_id,
-                reason=f"Team '{team.name}' accepted the dispatch assignment."
+                reason=f"Team '{team.name}' accepted the dispatch assignment.",
             )
 
         # 4. Update assignment and team status
@@ -147,11 +135,7 @@ class IncidentAssignmentService:
         event = IncidentEvent(
             incident_id=incident.id,
             event_type="incident_assignment_accepted",
-            payload={
-                "assignment_id": str(assignment_id),
-                "team_id": str(team.id),
-                "team_name": team.name
-            }
+            payload={"assignment_id": str(assignment_id), "team_id": str(team.id), "team_name": team.name},
         )
         db.add(event)
 
@@ -159,10 +143,7 @@ class IncidentAssignmentService:
             incident_id=incident.id,
             user_id=user_id,
             action="incident_assignment_accepted",
-            details={
-                "assignment_id": str(assignment_id),
-                "team_id": str(team.id)
-            }
+            details={"assignment_id": str(assignment_id), "team_id": str(team.id)},
         )
         db.add(audit)
         await db.flush()
@@ -171,11 +152,7 @@ class IncidentAssignmentService:
         return assignment
 
     async def reject_assignment(
-        self,
-        db: AsyncSession,
-        assignment_id: uuid.UUID,
-        user_id: uuid.UUID,
-        reason: str
+        self, db: AsyncSession, assignment_id: uuid.UUID, user_id: uuid.UUID, reason: str
     ) -> IncidentAssignment:
         """
         Rejects a pending dispatch assignment.
@@ -199,11 +176,7 @@ class IncidentAssignmentService:
         event = IncidentEvent(
             incident_id=assignment.incident_id,
             event_type="incident_assignment_rejected",
-            payload={
-                "assignment_id": str(assignment_id),
-                "team_id": str(assignment.team_id),
-                "reason": reason
-            }
+            payload={"assignment_id": str(assignment_id), "team_id": str(assignment.team_id), "reason": reason},
         )
         db.add(event)
 
@@ -211,11 +184,7 @@ class IncidentAssignmentService:
             incident_id=assignment.incident_id,
             user_id=user_id,
             action="incident_assignment_rejected",
-            details={
-                "assignment_id": str(assignment_id),
-                "team_id": str(assignment.team_id),
-                "reason": reason
-            }
+            details={"assignment_id": str(assignment_id), "team_id": str(assignment.team_id), "reason": reason},
         )
         db.add(audit)
         await db.flush()

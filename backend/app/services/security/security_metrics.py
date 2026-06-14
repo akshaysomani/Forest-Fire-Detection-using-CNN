@@ -1,11 +1,6 @@
 class SecurityMetrics:
     def __init__(self):
-        self._metrics = {
-            "failed_logins": 0,
-            "blocked_threats": 0,
-            "secret_rotations": 0,
-            "policy_scans": 0
-        }
+        self._metrics = {"failed_logins": 0, "blocked_threats": 0, "secret_rotations": 0, "policy_scans": 0}
 
     def increment(self, name: str) -> None:
         """Increment metric counter."""

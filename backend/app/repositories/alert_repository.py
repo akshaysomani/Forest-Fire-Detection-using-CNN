@@ -24,7 +24,7 @@ class AlertRepository(BaseRepository[Alert]):
         severity: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        include_deleted: bool = False
+        include_deleted: bool = False,
     ) -> Tuple[Sequence[Alert], int]:
         """
         Retrieves a filtered, paginated list of alerts and the total matching record count.
@@ -62,24 +62,16 @@ class AlertRepository(BaseRepository[Alert]):
         """
         Retrieves a single alert with preloaded events and notifications to optimize queries.
         """
-        query = select(self.model).where(
-            and_(
-                self.model.id == alert_id,
-                self.model.deleted_at.is_(None)
-            )
-        ).options(
-            selectinload(self.model.events),
-            selectinload(self.model.notifications)
+        query = (
+            select(self.model)
+            .where(and_(self.model.id == alert_id, self.model.deleted_at.is_(None)))
+            .options(selectinload(self.model.events), selectinload(self.model.notifications))
         )
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     async def get_audit_history(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        alert_id: Optional[uuid.UUID] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, alert_id: Optional[uuid.UUID] = None
     ) -> Tuple[Sequence[AlertAuditLog], int]:
         """
         Fetch paginated audit log entries with filter query and count.

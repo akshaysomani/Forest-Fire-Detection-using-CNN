@@ -19,9 +19,7 @@ from app.services.file_manager import file_manager
 
 
 class VersionManager:
-    async def compare_versions(
-        self, db: AsyncSession, dataset_id: uuid.UUID, v1_str: str, v2_str: str
-    ) -> Dict[str, Any]:
+    async def compare_versions(self, db: AsyncSession, dataset_id: uuid.UUID, v1_str: str, v2_str: str) -> Dict[str, Any]:
         """
         Compare two dataset versions by checking metadata file hashes:
         - Lists files unique to v1 (deleted in v2)
@@ -69,15 +67,11 @@ class VersionManager:
             "unchanged_count": len(unchanged),
             "added": added,
             "removed": removed,
-            "modified": modified
+            "modified": modified,
         }
 
     async def rollback_to_version(
-        self,
-        db: AsyncSession,
-        dataset_id: uuid.UUID,
-        version_str: str,
-        user_id: uuid.UUID
+        self, db: AsyncSession, dataset_id: uuid.UUID, version_str: str, user_id: uuid.UUID
     ) -> Dict[str, Any]:
         """
         Rollback active dataset state to a specific version:
@@ -160,11 +154,7 @@ class VersionManager:
                     mime_type=None,  # Let it be default
                     md5_hash=f_meta["md5_hash"],
                     label_id=label_obj.id if label_obj else None,
-                    metadata_json={
-                        "width": f_meta.get("width"),
-                        "height": f_meta.get("height"),
-                        "restored_from": version_str
-                    }
+                    metadata_json={"width": f_meta.get("width"), "height": f_meta.get("height"), "restored_from": version_str},
                 )
                 db.add(new_db_file)
                 restored_count += 1
@@ -174,11 +164,7 @@ class VersionManager:
                 dataset_id=dataset_id,
                 user_id=user_id,
                 action="dataset.rollback",
-                details={
-                    "version_str": version_str,
-                    "version_id": str(version.id),
-                    "restored_files_count": restored_count
-                }
+                details={"version_str": version_str, "version_id": str(version.id), "restored_files_count": restored_count},
             )
             db.add(audit_log)
             await db.flush()
@@ -190,7 +176,7 @@ class VersionManager:
         return {
             "status": "success",
             "message": f"Successfully rolled back dataset to version '{version_str}'.",
-            "restored_files": restored_count
+            "restored_files": restored_count,
         }
 
 

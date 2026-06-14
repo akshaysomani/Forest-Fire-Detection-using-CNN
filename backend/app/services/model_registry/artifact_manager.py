@@ -21,7 +21,7 @@ class ArtifactManager:
         name: str,
         artifact_type: str,
         uri: str,
-        created_by: Optional[uuid.UUID] = None
+        created_by: Optional[uuid.UUID] = None,
     ) -> ModelArtifact:
         """
         Validates artifact file existence in storage, calculates file size and SHA256 checksum,
@@ -43,7 +43,7 @@ class ArtifactManager:
             uri=uri,
             file_size=file_size,
             checksum=checksum,
-            created_by=created_by
+            created_by=created_by,
         )
 
         # 4. Audit Log entry
@@ -52,23 +52,14 @@ class ArtifactManager:
             action="register_artifact",
             performed_by=created_by or uuid.UUID(int=0),
             model_version_id=model_version_id,
-            details={
-                "artifact_id": str(artifact.id),
-                "name": name,
-                "type": artifact_type,
-                "uri": uri,
-                "size": file_size
-            }
+            details={"artifact_id": str(artifact.id), "name": name, "type": artifact_type, "uri": uri, "size": file_size},
         )
 
         return artifact
 
     @staticmethod
     async def auto_register_training_run_artifacts(
-        db: AsyncSession,
-        model_version_id: uuid.UUID,
-        training_run_id: uuid.UUID,
-        created_by: Optional[uuid.UUID] = None
+        db: AsyncSession, model_version_id: uuid.UUID, training_run_id: uuid.UUID, created_by: Optional[uuid.UUID] = None
     ) -> List[ModelArtifact]:
         """
         Auto-discovers and registers standard outputs of a training run:
@@ -82,24 +73,28 @@ class ArtifactManager:
             raise EntityNotFoundException(f"Training run '{training_run_id}' not found.")
 
         # Find best checkpoint for this run
-        checkpoint_query = select(TrainingCheckpoint).where(
-            and_(
-                TrainingCheckpoint.run_id == training_run_id,
-                TrainingCheckpoint.is_best == True,
-                TrainingCheckpoint.deleted_at.is_(None)
+        checkpoint_query = (
+            select(TrainingCheckpoint)
+            .where(
+                and_(
+                    TrainingCheckpoint.run_id == training_run_id,
+                    TrainingCheckpoint.is_best == True,
+                    TrainingCheckpoint.deleted_at.is_(None),
+                )
             )
-        ).limit(1)
+            .limit(1)
+        )
         res_checkpoint = await db.execute(checkpoint_query)
         checkpoint = res_checkpoint.scalar_one_or_none()
 
         if not checkpoint:
             # Fallback to latest checkpoint
-            fallback_query = select(TrainingCheckpoint).where(
-                and_(
-                    TrainingCheckpoint.run_id == training_run_id,
-                    TrainingCheckpoint.deleted_at.is_(None)
-                )
-            ).order_by(TrainingCheckpoint.epoch.desc()).limit(1)
+            fallback_query = (
+                select(TrainingCheckpoint)
+                .where(and_(TrainingCheckpoint.run_id == training_run_id, TrainingCheckpoint.deleted_at.is_(None)))
+                .order_by(TrainingCheckpoint.epoch.desc())
+                .limit(1)
+            )
             res_fallback = await db.execute(fallback_query)
             checkpoint = res_fallback.scalar_one_or_none()
 
@@ -114,14 +109,16 @@ class ArtifactManager:
                     name=f"epoch_{checkpoint.epoch}_best_weights.pth",
                     artifact_type="weights",
                     uri=checkpoint.checkpoint_path,
-                    created_by=created_by
+                    created_by=created_by,
                 )
                 registered_artifacts.append(art)
             except Exception as e:
                 logger.error(f"Failed to auto-register weights artifact: {str(e)}")
                 raise ValidationException(f"Failed to register training checkpoint weights: {str(e)}")
         else:
-            raise ValidationException(f"No checkpoint found for training run '{training_run_id}'. Cannot register model version.")
+            raise ValidationException(
+                f"No checkpoint found for training run '{training_run_id}'. Cannot register model version."
+            )
 
         # 2. Register Confusion Matrix (OPTIONAL/BEST EFFORT)
         cm_path = f"runs/{str(training_run_id)}/artifacts/confusion_matrix.png"
@@ -133,7 +130,7 @@ class ArtifactManager:
                     name="confusion_matrix.png",
                     artifact_type="evaluation_plot",
                     uri=cm_path,
-                    created_by=created_by
+                    created_by=created_by,
                 )
                 registered_artifacts.append(art)
             except Exception as e:
@@ -149,7 +146,7 @@ class ArtifactManager:
                     name="evaluation_report.md",
                     artifact_type="evaluation_report",
                     uri=report_path,
-                    created_by=created_by
+                    created_by=created_by,
                 )
                 registered_artifacts.append(art)
             except Exception as e:

@@ -22,14 +22,14 @@ class ArtifactStorageService:
         """
         if not await storage_service.exists(storage_path):
             raise EntityNotFoundException(f"Artifact at path '{storage_path}' not found in storage.")
-        
+
         file_bytes = await storage_service.read_file(storage_path)
         file_size = len(file_bytes)
-        
+
         sha256_hash = hashlib.sha256()
         sha256_hash.update(file_bytes)
         checksum = sha256_hash.hexdigest()
-        
+
         return file_size, checksum
 
     @staticmethod

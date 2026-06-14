@@ -8,9 +8,7 @@ from app.repositories.label_repository import label_repository
 
 
 class LabelService:
-    async def create_label(
-        self, db: AsyncSession, name: str, description: str | None = None
-    ) -> DatasetLabel:
+    async def create_label(self, db: AsyncSession, name: str, description: str | None = None) -> DatasetLabel:
         # Check if label name already exists
         existing = await label_repository.get_by_name(db, name)
         if existing:

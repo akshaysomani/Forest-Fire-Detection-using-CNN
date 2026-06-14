@@ -18,13 +18,7 @@ from app.models.image import ImageProcessingLog
 
 
 class UploadProcessor:
-    async def process_zip_images(
-        self,
-        task_id: uuid.UUID,
-        zip_bytes: bytes,
-        owner_id: uuid.UUID,
-        upload_source: str
-    ) -> None:
+    async def process_zip_images(self, task_id: uuid.UUID, zip_bytes: bytes, owner_id: uuid.UUID, upload_source: str) -> None:
         """
         Extract and process images inside a ZIP archive in a background worker task:
         - Read ZIP stream
@@ -43,7 +37,8 @@ class UploadProcessor:
                 with zipfile.ZipFile(zip_stream) as zipf:
                     # Filter out directories and metadata files
                     namelist = [
-                        name for name in zipf.namelist()
+                        name
+                        for name in zipf.namelist()
                         if not name.endswith("/") and not os.path.basename(name).startswith(".")
                     ]
 
@@ -69,8 +64,7 @@ class UploadProcessor:
 
                         # 1. Validate image
                         is_valid, error_msg, width, height = file_validator.validate_image(
-                            file_stream=entry_stream,
-                            filename=sanitized_name
+                            file_stream=entry_stream, filename=sanitized_name
                         )
                         if not is_valid:
                             failed_count += 1
@@ -95,15 +89,12 @@ class UploadProcessor:
                                 md5_hash=md5_hash,
                                 owner_id=owner_id,
                                 upload_source=upload_source,
-                                mime_type=None  # will be derived later or left empty
+                                mime_type=None,  # will be derived later or left empty
                             )
 
                             # Log processing start
                             proc_log = ImageProcessingLog(
-                                image_id=image.id,
-                                operation="zip_extract_process",
-                                status="pending",
-                                started_at=start_time
+                                image_id=image.id, operation="zip_extract_process", status="pending", started_at=start_time
                             )
                             db.add(proc_log)
                             await db.flush()
@@ -124,7 +115,7 @@ class UploadProcessor:
                                 captured_at=metadata_dict.get("captured_at"),
                                 camera_make=metadata_dict.get("camera_make"),
                                 camera_model=metadata_dict.get("camera_model"),
-                                extra_metadata=metadata_dict.get("extra_metadata")
+                                extra_metadata=metadata_dict.get("extra_metadata"),
                             )
 
                             # 5. Save original image to storage
@@ -133,18 +124,27 @@ class UploadProcessor:
 
                             # 6. Save original image storage location record
                             from app.core.config import settings
+
                             await image_service.add_storage_location(
                                 db=db,
                                 image_id=image.id,
                                 version_id=None,
                                 provider=settings.STORAGE_PROVIDER,
-                                bucket_or_container=settings.AWS_S3_BUCKET if settings.STORAGE_PROVIDER == "s3" else (
-                                    settings.GCS_BUCKET if settings.STORAGE_PROVIDER == "gcs" else (
-                                        settings.AZURE_CONTAINER if settings.STORAGE_PROVIDER == "azure" else settings.STORAGE_BASE_DIR
+                                bucket_or_container=(
+                                    settings.AWS_S3_BUCKET
+                                    if settings.STORAGE_PROVIDER == "s3"
+                                    else (
+                                        settings.GCS_BUCKET
+                                        if settings.STORAGE_PROVIDER == "gcs"
+                                        else (
+                                            settings.AZURE_CONTAINER
+                                            if settings.STORAGE_PROVIDER == "azure"
+                                            else settings.STORAGE_BASE_DIR
+                                        )
                                     )
                                 ),
                                 file_key_or_path=storage_dest,
-                                is_primary=True
+                                is_primary=True,
                             )
 
                             # 7. Generate preprocessed versions (Original, Resized CNN 224x224, WebP Thumbnail 128x128)
@@ -155,7 +155,7 @@ class UploadProcessor:
                                 purpose="original",
                                 file_path=storage_dest,
                                 size_bytes=len(entry_bytes),
-                                md5_hash=md5_hash
+                                md5_hash=md5_hash,
                             )
 
                             # Resized CNN Version (e.g. 224x224 PNG)
@@ -164,7 +164,7 @@ class UploadProcessor:
                                 resized_hash = file_manager.calculate_md5(resized_bytes)
                                 resized_dest = f"images/{str(image.id)}/versions/resized_{sanitized_name}"
                                 await storage_service.save_file(resized_bytes, resized_dest)
-                                
+
                                 resized_ver = await image_service.add_version(
                                     db=db,
                                     image_id=image.id,
@@ -172,27 +172,37 @@ class UploadProcessor:
                                     purpose="resized",
                                     file_path=resized_dest,
                                     size_bytes=len(resized_bytes),
-                                    md5_hash=resized_hash
+                                    md5_hash=resized_hash,
                                 )
                                 await image_service.add_storage_location(
                                     db=db,
                                     image_id=image.id,
                                     version_id=resized_ver.id,
                                     provider=settings.STORAGE_PROVIDER,
-                                    bucket_or_container=settings.AWS_S3_BUCKET if settings.STORAGE_PROVIDER == "s3" else (
-                                        settings.GCS_BUCKET if settings.STORAGE_PROVIDER == "gcs" else (
-                                            settings.AZURE_CONTAINER if settings.STORAGE_PROVIDER == "azure" else settings.STORAGE_BASE_DIR
+                                    bucket_or_container=(
+                                        settings.AWS_S3_BUCKET
+                                        if settings.STORAGE_PROVIDER == "s3"
+                                        else (
+                                            settings.GCS_BUCKET
+                                            if settings.STORAGE_PROVIDER == "gcs"
+                                            else (
+                                                settings.AZURE_CONTAINER
+                                                if settings.STORAGE_PROVIDER == "azure"
+                                                else settings.STORAGE_BASE_DIR
+                                            )
                                         )
                                     ),
                                     file_key_or_path=resized_dest,
-                                    is_primary=False
+                                    is_primary=False,
                                 )
                             except Exception:
                                 pass
 
                             # Thumbnail Version (e.g. 128x128 WEBP)
                             try:
-                                thumb_bytes = await thumbnail_service.generate_thumbnail(entry_bytes, (128, 128), format="WEBP")
+                                thumb_bytes = await thumbnail_service.generate_thumbnail(
+                                    entry_bytes, (128, 128), format="WEBP"
+                                )
                                 thumb_hash = file_manager.calculate_md5(thumb_bytes)
                                 thumb_filename = sanitized_name.rsplit(".", 1)[0] + ".webp"
                                 thumb_dest = f"images/{str(image.id)}/versions/thumbnail_{thumb_filename}"
@@ -205,20 +215,28 @@ class UploadProcessor:
                                     purpose="thumbnail",
                                     file_path=thumb_dest,
                                     size_bytes=len(thumb_bytes),
-                                    md5_hash=thumb_hash
+                                    md5_hash=thumb_hash,
                                 )
                                 await image_service.add_storage_location(
                                     db=db,
                                     image_id=image.id,
                                     version_id=thumb_ver.id,
                                     provider=settings.STORAGE_PROVIDER,
-                                    bucket_or_container=settings.AWS_S3_BUCKET if settings.STORAGE_PROVIDER == "s3" else (
-                                        settings.GCS_BUCKET if settings.STORAGE_PROVIDER == "gcs" else (
-                                            settings.AZURE_CONTAINER if settings.STORAGE_PROVIDER == "azure" else settings.STORAGE_BASE_DIR
+                                    bucket_or_container=(
+                                        settings.AWS_S3_BUCKET
+                                        if settings.STORAGE_PROVIDER == "s3"
+                                        else (
+                                            settings.GCS_BUCKET
+                                            if settings.STORAGE_PROVIDER == "gcs"
+                                            else (
+                                                settings.AZURE_CONTAINER
+                                                if settings.STORAGE_PROVIDER == "azure"
+                                                else settings.STORAGE_BASE_DIR
+                                            )
                                         )
                                     ),
                                     file_key_or_path=thumb_dest,
-                                    is_primary=False
+                                    is_primary=False,
                                 )
                             except Exception:
                                 pass
@@ -244,17 +262,14 @@ class UploadProcessor:
 
             # Audit tracking using existing activity service/logs
             from app.services.activity_service import activity_service
+
             await activity_service.track_activity(
                 db=db,
                 action="image.zip_upload_background",
                 user_id=owner_id,
                 resource_type="zip_task",
                 resource_id=str(task_id),
-                details={
-                    "success_count": success_count,
-                    "failed_count": failed_count,
-                    "errors": errors
-                }
+                details={"success_count": success_count, "failed_count": failed_count, "errors": errors},
             )
             await db.commit()
 

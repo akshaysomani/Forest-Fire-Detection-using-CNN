@@ -16,10 +16,7 @@ logger = logging.getLogger("mlops.model_deployment_service")
 class ModelDeploymentService:
     @staticmethod
     async def deploy_to_environment(
-        db: AsyncSession,
-        environment_id: uuid.UUID,
-        model_version_id: uuid.UUID,
-        deployed_by: uuid.UUID
+        db: AsyncSession, environment_id: uuid.UUID, model_version_id: uuid.UUID, deployed_by: uuid.UUID
     ) -> DeploymentJob:
         """
         Orchestrates the entire model deployment process onto a target environment.
@@ -37,10 +34,7 @@ class ModelDeploymentService:
 
         # 3. Create and execute deployment job
         job = await deployment_orchestrator.create_job(
-            db=db,
-            environment_id=environment_id,
-            model_version_id=model_version_id,
-            deployed_by=deployed_by
+            db=db, environment_id=environment_id, model_version_id=model_version_id, deployed_by=deployed_by
         )
 
         try:
@@ -60,19 +54,17 @@ class ModelDeploymentService:
                     model_version_id=model_version_id,
                     environment=env.name,
                     deployed_by=deployed_by,
-                    metrics=version.metrics
+                    metrics=version.metrics,
                 )
-                
+
                 # Register a system release
                 release_ver = f"release-{env.name}-{version.version}"
-                
+
                 # Check if release with this version already exists, if so append unique suffix
-                existing_release = await db.execute(
-                    select(Release)
-                    .where(Release.version == release_ver)
-                )
+                existing_release = await db.execute(select(Release).where(Release.version == release_ver))
                 if existing_release.scalar_one_or_none():
                     import random
+
                     release_ver += f"-{random.randint(1000, 9999)}"
 
                 release = await release_manager.create_new_release(
@@ -80,7 +72,7 @@ class ModelDeploymentService:
                     version=release_ver,
                     description=f"Auto-release for model {version.version} deployed to {env.name}.",
                     model_version_id=model_version_id,
-                    created_by=deployed_by
+                    created_by=deployed_by,
                 )
 
                 # Link environment to the release
@@ -95,11 +87,7 @@ class ModelDeploymentService:
         return job
 
     @staticmethod
-    async def rollback_environment(
-        db: AsyncSession,
-        environment_id: uuid.UUID,
-        performed_by: uuid.UUID
-    ) -> DeploymentJob:
+    async def rollback_environment(db: AsyncSession, environment_id: uuid.UUID, performed_by: uuid.UUID) -> DeploymentJob:
         """
         Rolls back the active deployment in an environment to the previous stable release.
         """
@@ -109,13 +97,18 @@ class ModelDeploymentService:
 
         # Query previous deployment job in this environment
         from sqlalchemy import select, desc, and_
-        query = select(DeploymentJob).where(
-            and_(
-                DeploymentJob.environment_id == environment_id,
-                DeploymentJob.status == "succeeded",
-                DeploymentJob.deleted_at.is_(None)
+
+        query = (
+            select(DeploymentJob)
+            .where(
+                and_(
+                    DeploymentJob.environment_id == environment_id,
+                    DeploymentJob.status == "succeeded",
+                    DeploymentJob.deleted_at.is_(None),
+                )
             )
-        ).order_by(desc(DeploymentJob.created_at))
+            .order_by(desc(DeploymentJob.created_at))
+        )
         res = await db.execute(query)
         jobs = res.scalars().all()
 
@@ -127,10 +120,7 @@ class ModelDeploymentService:
 
         # Trigger deployment of previous version to this environment
         rollback_job = await ModelDeploymentService.deploy_to_environment(
-            db=db,
-            environment_id=environment_id,
-            model_version_id=previous_job.model_version_id,
-            deployed_by=performed_by
+            db=db, environment_id=environment_id, model_version_id=previous_job.model_version_id, deployed_by=performed_by
         )
 
         # Set job rollback details
@@ -143,4 +133,5 @@ class ModelDeploymentService:
 
 # Import statement to make sure we don't hit circular import on Select
 from sqlalchemy import select
+
 model_deployment_service = ModelDeploymentService()

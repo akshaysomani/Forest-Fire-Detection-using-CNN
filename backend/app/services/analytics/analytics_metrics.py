@@ -12,7 +12,7 @@ class AnalyticsMetrics:
             "xlsx_exported": 0,
             "csv_exported": 0,
             "json_exported": 0,
-            "scheduled_jobs_run": 0
+            "scheduled_jobs_run": 0,
         }
 
     def increment(self, metric_name: str, val: int = 1) -> None:

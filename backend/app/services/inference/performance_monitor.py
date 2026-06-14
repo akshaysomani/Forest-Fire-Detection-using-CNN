@@ -9,13 +9,7 @@ class PerformanceMonitor:
         # Store raw history lists for analysis
         self._latencies: List[Dict[str, float]] = []
 
-    def record_latencies(
-        self,
-        preprocessing: float,
-        transformation: float,
-        forward_pass: float,
-        database_save: float
-    ) -> None:
+    def record_latencies(self, preprocessing: float, transformation: float, forward_pass: float, database_save: float) -> None:
         """
         Record stage latencies in seconds.
         """
@@ -25,7 +19,7 @@ class PerformanceMonitor:
             "transformation": transformation,
             "forward_pass": forward_pass,
             "database_save": database_save,
-            "total": total
+            "total": total,
         }
         self._latencies.append(record)
 
@@ -52,7 +46,7 @@ class PerformanceMonitor:
                 "avg_transformation_ms": 0.0,
                 "avg_forward_pass_ms": 0.0,
                 "avg_database_save_ms": 0.0,
-                "sample_count": 0
+                "sample_count": 0,
             }
 
         count = len(self._latencies)
@@ -68,7 +62,7 @@ class PerformanceMonitor:
             "avg_transformation_ms": avg_trans * 1000.0,
             "avg_forward_pass_ms": avg_forward * 1000.0,
             "avg_database_save_ms": avg_db * 1000.0,
-            "sample_count": count
+            "sample_count": count,
         }
 
 

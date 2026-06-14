@@ -20,11 +20,7 @@ class IncidentMetrics:
 
         total = len(incidents)
         if total == 0:
-            return {
-                "active_count": 0,
-                "resolved_closed_count": 0,
-                "active_ratio": 0.0
-            }
+            return {"active_count": 0, "resolved_closed_count": 0, "active_ratio": 0.0}
 
         active_statuses = ["Open", "Acknowledged", "Assigned", "In Progress", "Escalated"]
         active_count = sum(1 for inc in incidents if inc.status in active_statuses)
@@ -33,7 +29,7 @@ class IncidentMetrics:
         return {
             "active_count": active_count,
             "resolved_closed_count": resolved_closed_count,
-            "active_ratio": round(active_count / total, 4)
+            "active_ratio": round(active_count / total, 4),
         }
 
     async def get_timeline_metrics(self, db: AsyncSession, days: int = 7) -> List[Dict[str, Any]]:
@@ -66,10 +62,7 @@ class IncidentMetrics:
                         if resolved_date > target_date:
                             active_on_day += 1
 
-            timeline.append({
-                "date": target_date.isoformat(),
-                "active_incidents": active_on_day
-            })
+            timeline.append({"date": target_date.isoformat(), "active_incidents": active_on_day})
 
         return timeline
 

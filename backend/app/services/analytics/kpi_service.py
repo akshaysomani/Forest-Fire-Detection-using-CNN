@@ -29,17 +29,12 @@ class KPIService:
 
         # Save to database
         for name, val in kpis.items():
-            kpi_entry = KPIHistory(
-                kpi_name=name,
-                kpi_value=val,
-                recorded_date=now
-            )
+            kpi_entry = KPIHistory(kpi_name=name, kpi_value=val, recorded_date=now)
             db.add(kpi_entry)
 
         # Audit Log
         audit = AnalyticsAuditLog(
-            action="kpi_recorded",
-            details={"recorded_kpis": list(kpis.keys()), "timestamp": now.isoformat()}
+            action="kpi_recorded", details={"recorded_kpis": list(kpis.keys()), "timestamp": now.isoformat()}
         )
         db.add(audit)
         await db.flush()
@@ -71,14 +66,12 @@ class KPIService:
     async def get_historical_kpis(self, db: AsyncSession, kpi_name: str, days: int = 30) -> List[KPIHistory]:
         """Fetch historical records for a specific KPI over a time window."""
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        query = select(KPIHistory).where(
-            and_(
-                KPIHistory.kpi_name == kpi_name,
-                KPIHistory.recorded_date >= cutoff,
-                KPIHistory.deleted_at.is_(None)
-            )
-        ).order_by(KPIHistory.recorded_date.asc())
-        
+        query = (
+            select(KPIHistory)
+            .where(and_(KPIHistory.kpi_name == kpi_name, KPIHistory.recorded_date >= cutoff, KPIHistory.deleted_at.is_(None)))
+            .order_by(KPIHistory.recorded_date.asc())
+        )
+
         res = await db.execute(query)
         return list(res.scalars().all())
 

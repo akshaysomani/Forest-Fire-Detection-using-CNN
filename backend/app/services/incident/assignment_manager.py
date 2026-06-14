@@ -25,7 +25,7 @@ class AssignmentManager:
                 ResponseTeam.status == "Active",
                 ResponseTeam.specialty == preferred_specialty,
                 ResponseTeam.current_incident_id.is_(None),
-                ResponseTeam.deleted_at.is_(None)
+                ResponseTeam.deleted_at.is_(None),
             )
         )
         res = await db.execute(query)
@@ -38,9 +38,7 @@ class AssignmentManager:
         # 2. Fallback to any active available team
         fallback_query = select(ResponseTeam).where(
             and_(
-                ResponseTeam.status == "Active",
-                ResponseTeam.current_incident_id.is_(None),
-                ResponseTeam.deleted_at.is_(None)
+                ResponseTeam.status == "Active", ResponseTeam.current_incident_id.is_(None), ResponseTeam.deleted_at.is_(None)
             )
         )
         res_fb = await db.execute(fallback_query)

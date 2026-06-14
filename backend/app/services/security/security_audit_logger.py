@@ -15,7 +15,7 @@ class SecurityAuditLogger:
         user_id: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Formats a security event as standardized structured JSON
@@ -30,7 +30,7 @@ class SecurityAuditLogger:
             "user.id": user_id,
             "client.ip": ip_address,
             "user_agent.original": user_agent,
-            "security.details": details or {}
+            "security.details": details or {},
         }
 
         # Log at appropriate python log level based on event severity

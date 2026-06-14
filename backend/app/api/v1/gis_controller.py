@@ -43,7 +43,7 @@ router = APIRouter()
 async def create_location(
     body: LocationCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    current_user: User = Depends(PermissionChecker("view_alerts")),
 ):
     """Register a new location coordinate reference point."""
     loc = await location_service.create_location(
@@ -54,7 +54,7 @@ async def create_location(
         address=body.address,
         elevation=body.elevation,
         description=body.description,
-        user_id=current_user.id
+        user_id=current_user.id,
     )
     await db.commit()
     await db.refresh(loc)
@@ -67,7 +67,7 @@ async def list_locations(
     limit: int = Query(100, ge=1, le=1000),
     name: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """Retrieve all locations with optional filtering."""
     items, total = await location_repository.get_locations_filtered(db, skip, limit, name)
@@ -76,9 +76,7 @@ async def list_locations(
 
 @router.get("/locations/{id}", response_model=LocationResponse)
 async def get_location(
-    id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """View details of a single geocoded reference location."""
     return await location_service.get_location_by_id(db, id)
@@ -88,7 +86,7 @@ async def get_location(
 async def create_region(
     body: RegionCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """Register a new administrative division or forest range polygon boundary."""
     region = await region_service.create_region(
@@ -98,7 +96,7 @@ async def create_region(
         type_=body.type,
         boundary=body.boundary,
         parent_id=body.parent_id,
-        user_id=current_user.id
+        user_id=current_user.id,
     )
     await db.commit()
     await db.refresh(region)
@@ -111,7 +109,7 @@ async def list_regions(
     limit: int = Query(100, ge=1, le=1000),
     type_: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """Retrieve administrative division regions."""
     items, total = await location_repository.get_regions_filtered(db, skip, limit, type_)
@@ -120,9 +118,7 @@ async def list_regions(
 
 @router.get("/regions/{id}", response_model=RegionResponse)
 async def get_region(
-    id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """View polygon boundary details for a single region division."""
     return await region_service.get_region_by_id(db, id)
@@ -132,7 +128,7 @@ async def get_region(
 async def create_zone(
     body: ZoneCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """Register a new monitoring division or buffer zone polygon boundary."""
     zone = await zone_manager.create_zone(
@@ -143,7 +139,7 @@ async def create_zone(
         type_=body.type,
         boundary=body.boundary,
         risk_level=body.risk_level,
-        user_id=current_user.id
+        user_id=current_user.id,
     )
     await db.commit()
     await db.refresh(zone)
@@ -156,7 +152,7 @@ async def list_zones(
     limit: int = Query(100, ge=1, le=1000),
     region_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """Retrieve monitoring buffer zones."""
     items, total = await location_repository.get_zones_filtered(db, skip, limit, region_id)
@@ -167,7 +163,7 @@ async def list_zones(
 async def create_geofence(
     body: GeofenceCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """Register a new circular/polygonal geofence boundary."""
     geofence = await geofence_service.create_geofence(
@@ -177,7 +173,7 @@ async def create_geofence(
         type_=body.type,
         geometry=body.geometry,
         is_active=body.is_active,
-        user_id=current_user.id
+        user_id=current_user.id,
     )
     await db.commit()
     await db.refresh(geofence)
@@ -190,7 +186,7 @@ async def list_geofences(
     limit: int = Query(100, ge=1, le=1000),
     is_active: Optional[bool] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """Retrieve geofencing entries."""
     items, total = await location_repository.get_geofences_filtered(db, skip, limit, is_active)
@@ -199,8 +195,7 @@ async def list_geofences(
 
 @router.get("/fire-locations", response_model=List[AlertLocationResponse])
 async def list_fire_locations(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """Retrieve coordinates reference mappings for active fire alerts."""
     query = select(AlertLocation).options(selectinload(AlertLocation.location)).order_by(desc(AlertLocation.created_at))
@@ -210,8 +205,7 @@ async def list_fire_locations(
 
 @router.get("/spatial-analytics")
 async def get_spatial_analytics_report(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """Retrieve spatial clustering, hot wildfire spots, and heatmaps compilation."""
     gis_monitor.increment("spatial_queries")
@@ -223,7 +217,7 @@ async def get_coordinate_intelligence(
     latitude: float = Query(...),
     longitude: float = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """Compiles containment and geofencing context for point coordinates."""
     gis_monitor.increment("spatial_queries")
@@ -234,14 +228,11 @@ async def get_coordinate_intelligence(
 async def create_location_history(
     body: LocationHistoryCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    current_user: User = Depends(PermissionChecker("view_alerts")),
 ):
     """Log tracking history coordinate for ranger patrols or drone flights."""
     history = LocationHistory(
-        entity_type=body.entity_type,
-        entity_id=body.entity_id,
-        latitude=body.latitude,
-        longitude=body.longitude
+        entity_type=body.entity_type, entity_id=body.entity_id, latitude=body.latitude, longitude=body.longitude
     )
     db.add(history)
     await db.commit()
@@ -254,7 +245,7 @@ async def list_gis_audit_history(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("access_audit_logs"))
+    current_user: User = Depends(PermissionChecker("access_audit_logs")),
 ):
     """View paginated security audit history logs for geofence breaches and spatial transactions."""
     items, total = await location_repository.get_gis_audit_history(db, skip, limit)

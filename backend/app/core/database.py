@@ -11,29 +11,20 @@ is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 # For SQLite, we avoid pool size configurations that are unsupported
 connect_args = {"check_same_thread": False} if is_sqlite else {}
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    connect_args=connect_args,
-    future=True
-)
+engine = create_async_engine(settings.DATABASE_URL, echo=False, connect_args=connect_args, future=True)
 
 # Enable foreign keys for SQLite sessions
 if is_sqlite:
+
     @event.listens_for(engine.sync_engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
+
 # Create async sessionmaker
-SessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False
-)
+SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False, autocommit=False, autoflush=False)
 
 
 # Base class for SQLAlchemy 2.x models

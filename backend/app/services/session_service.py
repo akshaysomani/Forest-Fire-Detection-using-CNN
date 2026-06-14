@@ -19,12 +19,7 @@ class SessionService:
         return "Desktop"
 
     async def create_session(
-        self,
-        db: AsyncSession,
-        user_id: uuid.UUID,
-        refresh_token_id: uuid.UUID,
-        ip_address: str | None,
-        user_agent: str | None
+        self, db: AsyncSession, user_id: uuid.UUID, refresh_token_id: uuid.UUID, ip_address: str | None, user_agent: str | None
     ) -> UserSession:
         """Tracks a new login session linked to a specific refresh token."""
         expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
@@ -38,7 +33,7 @@ class SessionService:
             device_type=device_type,
             is_active=True,
             expires_at=expires_at,
-            last_activity_at=datetime.now(timezone.utc)
+            last_activity_at=datetime.now(timezone.utc),
         )
         db.add(session)
         await db.flush()
@@ -47,19 +42,14 @@ class SessionService:
     async def get_active_sessions(self, db: AsyncSession, user_id: uuid.UUID) -> list[UserSession]:
         """Returns all active sessions for a user."""
         query = select(UserSession).where(
-            UserSession.user_id == user_id,
-            UserSession.is_active == True,
-            UserSession.expires_at > datetime.now(timezone.utc)
+            UserSession.user_id == user_id, UserSession.is_active == True, UserSession.expires_at > datetime.now(timezone.utc)
         )
         result = await db.execute(query)
         return list(result.scalars().all())
 
     async def revoke_session(self, db: AsyncSession, session_id: uuid.UUID, user_id: uuid.UUID) -> bool:
         """Terminates a specific session for a user, revoking the associated refresh token."""
-        query = select(UserSession).where(
-            UserSession.id == session_id,
-            UserSession.user_id == user_id
-        )
+        query = select(UserSession).where(UserSession.id == session_id, UserSession.user_id == user_id)
         result = await db.execute(query)
         session = result.scalar_one_or_none()
 
@@ -72,6 +62,7 @@ class SessionService:
         # Revoke the associated refresh token if it exists
         if session.refresh_token_id:
             from app.models.token import RefreshToken
+
             token_stmt = update(RefreshToken).where(RefreshToken.id == session.refresh_token_id).values(is_revoked=True)
             await db.execute(token_stmt)
 
@@ -81,18 +72,19 @@ class SessionService:
     async def revoke_all_sessions(self, db: AsyncSession, user_id: uuid.UUID) -> None:
         """Revokes all active sessions and refresh tokens for a user (e.g. on password change)."""
         # Revoke sessions
-        session_stmt = update(UserSession).where(
-            UserSession.user_id == user_id,
-            UserSession.is_active == True
-        ).values(is_active=False)
+        session_stmt = (
+            update(UserSession).where(UserSession.user_id == user_id, UserSession.is_active == True).values(is_active=False)
+        )
         await db.execute(session_stmt)
 
         # Revoke tokens
         from app.models.token import RefreshToken
-        token_stmt = update(RefreshToken).where(
-            RefreshToken.user_id == user_id,
-            RefreshToken.is_revoked == False
-        ).values(is_revoked=True)
+
+        token_stmt = (
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user_id, RefreshToken.is_revoked == False)
+            .values(is_revoked=True)
+        )
         await db.execute(token_stmt)
 
         await db.flush()

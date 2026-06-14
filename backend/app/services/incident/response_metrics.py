@@ -15,10 +15,7 @@ class ResponseMetrics:
             if inc.status in ["Resolved", "Closed"]:
                 sev = inc.severity
                 if sev not in distribution:
-                    distribution[sev] = {
-                        "resolved_count": 0,
-                        "average_duration_hours": 0.0
-                    }
+                    distribution[sev] = {"resolved_count": 0, "average_duration_hours": 0.0}
                 distribution[sev]["resolved_count"] += 1
                 # Simplified check for testing
                 duration_hours = max(0.1, (inc.updated_at - inc.created_at).total_seconds() / 3600.0)

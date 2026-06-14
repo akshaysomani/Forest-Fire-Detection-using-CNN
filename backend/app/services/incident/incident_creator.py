@@ -30,6 +30,7 @@ class IncidentCreator:
         if alert.detection_id:
             # Query detection details
             from app.models.detection import Detection
+
             res = await db.execute(select(Detection).where(Detection.id == alert.detection_id))
             det = res.scalar_one_or_none()
             if det:
@@ -44,7 +45,7 @@ class IncidentCreator:
             status="Open",
             severity=alert.severity,
             latitude=latitude,
-            longitude=longitude
+            longitude=longitude,
         )
         db.add(incident)
         await db.flush()  # Populates incident.id
@@ -54,7 +55,7 @@ class IncidentCreator:
             incident_id=incident.id,
             old_status="None",
             new_status="Open",
-            transition_reason=f"System automatically created incident from Alert ID: {alert.id}."
+            transition_reason=f"System automatically created incident from Alert ID: {alert.id}.",
         )
         db.add(history)
 
@@ -62,12 +63,7 @@ class IncidentCreator:
         event = IncidentEvent(
             incident_id=incident.id,
             event_type="incident_auto_created",
-            payload={
-                "alert_id": str(alert.id),
-                "severity": alert.severity,
-                "latitude": latitude,
-                "longitude": longitude
-            }
+            payload={"alert_id": str(alert.id), "severity": alert.severity, "latitude": latitude, "longitude": longitude},
         )
         db.add(event)
 
@@ -75,10 +71,7 @@ class IncidentCreator:
         audit = IncidentAuditLog(
             incident_id=incident.id,
             action="incident_created",
-            details={
-                "triggered_by_alert": str(alert.id),
-                "severity": alert.severity
-            }
+            details={"triggered_by_alert": str(alert.id), "severity": alert.severity},
         )
         db.add(audit)
         await db.flush()

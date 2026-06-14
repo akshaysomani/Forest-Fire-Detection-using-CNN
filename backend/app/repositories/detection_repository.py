@@ -11,12 +11,7 @@ class DetectionRepository(BaseRepository[Detection]):
         super().__init__(Detection)
 
     async def get_by_user(
-        self,
-        db: AsyncSession,
-        user_id: uuid.UUID,
-        skip: int = 0,
-        limit: int = 100,
-        include_deleted: bool = False
+        self, db: AsyncSession, user_id: uuid.UUID, skip: int = 0, limit: int = 100, include_deleted: bool = False
     ) -> Sequence[Detection]:
         """Fetch all detections uploaded by a specific user."""
         query = select(self.model).where(self.model.user_id == user_id)

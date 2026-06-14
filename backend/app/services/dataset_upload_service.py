@@ -23,7 +23,7 @@ class DatasetUploadService:
         dataset_id: uuid.UUID,
         upload_file: UploadFile,
         user_id: uuid.UUID,
-        label_id: uuid.UUID | None = None
+        label_id: uuid.UUID | None = None,
     ) -> DatasetFile:
         # Verify dataset exists
         dataset = await dataset_repository.get_by_id(db, dataset_id)
@@ -43,11 +43,7 @@ class DatasetUploadService:
 
         # Validate file
         val_report = await dataset_validator.validate_and_hash_file(
-            db=db,
-            dataset_id=dataset_id,
-            file_stream=file_stream,
-            filename=filename,
-            mime_type=upload_file.content_type
+            db=db, dataset_id=dataset_id, file_stream=file_stream, filename=filename, mime_type=upload_file.content_type
         )
 
         if not val_report["is_valid"]:
@@ -67,10 +63,7 @@ class DatasetUploadService:
             mime_type=upload_file.content_type,
             md5_hash=val_report["md5_hash"],
             label_id=label_id,
-            metadata_json={
-                "width": val_report["width"],
-                "height": val_report["height"]
-            }
+            metadata_json={"width": val_report["width"], "height": val_report["height"]},
         )
         db.add(db_file)
 
@@ -79,11 +72,7 @@ class DatasetUploadService:
             dataset_id=dataset_id,
             user_id=user_id,
             action="dataset.upload_file",
-            details={
-                "filename": filename,
-                "md5_hash": val_report["md5_hash"],
-                "file_size": val_report["file_size"]
-            }
+            details={"filename": filename, "md5_hash": val_report["md5_hash"], "file_size": val_report["file_size"]},
         )
         db.add(audit)
         await db.flush()
@@ -91,11 +80,7 @@ class DatasetUploadService:
         return db_file
 
     async def upload_bulk_files(
-        self,
-        db: AsyncSession,
-        dataset_id: uuid.UUID,
-        upload_files: List[UploadFile],
-        user_id: uuid.UUID
+        self, db: AsyncSession, dataset_id: uuid.UUID, upload_files: List[UploadFile], user_id: uuid.UUID
     ) -> Dict[str, Any]:
         """
         Process multiple image uploads. Returns statistics of succeeded and failed files.
@@ -113,11 +98,7 @@ class DatasetUploadService:
             filename = file_manager.sanitize_filename(upload_file.filename or "bulk_image")
 
             val_report = await dataset_validator.validate_and_hash_file(
-                db=db,
-                dataset_id=dataset_id,
-                file_stream=file_stream,
-                filename=filename,
-                mime_type=upload_file.content_type
+                db=db, dataset_id=dataset_id, file_stream=file_stream, filename=filename, mime_type=upload_file.content_type
             )
 
             if val_report["is_valid"]:
@@ -133,10 +114,7 @@ class DatasetUploadService:
                     mime_type=upload_file.content_type,
                     md5_hash=val_report["md5_hash"],
                     label_id=None,
-                    metadata_json={
-                        "width": val_report["width"],
-                        "height": val_report["height"]
-                    }
+                    metadata_json={"width": val_report["width"], "height": val_report["height"]},
                 )
                 db.add(db_file)
                 success_files.append(filename)
@@ -149,10 +127,7 @@ class DatasetUploadService:
                 dataset_id=dataset_id,
                 user_id=user_id,
                 action="dataset.upload_bulk",
-                details={
-                    "success_count": len(success_files),
-                    "failed_count": len(failed_files)
-                }
+                details={"success_count": len(success_files), "failed_count": len(failed_files)},
             )
             db.add(audit)
             await db.flush()
@@ -163,7 +138,7 @@ class DatasetUploadService:
             "success_count": len(success_files),
             "failed_count": len(failed_files),
             "success_files": success_files,
-            "failed_files": failed_files
+            "failed_files": failed_files,
         }
 
     async def upload_zip_dataset(
@@ -172,7 +147,7 @@ class DatasetUploadService:
         dataset_id: uuid.UUID,
         zip_file: UploadFile,
         user_id: uuid.UUID,
-        background_tasks: BackgroundTasks
+        background_tasks: BackgroundTasks,
     ) -> DatasetUploadHistory:
         """
         Receives ZIP upload, registers a pending upload history item, and schedules a background extractor job.
@@ -183,7 +158,7 @@ class DatasetUploadService:
 
         # Read zip bytes
         zip_bytes = await zip_file.read()
-        
+
         # Simple size validation
         if len(zip_bytes) == 0:
             raise ValidationException("ZIP archive is empty.")
@@ -201,7 +176,7 @@ class DatasetUploadService:
             original_filename=zip_file.filename,
             total_files=0,
             processed_files=0,
-            failed_files=0
+            failed_files=0,
         )
         db.add(history)
         await db.flush()
@@ -212,11 +187,12 @@ class DatasetUploadService:
             history_id=history.id,
             dataset_id=dataset_id,
             zip_file_bytes=zip_bytes,
-            user_id=user_id
+            user_id=user_id,
         )
 
         return history
 
 
 import io
+
 dataset_upload_service = DatasetUploadService()

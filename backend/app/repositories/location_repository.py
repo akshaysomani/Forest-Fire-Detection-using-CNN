@@ -15,11 +15,7 @@ class LocationRepository(BaseRepository[Location]):
         super().__init__(Location)
 
     async def get_locations_filtered(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        name: Optional[str] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, name: Optional[str] = None
     ) -> Tuple[Sequence[Location], int]:
         query = select(self.model).where(self.model.deleted_at.is_(None))
         count_query = select(func.count()).select_from(self.model).where(self.model.deleted_at.is_(None))
@@ -39,11 +35,7 @@ class LocationRepository(BaseRepository[Location]):
         return items, total
 
     async def get_regions_filtered(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        type_: Optional[str] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, type_: Optional[str] = None
     ) -> Tuple[Sequence[Region], int]:
         query = select(Region).where(Region.deleted_at.is_(None))
         count_query = select(func.count()).select_from(Region).where(Region.deleted_at.is_(None))
@@ -63,11 +55,7 @@ class LocationRepository(BaseRepository[Location]):
         return items, total
 
     async def get_zones_filtered(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        region_id: Optional[uuid.UUID] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, region_id: Optional[uuid.UUID] = None
     ) -> Tuple[Sequence[Zone], int]:
         query = select(Zone).where(Zone.deleted_at.is_(None))
         count_query = select(func.count()).select_from(Zone).where(Zone.deleted_at.is_(None))
@@ -87,11 +75,7 @@ class LocationRepository(BaseRepository[Location]):
         return items, total
 
     async def get_geofences_filtered(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100,
-        is_active: Optional[bool] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, is_active: Optional[bool] = None
     ) -> Tuple[Sequence[Geofence], int]:
         query = select(Geofence).where(Geofence.deleted_at.is_(None))
         count_query = select(func.count()).select_from(Geofence).where(Geofence.deleted_at.is_(None))
@@ -111,10 +95,7 @@ class LocationRepository(BaseRepository[Location]):
         return items, total
 
     async def get_gis_audit_history(
-        self,
-        db: AsyncSession,
-        skip: int = 0,
-        limit: int = 100
+        self, db: AsyncSession, skip: int = 0, limit: int = 100
     ) -> Tuple[Sequence[GISAuditLog], int]:
         query = select(GISAuditLog)
         count_query = select(func.count()).select_from(GISAuditLog)

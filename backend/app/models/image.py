@@ -18,48 +18,39 @@ class Image(BaseModel):
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     md5_hash: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    upload_source: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # dataset, manual, drone, cctv, satellite
-    status: Mapped[str] = mapped_column(String(50), default="active", nullable=False, index=True)  # active, processing, archived, deleted
+    upload_source: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # dataset, manual, drone, cctv, satellite
+    status: Mapped[str] = mapped_column(
+        String(50), default="active", nullable=False, index=True
+    )  # active, processing, archived, deleted
 
     # Relationships
     owner: Mapped["User"] = relationship("User", backref="uploaded_images")
     metadata_relation: Mapped["ImageMetadata | None"] = relationship(
-        "ImageMetadata",
-        back_populates="image",
-        cascade="all, delete-orphan",
-        uselist=False
+        "ImageMetadata", back_populates="image", cascade="all, delete-orphan", uselist=False
     )
-    versions: Mapped[list["ImageVersion"]] = relationship(
-        "ImageVersion",
-        back_populates="image",
-        cascade="all, delete-orphan"
-    )
+    versions: Mapped[list["ImageVersion"]] = relationship("ImageVersion", back_populates="image", cascade="all, delete-orphan")
     processing_logs: Mapped[list["ImageProcessingLog"]] = relationship(
-        "ImageProcessingLog",
-        back_populates="image",
-        cascade="all, delete-orphan"
+        "ImageProcessingLog", back_populates="image", cascade="all, delete-orphan"
     )
     storage_locations: Mapped[list["ImageStorageLocation"]] = relationship(
-        "ImageStorageLocation",
-        back_populates="image",
-        cascade="all, delete-orphan"
+        "ImageStorageLocation", back_populates="image", cascade="all, delete-orphan"
     )
     access_logs: Mapped[list["ImageAccessLog"]] = relationship(
-        "ImageAccessLog",
-        back_populates="image",
-        cascade="all, delete-orphan"
+        "ImageAccessLog", back_populates="image", cascade="all, delete-orphan"
     )
     audit_logs: Mapped[list["ImageAuditLog"]] = relationship(
-        "ImageAuditLog",
-        back_populates="image",
-        cascade="all, delete-orphan"
+        "ImageAuditLog", back_populates="image", cascade="all, delete-orphan"
     )
 
 
 class ImageMetadata(BaseModel):
     __tablename__ = "image_metadata"
 
-    image_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("images.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("images.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
+    )
     width: Mapped[int] = mapped_column(Integer, nullable=False)
     height: Mapped[int] = mapped_column(Integer, nullable=False)
     exif_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -79,7 +70,9 @@ class ImageVersion(BaseModel):
 
     image_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("images.id", ondelete="CASCADE"), nullable=False, index=True)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)  # 1 for original, 2, 3, etc.
-    purpose: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # original, resized, normalized, thumbnail, augmented
+    purpose: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # original, resized, normalized, thumbnail, augmented
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     md5_hash: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -87,9 +80,7 @@ class ImageVersion(BaseModel):
     # Relationships
     image: Mapped[Image] = relationship("Image", back_populates="versions")
     storage_locations: Mapped[list["ImageStorageLocation"]] = relationship(
-        "ImageStorageLocation",
-        back_populates="image_version",
-        cascade="all, delete-orphan"
+        "ImageStorageLocation", back_populates="image_version", cascade="all, delete-orphan"
     )
 
 
@@ -112,7 +103,9 @@ class ImageStorageLocation(BaseModel):
     __tablename__ = "image_storage_locations"
 
     image_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("images.id", ondelete="CASCADE"), nullable=False, index=True)
-    image_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("image_versions.id", ondelete="SET NULL"), nullable=True, index=True)
+    image_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("image_versions.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     provider: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # local, s3, gcs, azure
     bucket_or_container: Mapped[str] = mapped_column(String(100), nullable=False)
     file_key_or_path: Mapped[str] = mapped_column(String(512), nullable=False)
@@ -127,7 +120,9 @@ class ImageAccessLog(BaseModel):
     __tablename__ = "image_access_logs"
 
     image_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("images.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     access_type: Mapped[str] = mapped_column(String(50), nullable=False)  # read, download, delete
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
@@ -142,8 +137,12 @@ class ImageAuditLog(BaseModel):
     __tablename__ = "image_audit_logs"
 
     image_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("images.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)  # create, update_metadata, archive, soft_delete, permanent_delete
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    action: Mapped[str] = mapped_column(
+        String(100), nullable=False, index=True
+    )  # create, update_metadata, archive, soft_delete, permanent_delete
     changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Relationships

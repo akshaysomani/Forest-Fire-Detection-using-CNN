@@ -13,7 +13,7 @@ class TrainingLogger:
             "level": level.upper(),
             "run_id": str(run_id),
             "message": message,
-            "logger": "training_pipeline"
+            "logger": "training_pipeline",
         }
         if extra:
             log_payload.update(extra)

@@ -17,7 +17,7 @@ class IncidentObservabilityService:
         dashboard payload.
         """
         logger.info("Compiling dashboard observability metrics for incidents...")
-        
+
         system_kpis = await response_tracking_service.get_system_kpis(db)
         ratios = await incident_metrics.get_active_ratios(db)
         timeline = await incident_metrics.get_timeline_metrics(db, days=7)
@@ -29,7 +29,7 @@ class IncidentObservabilityService:
             "active_ratios": ratios,
             "timeline_trends": timeline,
             "specialty_performance": specialties,
-            "in_memory_counters": in_memory
+            "in_memory_counters": in_memory,
         }
 
 

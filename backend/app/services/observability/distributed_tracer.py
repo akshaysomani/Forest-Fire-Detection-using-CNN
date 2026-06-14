@@ -4,6 +4,7 @@ Distributed Tracer - Implements span lifecycle controls (start_span, end_span).
 Creates trace span entries with precise timing, parent linking, and service
 attribution. Spans are buffered in the TraceCollector for batch persistence.
 """
+
 import logging
 import time
 from datetime import datetime, timezone
@@ -117,9 +118,7 @@ class DistributedTracer:
         span.finish(status=status, error_message=error_message)
         pop_span()
 
-        logger.debug(
-            f"Ended span '{span.name}' (duration={span.duration_ms}ms, status={status})"
-        )
+        logger.debug(f"Ended span '{span.name}' (duration={span.duration_ms}ms, status={status})")
         return span.to_dict()
 
 

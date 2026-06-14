@@ -6,10 +6,7 @@ from app.models.dataset import DatasetLabel
 
 class MetadataValidator:
     @staticmethod
-    async def validate_label_consistency(
-        db: AsyncSession,
-        labels: List[str]
-    ) -> Tuple[bool, str | None]:
+    async def validate_label_consistency(db: AsyncSession, labels: List[str]) -> Tuple[bool, str | None]:
         """
         Validate that the provided labels are supported by the system.
         Returns (is_consistent, error_message)
@@ -29,15 +26,13 @@ class MetadataValidator:
         return True, None
 
     @staticmethod
-    def validate_metadata_structure(
-        metadata: Dict[str, Any]
-    ) -> Tuple[bool, str | None]:
+    def validate_metadata_structure(metadata: Dict[str, Any]) -> Tuple[bool, str | None]:
         """
         Validate dataset metadata schema structure.
         """
         if not isinstance(metadata, dict):
             return False, "Metadata must be a JSON object (dictionary)."
-        
+
         # Check standard properties if specified, e.g. class distributions, description splits, etc.
         if "class_distribution" in metadata:
             dist = metadata["class_distribution"]

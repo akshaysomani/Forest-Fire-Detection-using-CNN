@@ -18,7 +18,7 @@ class RegionService:
         type_: str,
         boundary: dict,
         parent_id: Optional[uuid.UUID] = None,
-        user_id: Optional[uuid.UUID] = None
+        user_id: Optional[uuid.UUID] = None,
     ) -> Region:
         """Create a new administrative Region (e.g. Division, Range)."""
         logger.info(f"Creating region: {name} (Code: {code}, Type: {type_})")
@@ -33,25 +33,13 @@ class RegionService:
         if not boundary or "coordinates" not in boundary:
             raise ValidationException("Region boundary must contain a valid GeoJSON coordinates dictionary.")
 
-        region = Region(
-            name=name,
-            code=code,
-            type=type_,
-            parent_id=parent_id,
-            boundary=boundary
-        )
+        region = Region(name=name, code=code, type=type_, parent_id=parent_id, boundary=boundary)
         db.add(region)
         await db.flush()
 
         # Audit log
         audit = GISAuditLog(
-            user_id=user_id,
-            action="region_created",
-            details={
-                "region_id": str(region.id),
-                "name": name,
-                "code": code
-            }
+            user_id=user_id, action="region_created", details={"region_id": str(region.id), "name": name, "code": code}
         )
         db.add(audit)
         await db.flush()
@@ -74,7 +62,7 @@ class RegionService:
     async def seed_default_regions(self, db: AsyncSession) -> None:
         """Seeds default forest administrative regions if not already present."""
         logger.info("Checking default regions seeding...")
-        
+
         default_regions = [
             {
                 "name": "Yosemite Forest Division",
@@ -82,10 +70,8 @@ class RegionService:
                 "type": "Forest Division",
                 "boundary": {
                     "type": "Polygon",
-                    "coordinates": [
-                        [[37.0, -120.0], [38.0, -120.0], [38.0, -119.0], [37.0, -119.0], [37.0, -120.0]]
-                    ]
-                }
+                    "coordinates": [[[37.0, -120.0], [38.0, -120.0], [38.0, -119.0], [37.0, -119.0], [37.0, -120.0]]],
+                },
             },
             {
                 "name": "Northwest Forestry Range",
@@ -93,11 +79,9 @@ class RegionService:
                 "type": "Forest Range",
                 "boundary": {
                     "type": "Polygon",
-                    "coordinates": [
-                        [[40.0, -125.0], [42.0, -125.0], [42.0, -120.0], [40.0, -120.0], [40.0, -125.0]]
-                    ]
-                }
-            }
+                    "coordinates": [[[40.0, -125.0], [42.0, -125.0], [42.0, -120.0], [40.0, -120.0], [40.0, -125.0]]],
+                },
+            },
         ]
 
         for r in default_regions:
@@ -106,14 +90,9 @@ class RegionService:
             res = await db.execute(check_q)
             if not res.scalar_one_or_none():
                 logger.info(f"Seeding default region: {r['name']}")
-                region = Region(
-                    name=r["name"],
-                    code=r["code"],
-                    type=r["type"],
-                    boundary=r["boundary"]
-                )
+                region = Region(name=r["name"], code=r["code"], type=r["type"], boundary=r["boundary"])
                 db.add(region)
-        
+
         await db.flush()
 
 

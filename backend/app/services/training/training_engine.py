@@ -43,7 +43,7 @@ class TrainingEngine:
         version_str: str | None,
         model_name: str,
         hyperparams_dict: Dict[str, Any] | None,
-        user_id: uuid.UUID
+        user_id: uuid.UUID,
     ) -> uuid.UUID:
         """
         Trigger training in a background thread and register it in the run manager.
@@ -52,7 +52,7 @@ class TrainingEngine:
         thread = threading.Thread(
             target=self._run_training_thread_entrypoint,
             args=(run_id, dataset_id, version_str, model_name, hyperparams_dict, user_id, cancel_event),
-            daemon=True
+            daemon=True,
         )
         run_manager.register_run(str(run_id), thread, cancel_event)
         thread.start()
@@ -66,7 +66,7 @@ class TrainingEngine:
         model_name: str,
         hyperparams_dict: Dict[str, Any] | None,
         user_id: uuid.UUID,
-        cancel_event: threading.Event
+        cancel_event: threading.Event,
     ) -> None:
         """Background thread entrypoint setting up an async event loop for the database and storage providers."""
         loop = asyncio.new_event_loop()
@@ -89,7 +89,7 @@ class TrainingEngine:
         model_name: str,
         hyperparams_dict: Dict[str, Any] | None,
         user_id: uuid.UUID,
-        cancel_event: threading.Event
+        cancel_event: threading.Event,
     ) -> None:
         """Internal asynchronous core training implementation."""
         # 1. Parse and validate hyperparameters
@@ -110,10 +110,7 @@ class TrainingEngine:
             try:
                 # 3. Load and Split Datasets
                 prep_result = await dataset_preparation.prepare_dataset(
-                    db=db,
-                    dataset_id=dataset_id,
-                    version_str=version_str,
-                    seed=hparams.random_seed
+                    db=db, dataset_id=dataset_id, version_str=version_str, seed=hparams.random_seed
                 )
 
                 train_files = prep_result["train_files"]
@@ -128,44 +125,35 @@ class TrainingEngine:
 
                 # 4. Construct PyTorch DataLoaders
                 # Training loader receives augmentation transforms
-                train_transform = augmentation_manager.get_transforms(policy="default", custom_config={
-                    "mean": stats["channel_mean"],
-                    "std": stats["channel_std"]
-                })
+                train_transform = augmentation_manager.get_transforms(
+                    policy="default", custom_config={"mean": stats["channel_mean"], "std": stats["channel_std"]}
+                )
                 # Validation and testing loaders receive basic resize and normalization transforms (policy="none")
-                val_transform = augmentation_manager.get_transforms(policy="none", custom_config={
-                    "mean": stats["channel_mean"],
-                    "std": stats["channel_std"]
-                })
+                val_transform = augmentation_manager.get_transforms(
+                    policy="none", custom_config={"mean": stats["channel_mean"], "std": stats["channel_std"]}
+                )
 
                 train_loader = get_data_loader(
                     files=train_files,
                     batch_size=hparams.batch_size,
                     transform=train_transform,
                     label_map=label_map,
-                    shuffle=True
+                    shuffle=True,
                 )
                 val_loader = get_data_loader(
-                    files=val_files,
-                    batch_size=hparams.batch_size,
-                    transform=val_transform,
-                    label_map=label_map,
-                    shuffle=False
+                    files=val_files, batch_size=hparams.batch_size, transform=val_transform, label_map=label_map, shuffle=False
                 )
                 test_loader = get_data_loader(
                     files=test_files,
                     batch_size=hparams.batch_size,
                     transform=val_transform,
                     label_map=label_map,
-                    shuffle=False
+                    shuffle=False,
                 )
 
                 # 5. Build Model Architecture
                 model = model_factory.create_model(
-                    model_name=model_name,
-                    num_classes=2,
-                    pretrained=True,
-                    dropout=hparams.dropout
+                    model_name=model_name, num_classes=2, pretrained=True, dropout=hparams.dropout
                 )
 
                 # Configure Execution device (GPU if available)
@@ -175,11 +163,17 @@ class TrainingEngine:
                 # 6. Configure Optimizer and Criterion
                 criterion = nn.CrossEntropyLoss()
                 if hparams.optimizer == "adam":
-                    optimizer = torch.optim.Adam(model.parameters(), lr=hparams.learning_rate, weight_decay=hparams.weight_decay)
+                    optimizer = torch.optim.Adam(
+                        model.parameters(), lr=hparams.learning_rate, weight_decay=hparams.weight_decay
+                    )
                 elif hparams.optimizer == "adamw":
-                    optimizer = torch.optim.AdamW(model.parameters(), lr=hparams.learning_rate, weight_decay=hparams.weight_decay)
+                    optimizer = torch.optim.AdamW(
+                        model.parameters(), lr=hparams.learning_rate, weight_decay=hparams.weight_decay
+                    )
                 else:
-                    optimizer = torch.optim.SGD(model.parameters(), lr=hparams.learning_rate, momentum=0.9, weight_decay=hparams.weight_decay)
+                    optimizer = torch.optim.SGD(
+                        model.parameters(), lr=hparams.learning_rate, momentum=0.9, weight_decay=hparams.weight_decay
+                    )
 
                 # Standard CosineAnnealing Scheduler
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=hparams.epochs)
@@ -190,7 +184,7 @@ class TrainingEngine:
                     criterion=criterion,
                     device=device,
                     scheduler=scheduler,
-                    cancel_event=cancel_event
+                    cancel_event=cancel_event,
                 )
 
                 # Early stopping configuration parameters
@@ -219,7 +213,7 @@ class TrainingEngine:
                         train_acc=train_acc,
                         val_loss=val_loss,
                         val_acc=val_acc,
-                        lr=lr
+                        lr=lr,
                     )
                     metrics_history.append(epoch_stats)
 
@@ -247,7 +241,7 @@ class TrainingEngine:
                         val_loss=val_loss,
                         val_accuracy=val_acc,
                         hyperparameters=hyperparameter_manager.serialize(hparams),
-                        is_best=is_best
+                        is_best=is_best,
                     )
 
                     # Register checkpoint in the database
@@ -257,7 +251,7 @@ class TrainingEngine:
                         val_loss=val_loss,
                         val_accuracy=val_acc,
                         checkpoint_path=checkpoint_path,
-                        is_best=is_best
+                        is_best=is_best,
                     )
                     db.add(checkpoint_db)
                     await db.commit()
@@ -266,7 +260,10 @@ class TrainingEngine:
                     if patience_counter >= patience:
                         # Log early stopping to stdout
                         import sys
-                        sys.stdout.write(f"Early stopping triggered at epoch {epoch}. Validation loss has not improved for {patience} epochs.\n")
+
+                        sys.stdout.write(
+                            f"Early stopping triggered at epoch {epoch}. Validation loss has not improved for {patience} epochs.\n"
+                        )
                         break
 
                 # 8. Post-Training Phase (Evaluation and Artifact Packaging)
@@ -279,11 +276,7 @@ class TrainingEngine:
                 else:
                     # Load best checkpoint weights for testing evaluation
                     best_checkpoint_path = f"runs/{str(run_id)}/checkpoints/best_model.pth"
-                    await checkpoint_manager.load_checkpoint(
-                        storage_path=best_checkpoint_path,
-                        model=model,
-                        device=device
-                    )
+                    await checkpoint_manager.load_checkpoint(storage_path=best_checkpoint_path, model=model, device=device)
 
                     # Evaluate on the unseen test set
                     test_metrics = evaluation_service.evaluate_model(model, test_loader, device)
@@ -293,7 +286,7 @@ class TrainingEngine:
                         run_id=str(run_id),
                         metrics=test_metrics,
                         model_name=model_name,
-                        hyperparameters=hyperparameter_manager.serialize(hparams)
+                        hyperparameters=hyperparameter_manager.serialize(hparams),
                     )
 
                     # Save complete metadata config, history, and test metrics
@@ -301,7 +294,7 @@ class TrainingEngine:
                         run_id=str(run_id),
                         hyperparameters=hyperparameter_manager.serialize(hparams),
                         metrics_history=metrics_history,
-                        evaluation_summary=test_metrics
+                        evaluation_summary=test_metrics,
                     )
 
                     run.status = "completed"
@@ -312,8 +305,10 @@ class TrainingEngine:
             except Exception as e:
                 # Log traceback and mark run as failed
                 import traceback
+
                 error_trace = traceback.format_exc()
                 import sys
+
                 sys.stderr.write(f"Background training run {run_id} failed with error: {str(e)}\nTraceback:\n{error_trace}\n")
 
                 run = await db.get(TrainingRun, run_id)

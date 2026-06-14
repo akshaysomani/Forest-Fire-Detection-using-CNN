@@ -19,13 +19,13 @@ class PredictionTransformer:
         """
         # 1. Convert to tensor: Scales channels to [0.0, 1.0], swaps channels from HWC to CHW
         tensor = TF.to_tensor(img)
-        
+
         # 2. Normalize using ImageNet statistics
         tensor = TF.normalize(tensor, mean=PredictionTransformer.IMAGENET_MEAN, std=PredictionTransformer.IMAGENET_STD)
-        
+
         # 3. Add batch dimension: shape (3, H, W) -> (1, 3, H, W)
         tensor = tensor.unsqueeze(0)
-        
+
         return tensor
 
 

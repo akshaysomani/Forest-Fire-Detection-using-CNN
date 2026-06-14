@@ -16,7 +16,7 @@ class ReviewManager:
         model_version_id: uuid.UUID,
         requested_by: uuid.UUID,
         target_stage: str,
-        request_notes: Optional[str] = None
+        request_notes: Optional[str] = None,
     ) -> ModelApproval:
         """
         Creates a new model approval request for stage promotion.
@@ -36,9 +36,7 @@ class ReviewManager:
         # Run automated governance policy checks
         is_compliant, failures = model_governance_engine.evaluate_governance_policies(version)
         if not is_compliant:
-            raise ValidationException(
-                f"Model version failed automated governance check. Issues: {', '.join(failures)}"
-            )
+            raise ValidationException(f"Model version failed automated governance check. Issues: {', '.join(failures)}")
 
         # Deactivate any active pending approvals for this version & stage
         deact_query = select(ModelApproval).where(
@@ -46,7 +44,7 @@ class ReviewManager:
                 ModelApproval.model_version_id == model_version_id,
                 ModelApproval.target_stage == target_stage,
                 ModelApproval.status == "pending",
-                ModelApproval.deleted_at.is_(None)
+                ModelApproval.deleted_at.is_(None),
             )
         )
         res_deact = await db.execute(deact_query)
@@ -62,7 +60,7 @@ class ReviewManager:
             model_version_id=model_version_id,
             requested_by=requested_by,
             target_stage=target_stage,
-            request_notes=request_notes
+            request_notes=request_notes,
         )
 
         # Transition model version to 'Validation' status if it was in 'Draft'
@@ -72,7 +70,7 @@ class ReviewManager:
                 model_version_id=model_version_id,
                 target_state="Validation",
                 user_id=requested_by,
-                notes="Automatically moved to Validation on approval request."
+                notes="Automatically moved to Validation on approval request.",
             )
 
         # Log audit action
@@ -81,22 +79,14 @@ class ReviewManager:
             action="request_approval",
             performed_by=requested_by,
             model_version_id=model_version_id,
-            details={
-                "approval_id": str(approval.id),
-                "target_stage": target_stage,
-                "notes": request_notes
-            }
+            details={"approval_id": str(approval.id), "target_stage": target_stage, "notes": request_notes},
         )
 
         return approval
 
     @staticmethod
     async def submit_review(
-        db: AsyncSession,
-        approval_id: uuid.UUID,
-        reviewed_by: uuid.UUID,
-        status: str,
-        review_notes: Optional[str] = None
+        db: AsyncSession, approval_id: uuid.UUID, reviewed_by: uuid.UUID, status: str, review_notes: Optional[str] = None
     ) -> ModelApproval:
         """
         Completes the review workflow for a model version.
@@ -114,6 +104,7 @@ class ReviewManager:
             raise ValidationException("Review outcome must be 'approved' or 'rejected'.")
 
         from datetime import datetime
+
         approval.status = status_norm
         approval.reviewed_by = reviewed_by
         approval.reviewed_at = datetime.utcnow()
@@ -132,7 +123,7 @@ class ReviewManager:
                 model_version_id=approval.model_version_id,
                 target_state=target_state,
                 user_id=reviewed_by,
-                notes=f"Promoted to {target_state} via approved review workflow: {review_notes or ''}"
+                notes=f"Promoted to {target_state} via approved review workflow: {review_notes or ''}",
             )
         else:
             # If rejected, transition model version back to Draft
@@ -141,7 +132,7 @@ class ReviewManager:
                 model_version_id=approval.model_version_id,
                 target_state="Draft",
                 user_id=reviewed_by,
-                notes=f"Reverted to Draft due to review rejection: {review_notes or ''}"
+                notes=f"Reverted to Draft due to review rejection: {review_notes or ''}",
             )
 
         # Log audit action
@@ -150,11 +141,7 @@ class ReviewManager:
             action="submit_review",
             performed_by=reviewed_by,
             model_version_id=approval.model_version_id,
-            details={
-                "approval_id": str(approval.id),
-                "outcome": status_norm,
-                "notes": review_notes
-            }
+            details={"approval_id": str(approval.id), "outcome": status_norm, "notes": review_notes},
         )
 
         return approval
@@ -163,6 +150,7 @@ class ReviewManager:
 # Inline datetime helper
 def datetime_now():
     from datetime import datetime
+
     return datetime.utcnow()
 
 

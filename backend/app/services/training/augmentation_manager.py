@@ -23,7 +23,7 @@ class AugmentationManager:
                 "rotation_degrees": 0,
                 "brightness": 0.0,
                 "contrast": 0.0,
-                "noise_std": 0.0
+                "noise_std": 0.0,
             }
         elif policy == "light":
             config = {
@@ -33,7 +33,7 @@ class AugmentationManager:
                 "rotation_degrees": 10,
                 "brightness": 0.05,
                 "contrast": 0.05,
-                "noise_std": 0.0
+                "noise_std": 0.0,
             }
         elif policy == "heavy":
             config = {
@@ -43,7 +43,7 @@ class AugmentationManager:
                 "rotation_degrees": 30,
                 "brightness": 0.2,
                 "contrast": 0.2,
-                "noise_std": 0.05
+                "noise_std": 0.05,
             }
         else:  # default
             config = {
@@ -53,7 +53,7 @@ class AugmentationManager:
                 "rotation_degrees": 15,
                 "brightness": 0.1,
                 "contrast": 0.1,
-                "noise_std": 0.0
+                "noise_std": 0.0,
             }
 
         # Apply overrides

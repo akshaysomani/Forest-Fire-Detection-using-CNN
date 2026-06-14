@@ -4,6 +4,7 @@ Dashboard Adapter - Transforms observability data into visualization-ready forma
 Converts raw metric entries, log statistics, trace summaries, and SLO
 compliance data into structured JSON suitable for frontend charting.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List
@@ -55,9 +56,7 @@ class DashboardAdapter:
         return {
             "chart_type": "distribution",
             "labels": list(distribution.keys()),
-            "datasets": [
-                {"label": "Log Level Distribution", "data": list(distribution.values())}
-            ],
+            "datasets": [{"label": "Log Level Distribution", "data": list(distribution.values())}],
             "total": log_stats.get("total_logs", 0),
         }
 
@@ -71,8 +70,13 @@ class DashboardAdapter:
         return {
             "chart_type": "table",
             "columns": [
-                "endpoint", "method", "avg_latency_ms", "p95_latency_ms",
-                "error_rate", "throughput_rpm", "total_requests",
+                "endpoint",
+                "method",
+                "avg_latency_ms",
+                "p95_latency_ms",
+                "error_rate",
+                "throughput_rpm",
+                "total_requests",
             ],
             "rows": summaries,
         }
@@ -89,13 +93,15 @@ class DashboardAdapter:
         indicators = []
 
         for sli_name, evaluation in evaluations.items():
-            indicators.append({
-                "name": sli_name,
-                "target": evaluation.get("target_percentage", 0),
-                "actual": evaluation.get("actual_percentage", 0),
-                "compliant": evaluation.get("compliant", False),
-                "error_budget_remaining": evaluation.get("error_budget_remaining", 0),
-            })
+            indicators.append(
+                {
+                    "name": sli_name,
+                    "target": evaluation.get("target_percentage", 0),
+                    "actual": evaluation.get("actual_percentage", 0),
+                    "compliant": evaluation.get("compliant", False),
+                    "error_budget_remaining": evaluation.get("error_budget_remaining", 0),
+                }
+            )
 
         return {
             "chart_type": "gauge",

@@ -3,16 +3,7 @@ from app.core.exceptions import ValidationException
 
 
 class StateManager:
-    STATES = {
-        "Draft",
-        "Training",
-        "Validation",
-        "Approved",
-        "Staging",
-        "Production",
-        "Deprecated",
-        "Archived"
-    }
+    STATES = {"Draft", "Training", "Validation", "Approved", "Staging", "Production", "Deprecated", "Archived"}
 
     # Map from state to valid destination states
     VALID_TRANSITIONS: Dict[str, Set[str]] = {
@@ -23,7 +14,7 @@ class StateManager:
         "Staging": {"Production", "Approved", "Deprecated", "Archived"},
         "Production": {"Deprecated", "Archived"},
         "Deprecated": {"Archived"},
-        "Archived": set()  # Terminal state
+        "Archived": set(),  # Terminal state
     }
 
     @classmethod

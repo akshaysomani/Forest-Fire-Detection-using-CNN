@@ -11,11 +11,7 @@ logger = logging.getLogger("gis.fire_location_service")
 
 class FireLocationService:
     async def map_alert_to_location(
-        self,
-        db: AsyncSession,
-        alert_id: uuid.UUID,
-        latitude: float,
-        longitude: float
+        self, db: AsyncSession, alert_id: uuid.UUID, latitude: float, longitude: float
     ) -> AlertLocation:
         """
         Links an alert to a geocoded reference point.
@@ -26,30 +22,20 @@ class FireLocationService:
 
         # Check if already linked
         check_q = select(AlertLocation).where(
-            and_(
-                AlertLocation.alert_id == alert_id,
-                AlertLocation.location_id == location.id
-            )
+            and_(AlertLocation.alert_id == alert_id, AlertLocation.location_id == location.id)
         )
         res = await db.execute(check_q)
         alert_link = res.scalar_one_or_none()
 
         if not alert_link:
-            alert_link = AlertLocation(
-                alert_id=alert_id,
-                location_id=location.id
-            )
+            alert_link = AlertLocation(alert_id=alert_id, location_id=location.id)
             db.add(alert_link)
             await db.flush()
 
         return alert_link
 
     async def map_incident_to_location(
-        self,
-        db: AsyncSession,
-        incident_id: uuid.UUID,
-        latitude: float,
-        longitude: float
+        self, db: AsyncSession, incident_id: uuid.UUID, latitude: float, longitude: float
     ) -> IncidentLocation:
         """
         Links an incident dispatch to a location.
@@ -59,30 +45,20 @@ class FireLocationService:
         location = await self._find_or_create_proximity_location(db, latitude, longitude, f"Incident Site: {incident_id}")
 
         check_q = select(IncidentLocation).where(
-            and_(
-                IncidentLocation.incident_id == incident_id,
-                IncidentLocation.location_id == location.id
-            )
+            and_(IncidentLocation.incident_id == incident_id, IncidentLocation.location_id == location.id)
         )
         res = await db.execute(check_q)
         incident_link = res.scalar_one_or_none()
 
         if not incident_link:
-            incident_link = IncidentLocation(
-                incident_id=incident_id,
-                location_id=location.id
-            )
+            incident_link = IncidentLocation(incident_id=incident_id, location_id=location.id)
             db.add(incident_link)
             await db.flush()
 
         return incident_link
 
     async def _find_or_create_proximity_location(
-        self,
-        db: AsyncSession,
-        latitude: float,
-        longitude: float,
-        default_name: str
+        self, db: AsyncSession, latitude: float, longitude: float, default_name: str
     ) -> Location:
         """Helper to find an existing location within 50 meters, or create a new one."""
         query = select(Location).where(Location.deleted_at.is_(None))
@@ -96,12 +72,7 @@ class FireLocationService:
                 return loc
 
         # Create new Location
-        return await location_service.create_location(
-            db=db,
-            name=default_name,
-            latitude=latitude,
-            longitude=longitude
-        )
+        return await location_service.create_location(db=db, name=default_name, latitude=latitude, longitude=longitude)
 
 
 fire_location_service = FireLocationService()

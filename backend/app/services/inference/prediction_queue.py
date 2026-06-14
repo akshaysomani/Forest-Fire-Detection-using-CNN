@@ -24,7 +24,7 @@ class BatchJobState:
             "success_count": self.success_count,
             "failed_count": self.failed_count,
             "results": self.results,
-            "errors": self.errors
+            "errors": self.errors,
         }
 
 
@@ -34,11 +34,7 @@ class PredictionQueue:
         self._jobs: Dict[uuid.UUID, BatchJobState] = {}
         logger.info("Initialized async Batch PredictionQueue.")
 
-    async def enqueue_job(
-        self,
-        user_id: uuid.UUID,
-        images: List[Dict[str, Any]]
-    ) -> uuid.UUID:
+    async def enqueue_job(self, user_id: uuid.UUID, images: List[Dict[str, Any]]) -> uuid.UUID:
         """
         Register a new batch prediction job and queue its items.
         Each image dict should contain: 'filename', 'file_bytes', and optional 'latitude', 'longitude'.
@@ -57,7 +53,7 @@ class PredictionQueue:
                 "file_bytes": img["file_bytes"],
                 "latitude": img.get("latitude"),
                 "longitude": img.get("longitude"),
-                "image_path": img.get("image_path")
+                "image_path": img.get("image_path"),
             }
             await self._queue.put(task_item)
 
@@ -101,7 +97,9 @@ class PredictionQueue:
         processed = job.success_count + job.failed_count
         if processed >= job.total_count:
             job.status = "completed"
-            logger.info(f"Batch Job '{job.job_id}' has completed processing. Success={job.success_count}, Failures={job.failed_count}")
+            logger.info(
+                f"Batch Job '{job.job_id}' has completed processing. Success={job.success_count}, Failures={job.failed_count}"
+            )
 
 
 prediction_queue = PredictionQueue()

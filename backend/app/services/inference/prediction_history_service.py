@@ -20,7 +20,7 @@ class PredictionHistoryService:
         prediction_label: Optional[str] = None,
         min_confidence: Optional[float] = None,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
     ) -> Tuple[Sequence[Detection], int]:
         """
         Query prediction history from the database using filters.
@@ -34,7 +34,7 @@ class PredictionHistoryService:
             prediction_label=prediction_label,
             min_confidence=min_confidence,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
         )
 
     @staticmethod

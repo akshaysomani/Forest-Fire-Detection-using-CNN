@@ -7,7 +7,7 @@ from app.core.exceptions import (
     EntityNotFoundException,
     ValidationException,
     InvalidCredentialsException,
-    AccountLockedException
+    AccountLockedException,
 )
 from app.models.user import User
 from app.models.role import Role
@@ -52,6 +52,7 @@ class UserService:
         # Seed roles if they do not exist
         if not viewer_role:
             from app.services.permission_service import permission_service
+
             await permission_service.seed_roles_and_permissions(db)
             query = select(Role).where(Role.name == "Viewer")
             res = await db.execute(query)
@@ -63,7 +64,7 @@ class UserService:
             hashed_password=hashed_password,
             profile_image_url=user_in.get("profile_image_url"),
             is_active=True,
-            is_verified=False
+            is_verified=False,
         )
 
         if viewer_role:
@@ -84,7 +85,7 @@ class UserService:
             action="user.register",
             resource_type="user",
             resource_id=str(db_user.id),
-            details={"email": db_user.email, "username": db_user.username}
+            details={"email": db_user.email, "username": db_user.username},
         )
         db.add(audit)
 
@@ -92,12 +93,7 @@ class UserService:
         return db_user
 
     async def authenticate_user(
-        self,
-        db: AsyncSession,
-        identifier: str,
-        password: str,
-        ip_address: str | None = None,
-        user_agent: str | None = None
+        self, db: AsyncSession, identifier: str, password: str, ip_address: str | None = None, user_agent: str | None = None
     ) -> User:
         user = await user_repository.get_by_email_or_username(db, identifier)
         if not user:
@@ -105,9 +101,7 @@ class UserService:
 
         # Check account lockout status
         if user.locked_until and user.locked_until.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
-            raise AccountLockedException(
-                f"Account is locked. Please try again after {user.locked_until.isoformat()} UTC."
-            )
+            raise AccountLockedException(f"Account is locked. Please try again after {user.locked_until.isoformat()} UTC.")
 
         # Verify password
         if not password_service.verify_password(password, user.hashed_password):
@@ -128,7 +122,7 @@ class UserService:
                 user_agent=user_agent,
                 resource_type="user",
                 resource_id=str(user.id),
-                details={"reason": "incorrect_password", "failed_attempts_count": user.failed_login_attempts}
+                details={"reason": "incorrect_password", "failed_attempts_count": user.failed_login_attempts},
             )
             db.add(audit)
             await db.flush()
@@ -148,7 +142,7 @@ class UserService:
             ip_address=ip_address,
             user_agent=user_agent,
             resource_type="user",
-            resource_id=str(user.id)
+            resource_id=str(user.id),
         )
         db.add(audit)
         await db.flush()
@@ -169,12 +163,7 @@ class UserService:
         await session_service.revoke_all_sessions(db, user_id)
 
         # Audit password change
-        audit = AuditLog(
-            user_id=user.id,
-            action="user.password_change",
-            resource_type="user",
-            resource_id=str(user.id)
-        )
+        audit = AuditLog(user_id=user.id, action="user.password_change", resource_type="user", resource_id=str(user.id))
         db.add(audit)
         await db.flush()
 
@@ -190,10 +179,7 @@ class UserService:
         db.add(user)
 
         audit = AuditLog(
-            user_id=user.id,
-            action="user.password_reset_requested",
-            resource_type="user",
-            resource_id=str(user.id)
+            user_id=user.id, action="user.password_reset_requested", resource_type="user", resource_id=str(user.id)
         )
         db.add(audit)
         await db.flush()
@@ -227,10 +213,7 @@ class UserService:
         await session_service.revoke_all_sessions(db, user.id)
 
         audit = AuditLog(
-            user_id=user.id,
-            action="user.password_reset_executed",
-            resource_type="user",
-            resource_id=str(user.id)
+            user_id=user.id, action="user.password_reset_executed", resource_type="user", resource_id=str(user.id)
         )
         db.add(audit)
         await db.flush()
@@ -252,12 +235,7 @@ class UserService:
         user.email_verification_expires_at = None
         db.add(user)
 
-        audit = AuditLog(
-            user_id=user.id,
-            action="user.email_verified",
-            resource_type="user",
-            resource_id=str(user.id)
-        )
+        audit = AuditLog(user_id=user.id, action="user.email_verified", resource_type="user", resource_id=str(user.id))
         db.add(audit)
         await db.flush()
 
@@ -283,12 +261,7 @@ class UserService:
 
         db.add(user)
 
-        audit = AuditLog(
-            user_id=user.id,
-            action="user.profile_update",
-            resource_type="user",
-            resource_id=str(user.id)
-        )
+        audit = AuditLog(user_id=user.id, action="user.profile_update", resource_type="user", resource_id=str(user.id))
         db.add(audit)
         await db.flush()
         return user

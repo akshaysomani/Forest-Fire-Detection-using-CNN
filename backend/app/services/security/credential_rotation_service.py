@@ -28,12 +28,7 @@ class CredentialRotationService:
             db.add(secret)
 
             # Log success
-            log = SecretRotationLog(
-                secret_key=key,
-                rotated_at=now,
-                rotated_by_id=rotated_by_id,
-                status="SUCCESS"
-            )
+            log = SecretRotationLog(secret_key=key, rotated_at=now, rotated_by_id=rotated_by_id, status="SUCCESS")
             db.add(log)
 
             event = SecurityEvent(
@@ -41,7 +36,7 @@ class CredentialRotationService:
                 severity="HIGH",
                 description=f"Secret credentials for key '{key}' successfully rotated (Version: {secret.version})",
                 user_id=rotated_by_id,
-                details_json={"secret_key": key, "new_version": secret.version}
+                details_json={"secret_key": key, "new_version": secret.version},
             )
             db.add(event)
 
@@ -51,11 +46,7 @@ class CredentialRotationService:
         except Exception as e:
             # Log failure
             log = SecretRotationLog(
-                secret_key=key,
-                rotated_at=now,
-                rotated_by_id=rotated_by_id,
-                status="FAILURE",
-                error_message=str(e)
+                secret_key=key, rotated_at=now, rotated_by_id=rotated_by_id, status="FAILURE", error_message=str(e)
             )
             db.add(log)
 
@@ -64,7 +55,7 @@ class CredentialRotationService:
                 severity="CRITICAL",
                 description=f"Automated rotation for secret key '{key}' failed: {str(e)}",
                 user_id=rotated_by_id,
-                details_json={"secret_key": key, "error": str(e)}
+                details_json={"secret_key": key, "error": str(e)},
             )
             db.add(event)
             await db.flush()

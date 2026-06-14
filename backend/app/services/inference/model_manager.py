@@ -31,13 +31,14 @@ class ModelManager:
             "checkpoint_path": self._active_checkpoint_path,
             "run_id": self._active_run_id,
             "device": str(self._device),
-            "cached_count": len(self._cached_models)
+            "cached_count": len(self._cached_models),
         }
 
     def clear_cache(self) -> None:
         """Clear loaded PyTorch models cache to release memory."""
         self._cached_models.clear()
         import gc
+
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
@@ -58,14 +59,19 @@ class ModelManager:
         try:
             from sqlalchemy import and_, select
             from app.models.model_registry import ModelDeployment, ModelVersion, ModelArtifact, RegisteredModel
-            
-            deploy_query = select(ModelDeployment).where(
-                and_(
-                    ModelDeployment.environment == "production",
-                    ModelDeployment.status == "active",
-                    ModelDeployment.deleted_at.is_(None)
+
+            deploy_query = (
+                select(ModelDeployment)
+                .where(
+                    and_(
+                        ModelDeployment.environment == "production",
+                        ModelDeployment.status == "active",
+                        ModelDeployment.deleted_at.is_(None),
+                    )
                 )
-            ).order_by(ModelDeployment.deployed_at.desc()).limit(1)
+                .order_by(ModelDeployment.deployed_at.desc())
+                .limit(1)
+            )
             res_deploy = await db.execute(deploy_query)
             deploy = res_deploy.scalar_one_or_none()
             if deploy:
@@ -76,16 +82,20 @@ class ModelManager:
                 version = res_ver.scalar_one_or_none()
                 if version:
                     # Resolve weights artifact
-                    artifact_query = select(ModelArtifact).where(
-                        and_(
-                            ModelArtifact.model_version_id == version.id,
-                            ModelArtifact.artifact_type == "weights",
-                            ModelArtifact.deleted_at.is_(None)
+                    artifact_query = (
+                        select(ModelArtifact)
+                        .where(
+                            and_(
+                                ModelArtifact.model_version_id == version.id,
+                                ModelArtifact.artifact_type == "weights",
+                                ModelArtifact.deleted_at.is_(None),
+                            )
                         )
-                    ).limit(1)
+                        .limit(1)
+                    )
                     res_art = await db.execute(artifact_query)
                     art = res_art.scalar_one_or_none()
-                    
+
                     if art:
                         # Resolve parent model name
                         m_query = select(RegisteredModel).where(
@@ -93,12 +103,10 @@ class ModelManager:
                         )
                         res_m = await db.execute(m_query)
                         reg_model = res_m.scalar_one_or_none()
-                        
+
                         if reg_model:
                             model = await self.load_and_set_active_model(
-                                model_name=reg_model.name,
-                                checkpoint_path=art.uri,
-                                run_id=str(version.id)
+                                model_name=reg_model.name, checkpoint_path=art.uri, run_id=str(version.id)
                             )
                             # Set cached active parameters
                             self._active_model_name = reg_model.name
@@ -106,16 +114,14 @@ class ModelManager:
                             self._active_run_id = version.version
                             return model, reg_model.name, version.version
         except Exception as e:
-            logger.warning(f"Could not load active production deployment from model registry: {str(e)}. Falling back to training runs.")
+            logger.warning(
+                f"Could not load active production deployment from model registry: {str(e)}. Falling back to training runs."
+            )
 
         # Resolve latest completed run if no model is loaded
         try:
             run_id, model_name, checkpoint_path = await model_registry_adapter.get_latest_completed_run_checkpoint(db)
-            model = await self.load_and_set_active_model(
-                model_name=model_name,
-                checkpoint_path=checkpoint_path,
-                run_id=run_id
-            )
+            model = await self.load_and_set_active_model(model_name=model_name, checkpoint_path=checkpoint_path, run_id=run_id)
             return model, model_name, run_id
         except EntityNotFoundException as e:
             # Fallback to loading an un-pretrained default CustomCNN if no runs exist
@@ -128,18 +134,13 @@ class ModelManager:
                 model.to(self._device)
                 model.eval()
                 self._cached_models[fallback_key] = model
-            
+
             self._active_model_name = fallback_name
             self._active_checkpoint_path = fallback_key
             self._active_run_id = "0.0.0"
             return self._cached_models[fallback_key], fallback_name, "0.0.0"
 
-    async def load_and_set_active_model(
-        self,
-        model_name: str,
-        checkpoint_path: str,
-        run_id: str
-    ) -> nn.Module:
+    async def load_and_set_active_model(self, model_name: str, checkpoint_path: str, run_id: str) -> nn.Module:
         """
         Loads the specified model from checkpoint, updates cache, and sets it as the active model.
         This enables hot-swapping models dynamically.
@@ -153,17 +154,15 @@ class ModelManager:
 
         # Load fresh instance
         model = await model_loader.load_model_from_checkpoint(
-            model_name=model_name,
-            checkpoint_path=checkpoint_path,
-            device=self._device
+            model_name=model_name, checkpoint_path=checkpoint_path, device=self._device
         )
-        
+
         # Cache weights and update references
         self._cached_models[checkpoint_path] = model
         self._active_model_name = model_name
         self._active_checkpoint_path = checkpoint_path
         self._active_run_id = run_id
-        
+
         return model
 
 

@@ -34,17 +34,17 @@ class PerformanceTracker:
                     "completed_missions": 0,
                     "rejected_assignments": 0,
                     "ack_speeds_sum": 0.0,
-                    "ack_speeds_count": 0
+                    "ack_speeds_count": 0,
                 }
 
             specialties[spec]["total_teams"] += 1
-            
+
             # Get individual team stats
             stats = await response_tracking_service.get_team_performance(db, team.id)
             specialties[spec]["total_assignments"] += stats["total_assignments"]
             specialties[spec]["completed_missions"] += stats["completed_missions_count"]
             specialties[spec]["rejected_assignments"] += stats["assignments_by_status"].get("Rejected", 0)
-            
+
             avg_speed = stats["avg_acknowledgment_speed_seconds"]
             if avg_speed > 0:
                 specialties[spec]["ack_speeds_sum"] += avg_speed
@@ -56,14 +56,16 @@ class PerformanceTracker:
             if data["ack_speeds_count"] > 0:
                 avg_ack = data["ack_speeds_sum"] / data["ack_speeds_count"]
 
-            results.append({
-                "specialty": spec,
-                "total_teams": data["total_teams"],
-                "total_assignments": data["total_assignments"],
-                "completed_missions": data["completed_missions"],
-                "rejected_assignments": data["rejected_assignments"],
-                "avg_acknowledgment_speed_seconds": round(avg_ack, 2)
-            })
+            results.append(
+                {
+                    "specialty": spec,
+                    "total_teams": data["total_teams"],
+                    "total_assignments": data["total_assignments"],
+                    "completed_missions": data["completed_missions"],
+                    "rejected_assignments": data["rejected_assignments"],
+                    "avg_acknowledgment_speed_seconds": round(avg_ack, 2),
+                }
+            )
 
         return results
 

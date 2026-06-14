@@ -30,7 +30,7 @@ class AnalyticsMonitor:
             "total_reports_measured": len(self._report_execution_times),
             "average_report_generation_ms": round(avg_report_time, 2),
             "export_failures_count": self._export_failures,
-            "kpi_calculation_benchmarks_ms": self._kpi_calculation_times
+            "kpi_calculation_benchmarks_ms": self._kpi_calculation_times,
         }
 
 

@@ -12,7 +12,7 @@ class StatusManager:
         "In Progress": {"Escalated", "Resolved", "Closed"},
         "Escalated": {"In Progress", "Resolved", "Closed"},
         "Resolved": {"Closed"},
-        "Closed": set()  # Terminal state
+        "Closed": set(),  # Terminal state
     }
 
     @classmethod

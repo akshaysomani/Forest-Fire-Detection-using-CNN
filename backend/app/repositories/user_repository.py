@@ -40,9 +40,7 @@ class UserRepository(BaseRepository[User]):
     async def get_user_with_roles_and_permissions(self, db: AsyncSession, user_id: Any) -> User | None:
         query = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
         # Deeply load roles and permissions
-        query = query.options(
-            selectinload(User.roles).selectinload(Role.permissions)
-        )
+        query = query.options(selectinload(User.roles).selectinload(Role.permissions))
         result = await db.execute(query)
         return result.scalar_one_or_none()
 

@@ -13,10 +13,11 @@ class ActivityRepository:
         limit: int = 100,
         user_id: Optional[uuid.UUID] = None,
         action: Optional[str] = None,
-        resource_type: Optional[str] = None
+        resource_type: Optional[str] = None,
     ) -> Sequence[AuditLog]:
         """Fetch audit log items with optional filtering and pagination."""
         from sqlalchemy.orm import selectinload
+
         query = select(AuditLog).options(selectinload(AuditLog.user))
         if user_id:
             query = query.where(AuditLog.user_id == user_id)
@@ -24,10 +25,10 @@ class ActivityRepository:
             query = query.where(AuditLog.action == action)
         if resource_type:
             query = query.where(AuditLog.resource_type == resource_type)
-            
+
         # Order by newest first
         query = query.order_by(desc(AuditLog.created_at)).offset(skip).limit(limit)
-        
+
         result = await db.execute(query)
         return result.scalars().all()
 
@@ -36,7 +37,7 @@ class ActivityRepository:
         db: AsyncSession,
         user_id: Optional[uuid.UUID] = None,
         action: Optional[str] = None,
-        resource_type: Optional[str] = None
+        resource_type: Optional[str] = None,
     ) -> int:
         """Get total count of matching audit log items."""
         query = select(func.count(AuditLog.id))
@@ -46,7 +47,7 @@ class ActivityRepository:
             query = query.where(AuditLog.action == action)
         if resource_type:
             query = query.where(AuditLog.resource_type == resource_type)
-            
+
         result = await db.execute(query)
         return result.scalar_one()
 

@@ -7,13 +7,15 @@ from typing import Any
 
 class JSONFormatter(logging.Formatter):
     """Formats log records as structured JSON payloads."""
+
     def format(self, record):
         from datetime import timezone
+
         log_data = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
-            "logger": record.name
+            "logger": record.name,
         }
         # Inject custom structured activity attributes
         if hasattr(record, "activity_data"):
@@ -43,7 +45,7 @@ class ActivityLogger:
         resource_type: str = None,
         resource_id: str = None,
         ip_address: str = None,
-        details: dict = None
+        details: dict = None,
     ) -> None:
         """Write a structured JSON security audit record to the stdout console logs."""
         activity_data = {
@@ -53,11 +55,11 @@ class ActivityLogger:
             "resource_type": resource_type,
             "resource_id": resource_id,
             "ip_address": ip_address,
-            "details": details or {}
+            "details": details or {},
         }
         logger.info(
             f"Audit event: {action} executed on {resource_type or 'None'} {resource_id or 'None'}",
-            extra={"activity_data": activity_data}
+            extra={"activity_data": activity_data},
         )
 
 

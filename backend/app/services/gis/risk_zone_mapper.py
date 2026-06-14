@@ -18,11 +18,7 @@ class RiskZoneMapper:
         """
         # 1. Proximity check to active severe alerts
         query = select(Alert).where(
-            and_(
-                Alert.status == "active",
-                Alert.severity.in_(["Critical", "High"]),
-                Alert.deleted_at.is_(None)
-            )
+            and_(Alert.status == "active", Alert.severity.in_(["Critical", "High"]), Alert.deleted_at.is_(None))
         )
         res = await db.execute(query)
         alerts = res.scalars().all()
@@ -32,7 +28,7 @@ class RiskZoneMapper:
             loc_link_q = select(AlertLocation).where(AlertLocation.alert_id == alert.id)
             loc_link_res = await db.execute(loc_link_q)
             link = loc_link_res.scalar_one_or_none()
-            
+
             if link:
                 # Retrieve location
                 loc_q = select(Location).where(Location.id == link.location_id)

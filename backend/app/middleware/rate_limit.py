@@ -17,6 +17,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         import os
+
         if "PYTEST_CURRENT_TEST" in os.environ:
             return await call_next(request)
         ip = request.client.host if request.client else "unknown"
@@ -36,9 +37,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         "success": False,
                         "error": {
                             "code": "TOO_MANY_REQUESTS",
-                            "message": "Too many authentication attempts. Please try again later."
-                        }
-                    }
+                            "message": "Too many authentication attempts. Please try again later.",
+                        },
+                    },
                 )
             self.auth_history[ip].append(now)
 
@@ -48,11 +49,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
                     "success": False,
-                    "error": {
-                        "code": "TOO_MANY_REQUESTS",
-                        "message": "Rate limit exceeded. Please try again later."
-                    }
-                }
+                    "error": {"code": "TOO_MANY_REQUESTS", "message": "Rate limit exceeded. Please try again later."},
+                },
             )
 
         self.history[ip].append(now)

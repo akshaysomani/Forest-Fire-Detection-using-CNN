@@ -17,10 +17,7 @@ class DeploymentMonitor:
     @staticmethod
     async def get_deployments_by_status_count(db: AsyncSession, status: str) -> int:
         query = select(func.count(DeploymentJob.id)).where(
-            and_(
-                DeploymentJob.status == status.strip().lower(),
-                DeploymentJob.deleted_at.is_(None)
-            )
+            and_(DeploymentJob.status == status.strip().lower(), DeploymentJob.deleted_at.is_(None))
         )
         res = await db.execute(query)
         return res.scalar() or 0
@@ -28,10 +25,7 @@ class DeploymentMonitor:
     @staticmethod
     async def get_average_duration_seconds(db: AsyncSession) -> float:
         query = select(func.avg(DeploymentJob.duration_seconds)).where(
-            and_(
-                DeploymentJob.status == "succeeded",
-                DeploymentJob.deleted_at.is_(None)
-            )
+            and_(DeploymentJob.status == "succeeded", DeploymentJob.deleted_at.is_(None))
         )
         res = await db.execute(query)
         val = res.scalar()

@@ -9,18 +9,16 @@ logger = logging.getLogger("inference.preprocessor")
 
 class InferencePreprocessor:
     @staticmethod
-    async def preprocess_image(
-        file_bytes: bytes,
-        target_size: tuple[int, int] = (224, 224)
-    ) -> Image.Image:
+    async def preprocess_image(file_bytes: bytes, target_size: tuple[int, int] = (224, 224)) -> Image.Image:
         """
         Resize image, handle transparency channels (convert RGBA to RGB), and return PIL Image.
         Runs operations in threadpool to prevent blocking the event loop.
         """
+
         def _process():
             try:
                 img = Image.open(io.BytesIO(file_bytes))
-                
+
                 # Convert transparency to solid background (white) or just convert RGBA -> RGB
                 if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
                     # Create white background canvas

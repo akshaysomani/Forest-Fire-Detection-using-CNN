@@ -19,17 +19,14 @@ class ModelLoadException(BaseAPIException):
 class ModelLoader:
     @staticmethod
     async def load_model_from_checkpoint(
-        model_name: str,
-        checkpoint_path: str,
-        device: torch.device,
-        num_classes: int = 2
+        model_name: str, checkpoint_path: str, device: torch.device, num_classes: int = 2
     ) -> nn.Module:
         """
         Load a model checkpoint from storage and restore its state dictionary.
         Validates model name and weights shape prior to loading.
         """
         logger.info(f"Loading model '{model_name}' from checkpoint: {checkpoint_path} on device: {device}")
-        
+
         try:
             # 1. Instantiate the base model structure
             model = model_factory.create_model(model_name=model_name, num_classes=num_classes, pretrained=False)
@@ -42,10 +39,10 @@ class ModelLoader:
             # 2. Fetch checkpoint bytes from storage
             checkpoint_bytes = await storage_service.read_file(checkpoint_path)
             buffer = io.BytesIO(checkpoint_bytes)
-            
+
             # 3. Load checkpoint state
             checkpoint_data = torch.load(buffer, map_location=device)
-            
+
             # Support both raw state_dicts and wrapped checkpoint dictionary configurations
             if isinstance(checkpoint_data, dict) and "model_state_dict" in checkpoint_data:
                 state_dict = checkpoint_data["model_state_dict"]
@@ -53,17 +50,17 @@ class ModelLoader:
                 state_dict = checkpoint_data
             else:
                 raise ValueError("Checkpoint format is unrecognized (neither state_dict dict nor wrapped structure found).")
-            
+
             # 4. Validate state dict compatibility
             ModelLoader.validate_state_dict(model, state_dict)
-            
+
             # 5. Load weights
             model.load_state_dict(state_dict)
             model.eval()  # Enforce evaluation mode (disables dropout, batch norm updates)
-            
+
             logger.info(f"Successfully loaded and validated model '{model_name}' weights from checkpoint.")
             return model
-            
+
         except Exception as e:
             logger.error(f"Failed to load state dictionary into model '{model_name}' from path '{checkpoint_path}': {e}")
             raise ModelLoadException(f"Failed to restore checkpoint weights: {str(e)}")
@@ -75,16 +72,16 @@ class ModelLoader:
         and that their tensor shapes match precisely to prevent runtime shape mismatch crashes.
         """
         model_state = model.state_dict()
-        
+
         # Check missing or unexpected keys
         missing_keys = set(model_state.keys()) - set(state_dict.keys())
         unexpected_keys = set(state_dict.keys()) - set(model_state.keys())
-        
+
         if missing_keys:
             logger.warning(f"State dict missing keys: {missing_keys}")
         if unexpected_keys:
             logger.warning(f"State dict contains unexpected keys: {unexpected_keys}")
-            
+
         # Check shape alignment
         for key, model_tensor in model_state.items():
             if key in state_dict:

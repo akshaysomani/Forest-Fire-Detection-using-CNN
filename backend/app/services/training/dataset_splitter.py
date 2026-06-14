@@ -6,11 +6,7 @@ from app.models.dataset import DatasetFile
 class DatasetSplitter:
     @staticmethod
     def split_dataset(
-        files: List[DatasetFile],
-        train_ratio: float = 0.8,
-        val_ratio: float = 0.1,
-        test_ratio: float = 0.1,
-        seed: int = 42
+        files: List[DatasetFile], train_ratio: float = 0.8, val_ratio: float = 0.1, test_ratio: float = 0.1, seed: int = 42
     ) -> Tuple[List[DatasetFile], List[DatasetFile], List[DatasetFile]]:
         """
         Split a list of DatasetFile objects into train, validation, and test sets.

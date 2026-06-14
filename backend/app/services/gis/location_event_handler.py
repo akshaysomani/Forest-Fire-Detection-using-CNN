@@ -26,7 +26,7 @@ async def handle_alert_generated_gis(payload: dict) -> None:
         try:
             # Query alert and join detection to extract coordinates
             from app.models.detection import Detection
-            
+
             res = await db.execute(select(Alert).where(Alert.id == alert_id, Alert.deleted_at.is_(None)))
             alert = res.scalar_one_or_none()
 
@@ -52,10 +52,7 @@ async def handle_alert_generated_gis(payload: dict) -> None:
             for gf in breached_gfs:
                 # Publish breach to Event Bus
                 await gis_event_service.publish_geofence_breach(
-                    geofence_id=str(gf.id),
-                    geofence_name=gf.name,
-                    latitude=latitude,
-                    longitude=longitude
+                    geofence_id=str(gf.id), geofence_name=gf.name, latitude=latitude, longitude=longitude
                 )
 
             await db.commit()

@@ -40,32 +40,20 @@ class Dataset(BaseModel):
     category: Mapped[DatasetCategory] = relationship("DatasetCategory", back_populates="datasets")
     owner: Mapped["User"] = relationship("User", backref="datasets")
     versions: Mapped[list["DatasetVersion"]] = relationship(
-        "DatasetVersion",
-        back_populates="dataset",
-        cascade="all, delete-orphan"
+        "DatasetVersion", back_populates="dataset", cascade="all, delete-orphan"
     )
-    files: Mapped[list["DatasetFile"]] = relationship(
-        "DatasetFile",
-        back_populates="dataset",
-        cascade="all, delete-orphan"
-    )
+    files: Mapped[list["DatasetFile"]] = relationship("DatasetFile", back_populates="dataset", cascade="all, delete-orphan")
     uploads: Mapped[list["DatasetUploadHistory"]] = relationship(
-        "DatasetUploadHistory",
-        back_populates="dataset",
-        cascade="all, delete-orphan"
+        "DatasetUploadHistory", back_populates="dataset", cascade="all, delete-orphan"
     )
     audit_logs: Mapped[list["DatasetAuditLog"]] = relationship(
-        "DatasetAuditLog",
-        back_populates="dataset",
-        cascade="all, delete-orphan"
+        "DatasetAuditLog", back_populates="dataset", cascade="all, delete-orphan"
     )
 
 
 class DatasetVersion(BaseModel):
     __tablename__ = "dataset_versions"
-    __table_args__ = (
-        UniqueConstraint("dataset_id", "version_str", name="uq_dataset_version"),
-    )
+    __table_args__ = (UniqueConstraint("dataset_id", "version_str", name="uq_dataset_version"),)
 
     dataset_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
     version_str: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., 'v1.0.0'
@@ -80,23 +68,24 @@ class DatasetVersion(BaseModel):
     # Relationships
     dataset: Mapped[Dataset] = relationship("Dataset", back_populates="versions")
     creator: Mapped["User"] = relationship("User", backref="created_versions")
-    files: Mapped[list["DatasetFile"]] = relationship(
-        "DatasetFile",
-        back_populates="version"
-    )
+    files: Mapped[list["DatasetFile"]] = relationship("DatasetFile", back_populates="version")
 
 
 class DatasetFile(BaseModel):
     __tablename__ = "dataset_files"
 
     dataset_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
-    version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("dataset_versions.id", ondelete="SET NULL"), nullable=True)
+    version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("dataset_versions.id", ondelete="SET NULL"), nullable=True
+    )
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     mime_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     md5_hash: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
-    label_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("dataset_labels.id", ondelete="SET NULL"), nullable=True)
+    label_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("dataset_labels.id", ondelete="SET NULL"), nullable=True
+    )
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Relationships
@@ -110,7 +99,9 @@ class DatasetUploadHistory(BaseModel):
 
     dataset_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
-    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)  # pending, processing, completed, failed
+    status: Mapped[str] = mapped_column(
+        String(50), default="pending", nullable=False
+    )  # pending, processing, completed, failed
     upload_type: Mapped[str] = mapped_column(String(50), nullable=False)  # single, bulk, zip
     original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_files: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

@@ -10,7 +10,7 @@ from app.schemas.prediction_result import (
     PredictionResponse,
     SinglePredictionResult,
     PaginatedPredictions,
-    PredictionStatisticsResponse
+    PredictionStatisticsResponse,
 )
 from app.services.inference.prediction_service import prediction_service
 from app.services.inference.prediction_history_service import prediction_history_service
@@ -27,14 +27,14 @@ async def predict_single(
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("upload_images"))
+    current_user: User = Depends(PermissionChecker("upload_images")),
 ):
     """
     Upload an image to perform real-time forest fire CNN prediction.
     Requires 'upload_images' permission.
     """
     file_bytes = await file.read()
-    
+
     # Run prediction and store in DB
     detection = await prediction_service.predict_and_store(
         db=db,
@@ -42,7 +42,7 @@ async def predict_single(
         filename=file.filename or "unknown_image.jpg",
         user_id=current_user.id,
         latitude=latitude,
-        longitude=longitude
+        longitude=longitude,
     )
     await db.commit()
     await db.refresh(detection)
@@ -60,11 +60,8 @@ async def predict_single(
     return {
         "detection": detection,
         "risk_level": risk_level,
-        "probabilities": {
-            "non-fire": probs[0],
-            "fire": probs[1]
-        },
-        "processing_duration_seconds": 0.05  # Approximate processing latency
+        "probabilities": {"non-fire": probs[0], "fire": probs[1]},
+        "processing_duration_seconds": 0.05,  # Approximate processing latency
     }
 
 
@@ -72,7 +69,7 @@ async def predict_single(
 async def predict_batch(
     files: List[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("upload_images"))
+    current_user: User = Depends(PermissionChecker("upload_images")),
 ):
     """
     Upload multiple images for asynchronous batch prediction processing.
@@ -86,30 +83,21 @@ async def predict_batch(
     images_payload = []
     for f in files:
         file_bytes = await f.read()
-        images_payload.append({
-            "filename": f.filename or "unknown_image.jpg",
-            "file_bytes": file_bytes
-        })
+        images_payload.append({"filename": f.filename or "unknown_image.jpg", "file_bytes": file_bytes})
 
     # Submit batch job
-    job_id = await batch_prediction_service.submit_batch(
-        user_id=current_user.id,
-        images=images_payload
-    )
+    job_id = await batch_prediction_service.submit_batch(user_id=current_user.id, images=images_payload)
 
     return {
         "success": True,
         "message": "Batch prediction job successfully queued.",
         "job_id": str(job_id),
-        "total_images": len(files)
+        "total_images": len(files),
     }
 
 
 @router.get("/batch/{job_id}", status_code=status.HTTP_200_OK)
-async def get_batch_job_status(
-    job_id: uuid.UUID,
-    current_user: User = Depends(PermissionChecker("view_predictions"))
-):
+async def get_batch_job_status(job_id: uuid.UUID, current_user: User = Depends(PermissionChecker("view_predictions"))):
     """
     Check the status and processing progress of a queued batch prediction job.
     Requires 'view_predictions' permission.
@@ -125,19 +113,14 @@ async def list_predictions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_predictions"))
+    current_user: User = Depends(PermissionChecker("view_predictions")),
 ):
     """
     Fetch a paginated list of historic prediction records.
     Requires 'view_predictions' permission.
     """
     items, total = await prediction_history_service.get_history(db=db, skip=skip, limit=limit)
-    return {
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "items": items
-    }
+    return {"total": total, "skip": skip, "limit": limit, "items": items}
 
 
 @router.get("/history", response_model=PaginatedPredictions)
@@ -149,7 +132,7 @@ async def search_predictions_history(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_predictions"))
+    current_user: User = Depends(PermissionChecker("view_predictions")),
 ):
     """
     Query prediction history with advanced filters (labels, confidence threshold, date ranges).
@@ -162,27 +145,21 @@ async def search_predictions_history(
         prediction_label=label,
         min_confidence=min_confidence,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
     )
-    return {
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "items": items
-    }
+    return {"total": total, "skip": skip, "limit": limit, "items": items}
 
 
 @router.get("/statistics", response_model=PredictionStatisticsResponse)
 async def get_predictions_statistics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_predictions"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_predictions"))
 ):
     """
     Compile system-wide prediction stats (total volume, class ratios, average metrics).
     Requires 'view_predictions' permission.
     """
     stats = await prediction_history_service.get_statistics(db)
-    
+
     # Fill average latency as a default representation
     stats["average_latency_seconds"] = 0.05
     return stats
@@ -190,9 +167,7 @@ async def get_predictions_statistics(
 
 @router.get("/{id}", response_model=PredictionResponse)
 async def get_prediction_by_id(
-    id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_predictions"))
+    id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_predictions"))
 ):
     """
     Fetch complete record details for a specific prediction ID.

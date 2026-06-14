@@ -20,7 +20,7 @@ class ModelCacheManager:
             "max_cache_limit": self.max_cached_models,
             "device": str(model_manager.device),
             "active_model": active_details.get("model_name"),
-            "active_checkpoint": active_details.get("checkpoint_path")
+            "active_checkpoint": active_details.get("checkpoint_path"),
         }
 
     def enforce_retention_limit(self) -> None:
@@ -40,7 +40,7 @@ class ModelCacheManager:
             oldest_key = evict_candidates[0]
             del cached[oldest_key]
             logger.info(f"Evicted model checkpoint '{oldest_key}' from memory to respect size limits.")
-            
+
             # Clean up memory
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()

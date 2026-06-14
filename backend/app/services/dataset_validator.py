@@ -56,7 +56,9 @@ class DatasetValidator:
             if dup_file:
                 is_duplicate = True
                 is_valid = False
-                error_msg = f"Duplicate file check failed: An identical file already exists in the dataset (ID: {dup_file.id})."
+                error_msg = (
+                    f"Duplicate file check failed: An identical file already exists in the dataset (ID: {dup_file.id})."
+                )
 
         return {
             "filename": filename,
@@ -66,7 +68,7 @@ class DatasetValidator:
             "height": height,
             "md5_hash": md5_hash,
             "file_size": file_size,
-            "is_duplicate": is_duplicate
+            "is_duplicate": is_duplicate,
         }
 
 

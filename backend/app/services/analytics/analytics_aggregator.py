@@ -11,7 +11,9 @@ logger = logging.getLogger("analytics.analytics_aggregator")
 
 
 class AnalyticsAggregator:
-    async def aggregate_period(self, db: AsyncSession, start_dt: datetime, end_dt: datetime, period_type: str, period_key: str) -> None:
+    async def aggregate_period(
+        self, db: AsyncSession, start_dt: datetime, end_dt: datetime, period_type: str, period_key: str
+    ) -> None:
         """Compute aggregations for a specified date range and store them as AnalyticsMetric rows."""
         logger.info(f"Running aggregation for period: {period_type} ({period_key}) from {start_dt} to {end_dt}")
 
@@ -20,7 +22,7 @@ class AnalyticsAggregator:
             and_(
                 Detection.prediction_label == "fire",
                 Detection.created_at.between(start_dt, end_dt),
-                Detection.deleted_at.is_(None)
+                Detection.deleted_at.is_(None),
             )
         )
         det_res = await db.execute(det_q)
@@ -34,15 +36,15 @@ class AnalyticsAggregator:
                 Detection.is_verified_fire.is_not(None),
                 or_(
                     and_(Detection.prediction_label == "fire", Detection.is_verified_fire == True),
-                    and_(Detection.prediction_label == "non-fire", Detection.is_verified_fire == False)
-                )
+                    and_(Detection.prediction_label == "non-fire", Detection.is_verified_fire == False),
+                ),
             )
         )
         total_verified_q = select(func.count(Detection.id)).where(
             and_(
                 Detection.deleted_at.is_(None),
                 Detection.created_at.between(start_dt, end_dt),
-                Detection.is_verified_fire.is_not(None)
+                Detection.is_verified_fire.is_not(None),
             )
         )
         correct_res = await db.execute(correct_q)
@@ -53,10 +55,7 @@ class AnalyticsAggregator:
 
         # 3. Total alerts generated
         alerts_q = select(func.count(Alert.id)).where(
-            and_(
-                Alert.created_at.between(start_dt, end_dt),
-                Alert.deleted_at.is_(None)
-            )
+            and_(Alert.created_at.between(start_dt, end_dt), Alert.deleted_at.is_(None))
         )
         alerts_res = await db.execute(alerts_q)
         alerts_count = alerts_res.scalar_one()
@@ -66,7 +65,7 @@ class AnalyticsAggregator:
             and_(
                 Incident.status.in_(["Resolved", "Closed"]),
                 Incident.updated_at.between(start_dt, end_dt),
-                Incident.deleted_at.is_(None)
+                Incident.deleted_at.is_(None),
             )
         )
         incidents_res = await db.execute(incidents_q)
@@ -77,7 +76,7 @@ class AnalyticsAggregator:
             f"{period_type}_fire_detections": float(fire_detections),
             f"{period_type}_detection_accuracy": float(accuracy),
             f"{period_type}_alerts_count": float(alerts_count),
-            f"{period_type}_resolved_incidents": float(resolved_count)
+            f"{period_type}_resolved_incidents": float(resolved_count),
         }
 
         dimensions = {"period": period_type, "period_key": period_key}
@@ -89,7 +88,7 @@ class AnalyticsAggregator:
                     AnalyticsMetric.metric_name == name,
                     AnalyticsMetric.dimensions["period"].as_string() == period_type,
                     AnalyticsMetric.dimensions["period_key"].as_string() == period_key,
-                    AnalyticsMetric.deleted_at.is_(None)
+                    AnalyticsMetric.deleted_at.is_(None),
                 )
             )
             exist_res = await db.execute(exist_q)
@@ -98,17 +97,12 @@ class AnalyticsAggregator:
             if existing_metric:
                 existing_metric.metric_value = value
             else:
-                new_metric = AnalyticsMetric(
-                    metric_name=name,
-                    metric_value=value,
-                    dimensions=dimensions
-                )
+                new_metric = AnalyticsMetric(metric_name=name, metric_value=value, dimensions=dimensions)
                 db.add(new_metric)
 
         # Audit log
         audit = AnalyticsAuditLog(
-            action=f"aggregate_{period_type}",
-            details={"period_key": period_key, "metrics_count": len(metrics)}
+            action=f"aggregate_{period_type}", details={"period_key": period_key, "metrics_count": len(metrics)}
         )
         db.add(audit)
         await db.flush()

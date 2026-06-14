@@ -20,11 +20,7 @@ from app.services.file_manager import file_manager
 
 class DatasetProcessor:
     async def process_zip_upload(
-        self,
-        history_id: uuid.UUID,
-        dataset_id: uuid.UUID,
-        zip_file_bytes: bytes,
-        user_id: uuid.UUID
+        self, history_id: uuid.UUID, dataset_id: uuid.UUID, zip_file_bytes: bytes, user_id: uuid.UUID
     ) -> None:
         """
         Background task to process ZIP archive upload:
@@ -57,10 +53,11 @@ class DatasetProcessor:
                 with zipfile.ZipFile(zip_stream) as zipf:
                     # Filter out directory entries and non-images
                     namelist = [
-                        name for name in zipf.namelist()
+                        name
+                        for name in zipf.namelist()
                         if not name.endswith("/") and not os.path.basename(name).startswith(".")
                     ]
-                    
+
                     history.total_files = len(namelist)
                     db.add(history)
                     await db.commit()
@@ -95,10 +92,7 @@ class DatasetProcessor:
 
                             # Validate file
                             val_report = await dataset_validator.validate_and_hash_file(
-                                db=db,
-                                dataset_id=dataset_id,
-                                file_stream=entry_stream,
-                                filename=sanitized_name
+                                db=db, dataset_id=dataset_id, file_stream=entry_stream, filename=sanitized_name
                             )
 
                             if val_report["is_valid"]:
@@ -119,8 +113,8 @@ class DatasetProcessor:
                                     metadata_json={
                                         "width": val_report["width"],
                                         "height": val_report["height"],
-                                        "extracted_from": history.original_filename
-                                    }
+                                        "extracted_from": history.original_filename,
+                                    },
                                 )
                                 db.add(new_file)
                                 processed_count += 1
@@ -140,7 +134,7 @@ class DatasetProcessor:
                 history.status = "completed" if failed_count == 0 else "completed"  # Still completed, but lists errors
                 if failed_count == len(namelist) and len(namelist) > 0:
                     history.status = "failed"
-                
+
                 history.processed_files = processed_count
                 history.failed_files = failed_count
                 history.error_details = errors
@@ -155,8 +149,8 @@ class DatasetProcessor:
                         "history_id": str(history_id),
                         "total_files": len(namelist),
                         "processed": processed_count,
-                        "failed": failed_count
-                    }
+                        "failed": failed_count,
+                    },
                 )
                 db.add(audit)
                 await db.commit()

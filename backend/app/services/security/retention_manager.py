@@ -17,16 +17,12 @@ class RetentionManager:
         status = "SUCCESS"
         error_msg = None
 
-        retention_settings = {
-            "audit_logs": 180,
-            "security_events": 90,
-            "observability_logs": 30
-        }
+        retention_settings = {"audit_logs": 180, "security_events": 90, "observability_logs": 30}
 
         try:
             for table, days in retention_settings.items():
                 threshold = now - timedelta(days=days)
-                
+
                 # Dynamic deletion using raw execution since some tables don't use soft delete or to purge permanently
                 if table == "security_events":
                     q = text(f"DELETE FROM {table} WHERE timestamp < :threshold")
@@ -47,7 +43,7 @@ class RetentionManager:
                     table_name=table,
                     records_pruned=deleted_count,
                     status="SUCCESS",
-                    details_json={"threshold_date": threshold.isoformat(), "retention_days": days}
+                    details_json={"threshold_date": threshold.isoformat(), "retention_days": days},
                 )
                 db.add(log)
 
@@ -57,20 +53,11 @@ class RetentionManager:
             status = "FAILURE"
             error_msg = str(e)
             # Log failure
-            log = DataRetentionLog(
-                table_name="ALL",
-                records_pruned=0,
-                status="FAILURE",
-                details_json={"error": error_msg}
-            )
+            log = DataRetentionLog(table_name="ALL", records_pruned=0, status="FAILURE", details_json={"error": error_msg})
             db.add(log)
             await db.flush()
 
-        return {
-            "status": status,
-            "pruned": pruned_records,
-            "error": error_msg
-        }
+        return {"status": status, "pruned": pruned_records, "error": error_msg}
 
 
 retention_manager = RetentionManager()

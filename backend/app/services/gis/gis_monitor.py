@@ -11,7 +11,7 @@ class GISMonitor:
             "geofence_checks": 0,
             "geofence_breaches": 0,
             "location_resolutions": 0,
-            "gis_errors": 0
+            "gis_errors": 0,
         }
 
     def increment(self, name: str, value: int = 1):

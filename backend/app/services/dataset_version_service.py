@@ -43,7 +43,7 @@ class DatasetVersionService:
             version_str=version_str,
             files=active_files,
             creator_username=creator_username,
-            description=description
+            description=description,
         )
 
         # Create DB Version
@@ -56,7 +56,7 @@ class DatasetVersionService:
             metadata_json=metadata_json,
             snapshot_path=snapshot_path,
             size_bytes=size_bytes,
-            file_count=file_count
+            file_count=file_count,
         )
         db.add(db_version)
         await db.flush()
@@ -75,8 +75,8 @@ class DatasetVersionService:
                 "version_id": str(db_version.id),
                 "version_str": version_str,
                 "file_count": file_count,
-                "size_bytes": size_bytes
-            }
+                "size_bytes": size_bytes,
+            },
         )
         db.add(audit_log)
         await db.flush()

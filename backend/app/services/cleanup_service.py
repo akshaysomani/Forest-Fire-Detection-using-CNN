@@ -36,14 +36,12 @@ class CleanupService:
         physically delete their storage assets, and delete DB records permanently.
         """
         from datetime import timezone
+
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=older_than_days)
-        
+
         # Query images soft-deleted before cutoff date
         query = select(image_repository.model).where(
-            and_(
-                image_repository.model.deleted_at.is_not(None),
-                image_repository.model.deleted_at <= cutoff_date
-            )
+            and_(image_repository.model.deleted_at.is_not(None), image_repository.model.deleted_at <= cutoff_date)
         )
         res = await db.execute(query)
         stale_images = res.scalars().all()

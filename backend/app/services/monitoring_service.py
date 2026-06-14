@@ -23,7 +23,7 @@ class MonitoringService:
         storage_usage = system_metrics.get_storage_usage()
         cpu_usage = system_metrics.get_cpu_usage_percent()
         memory_usage = system_metrics.get_memory_usage()
-        
+
         # Database counts
         active_sess_count = await dashboard_repository.get_active_sessions_count(db)
 
@@ -35,7 +35,7 @@ class MonitoringService:
             "memory_usage": memory_usage,
             "active_sessions": active_sess_count,
             "background_jobs_status": "healthy",
-            "queue_status": "healthy"
+            "queue_status": "healthy",
         }
 
 

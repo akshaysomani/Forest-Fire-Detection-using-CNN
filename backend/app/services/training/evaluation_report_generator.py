@@ -7,10 +7,7 @@ from app.services.storage_service import storage_service
 class EvaluationReportGenerator:
     @staticmethod
     async def generate_and_save_report(
-        run_id: str,
-        metrics: Dict[str, Any],
-        model_name: str,
-        hyperparameters: Dict[str, Any]
+        run_id: str, metrics: Dict[str, Any], model_name: str, hyperparameters: Dict[str, Any]
     ) -> Dict[str, str]:
         """
         Generate and save evaluation report artifacts:
@@ -93,10 +90,7 @@ class EvaluationReportGenerator:
         md_path = f"runs/{run_id}/artifacts/evaluation_report.md"
         await storage_service.save_file(report_md.encode("utf-8"), md_path)
 
-        return {
-            "confusion_matrix": cm_path,
-            "evaluation_report": md_path
-        }
+        return {"confusion_matrix": cm_path, "evaluation_report": md_path}
 
 
 evaluation_report_generator = EvaluationReportGenerator()

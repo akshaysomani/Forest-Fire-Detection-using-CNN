@@ -9,8 +9,7 @@ logger = logging.getLogger("mlops.environment_manager")
 class EnvironmentManager:
     @staticmethod
     def validate_configuration(
-        config_data: Dict[str, Any],
-        schema: Optional[Dict[str, Any]] = None
+        config_data: Dict[str, Any], schema: Optional[Dict[str, Any]] = None
     ) -> Tuple[bool, Optional[str]]:
         """
         Validates the configuration parameters against a schema format.
@@ -28,7 +27,7 @@ class EnvironmentManager:
         for key, expected_type in schema.items():
             if key not in config_data:
                 return False, f"Missing expected key '{key}' from configuration profile."
-            
+
             val = config_data[key]
             if expected_type == "int":
                 try:
@@ -43,10 +42,7 @@ class EnvironmentManager:
         return True, None
 
     @staticmethod
-    def load_active_config(
-        raw_config: Dict[str, Any],
-        decrypt_secrets: bool = True
-    ) -> Dict[str, Any]:
+    def load_active_config(raw_config: Dict[str, Any], decrypt_secrets: bool = True) -> Dict[str, Any]:
         """Resolves configuration variables and handles secure vault mock decryption."""
         if decrypt_secrets:
             return config_loader.decrypt_dict_secrets(raw_config)

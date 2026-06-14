@@ -32,7 +32,7 @@ class ForestRegionRegistry:
             row = res.first()
             if not row:
                 break
-            
+
             name, parent_id = row
             path.append(name)
             current_id = parent_id

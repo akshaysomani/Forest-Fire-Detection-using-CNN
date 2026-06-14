@@ -35,7 +35,7 @@ class ApiSecurityService:
         # Clean expired timestamps
         if ip not in self._rate_limits:
             self._rate_limits[ip] = []
-        
+
         timestamps = self._rate_limits[ip]
         self._rate_limits[ip] = [t for t in timestamps if now - t < self._window_seconds]
 

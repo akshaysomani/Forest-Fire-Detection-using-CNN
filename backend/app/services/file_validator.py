@@ -28,26 +28,37 @@ class FileValidator:
         # 1. Validate extension
         ext = file_manager.get_file_extension(filename)
         if ext not in FileValidator.ALLOWED_EXTENSIONS:
-            return False, f"Unsupported file extension: '{ext}'. Allowed extensions are: {list(FileValidator.ALLOWED_EXTENSIONS)}", None, None
+            return (
+                False,
+                f"Unsupported file extension: '{ext}'. Allowed extensions are: {list(FileValidator.ALLOWED_EXTENSIONS)}",
+                None,
+                None,
+            )
 
         # 2. Validate mime type if provided
         if mime_type and mime_type.lower() not in FileValidator.ALLOWED_MIME_TYPES:
-            return False, f"Unsupported mime type: '{mime_type}'. Allowed mime types are: {list(FileValidator.ALLOWED_MIME_TYPES)}", None, None
+            return (
+                False,
+                f"Unsupported mime type: '{mime_type}'. Allowed mime types are: {list(FileValidator.ALLOWED_MIME_TYPES)}",
+                None,
+                None,
+            )
 
         # 3. Verify magic bytes to prevent spoofing
         from app.services.image_validator import image_validator
+
         valid_magic, magic_mime = image_validator.verify_magic_bytes(file_stream)
         if not valid_magic or not magic_mime:
             return False, "Invalid file signature: magic bytes do not match any supported image format.", None, None
 
-        mime_to_ext = {
-            "image/jpeg": {".jpg", ".jpeg"},
-            "image/png": {".png"},
-            "image/webp": {".webp"},
-            "image/gif": {".gif"}
-        }
+        mime_to_ext = {"image/jpeg": {".jpg", ".jpeg"}, "image/png": {".png"}, "image/webp": {".webp"}, "image/gif": {".gif"}}
         if magic_mime not in mime_to_ext or ext not in mime_to_ext[magic_mime]:
-            return False, f"Spoofing detected: file extension '{ext}' does not match file signature '{magic_mime}'.", None, None
+            return (
+                False,
+                f"Spoofing detected: file extension '{ext}' does not match file signature '{magic_mime}'.",
+                None,
+                None,
+            )
 
         # 3. Read size and check limits
         try:
@@ -69,12 +80,12 @@ class FileValidator:
         try:
             img = Image.open(file_stream)
             img.verify()  # Fast check for structural integrity
-            
+
             # Re-open for size info since verify() might close/invalidate file
             file_stream.seek(0)
             img = Image.open(file_stream)
             width, height = img.size
-            
+
             # Reset seek position for next readers
             file_stream.seek(0)
         except Exception as e:
@@ -82,10 +93,20 @@ class FileValidator:
 
         # 5. Check resolution boundaries
         if width < min_resolution[0] or height < min_resolution[1]:
-            return False, f"Image resolution too low ({width}x{height}). Minimum required: {min_resolution[0]}x{min_resolution[1]}.", width, height
+            return (
+                False,
+                f"Image resolution too low ({width}x{height}). Minimum required: {min_resolution[0]}x{min_resolution[1]}.",
+                width,
+                height,
+            )
 
         if width > max_resolution[0] or height > max_resolution[1]:
-            return False, f"Image resolution too high ({width}x{height}). Maximum allowed: {max_resolution[0]}x{max_resolution[1]}.", width, height
+            return (
+                False,
+                f"Image resolution too high ({width}x{height}). Maximum allowed: {max_resolution[0]}x{max_resolution[1]}.",
+                width,
+                height,
+            )
 
         return True, None, width, height
 

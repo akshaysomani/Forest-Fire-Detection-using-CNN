@@ -15,18 +15,13 @@ logger = logging.getLogger("mlops.deployment_orchestrator")
 class DeploymentOrchestrator:
     @staticmethod
     async def get_job(db: AsyncSession, job_id: uuid.UUID) -> Optional[DeploymentJob]:
-        query = select(DeploymentJob).where(
-            and_(DeploymentJob.id == job_id, DeploymentJob.deleted_at.is_(None))
-        )
+        query = select(DeploymentJob).where(and_(DeploymentJob.id == job_id, DeploymentJob.deleted_at.is_(None)))
         res = await db.execute(query)
         return res.scalar_one_or_none()
 
     @staticmethod
     async def create_job(
-        db: AsyncSession,
-        environment_id: uuid.UUID,
-        model_version_id: uuid.UUID,
-        deployed_by: uuid.UUID
+        db: AsyncSession, environment_id: uuid.UUID, model_version_id: uuid.UUID, deployed_by: uuid.UUID
     ) -> DeploymentJob:
         """Creates a pending deployment job record."""
         job = DeploymentJob(
@@ -37,9 +32,9 @@ class DeploymentOrchestrator:
                 {"name": "checkpoint_verification", "status": "pending", "timestamp": None},
                 {"name": "container_dry_run", "status": "pending", "timestamp": None},
                 {"name": "traffic_shifting_10", "status": "pending", "timestamp": None},
-                {"name": "traffic_shifting_100", "status": "pending", "timestamp": None}
+                {"name": "traffic_shifting_100", "status": "pending", "timestamp": None},
             ],
-            deployed_by=deployed_by
+            deployed_by=deployed_by,
         )
         db.add(job)
         await db.commit()
@@ -70,7 +65,7 @@ class DeploymentOrchestrator:
         job.steps[0]["timestamp"] = str(time.time())
         flag_modified(job, "steps")
         await db.commit()
-        time.sleep(0.1) # Simulate verification
+        time.sleep(0.1)  # Simulate verification
         job.steps[0]["status"] = "completed"
 
         # Step 2: Container dry run
@@ -110,7 +105,7 @@ class DeploymentOrchestrator:
             job=job,
             action="execute_deployment_success",
             performed_by=job.deployed_by,
-            details={"duration": job.duration_seconds}
+            details={"duration": job.duration_seconds},
         )
 
         return job
@@ -128,11 +123,7 @@ class DeploymentOrchestrator:
         await db.refresh(job)
 
         await release_tracking_service.audit_deployment_job(
-            db=db,
-            job=job,
-            action="execute_deployment_failed",
-            performed_by=job.deployed_by,
-            details={"reason": reason}
+            db=db, job=job, action="execute_deployment_failed", performed_by=job.deployed_by, details={"reason": reason}
         )
 
         return job

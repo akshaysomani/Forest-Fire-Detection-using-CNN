@@ -4,6 +4,7 @@ SLI Manager - Manages Service Level Indicator definitions and target thresholds.
 Defines the SLI targets for the Forest Fire Detection platform including
 API availability, latency thresholds, error budgets, and inference response times.
 """
+
 import logging
 from typing import Dict, Any, List
 

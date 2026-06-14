@@ -19,12 +19,7 @@ class IncidentService:
             raise EntityNotFoundException("Incident not found.")
         return incident
 
-    async def create_manual_incident(
-        self,
-        db: AsyncSession,
-        data: Dict[str, Any],
-        user_id: uuid.UUID
-    ) -> Incident:
+    async def create_manual_incident(self, db: AsyncSession, data: Dict[str, Any], user_id: uuid.UUID) -> Incident:
         """
         Manually creates a new incident report from dispatcher inputs.
         """
@@ -38,7 +33,7 @@ class IncidentService:
             status="Open",
             severity=data.get("severity", "Medium"),
             latitude=data.get("latitude"),
-            longitude=data.get("longitude")
+            longitude=data.get("longitude"),
         )
         db.add(incident)
         await db.flush()  # Populates incident.id
@@ -49,7 +44,7 @@ class IncidentService:
             user_id=user_id,
             old_status="None",
             new_status="Open",
-            transition_reason=data.get("transition_reason", "Dispatcher manually created incident report.")
+            transition_reason=data.get("transition_reason", "Dispatcher manually created incident report."),
         )
         db.add(history)
 
@@ -57,11 +52,7 @@ class IncidentService:
         event = IncidentEvent(
             incident_id=incident.id,
             event_type="incident_manually_created",
-            payload={
-                "created_by": str(user_id),
-                "title": incident.title,
-                "severity": incident.severity
-            }
+            payload={"created_by": str(user_id), "title": incident.title, "severity": incident.severity},
         )
         db.add(event)
 
@@ -70,10 +61,7 @@ class IncidentService:
             incident_id=incident.id,
             user_id=user_id,
             action="incident_created",
-            details={
-                "created_by": str(user_id),
-                "severity": incident.severity
-            }
+            details={"created_by": str(user_id), "severity": incident.severity},
         )
         db.add(audit)
         await db.flush()

@@ -26,7 +26,7 @@ class ConfigLoader:
         """
         if value.startswith("vault::"):
             # Mock secure vault parsing: strip prefix and reverse string as a mock decryption
-            encrypted_payload = value[len("vault::"):]
+            encrypted_payload = value[len("vault::") :]
             decrypted = encrypted_payload[::-1]
             logger.info("Successfully decrypted secret value from Vault provider.")
             return decrypted

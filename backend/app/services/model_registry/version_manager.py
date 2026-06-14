@@ -9,11 +9,7 @@ from app.models.model_registry import ModelVersion
 
 class VersionManager:
     @staticmethod
-    async def validate_new_version(
-        db: AsyncSession,
-        model_id: uuid.UUID,
-        version_str: str
-    ) -> None:
+    async def validate_new_version(db: AsyncSession, model_id: uuid.UUID, version_str: str) -> None:
         """
         Validates that a new version string is valid SemVer, and does not conflict
         with any existing versions for the specified model family.
@@ -27,9 +23,7 @@ class VersionManager:
         # Check for duplication
         existing = await model_repository.get_version_by_number(db, model_id, version_str)
         if existing:
-            raise ValidationException(
-                f"Model version '{version_str}' is already registered for this model family."
-            )
+            raise ValidationException(f"Model version '{version_str}' is already registered for this model family.")
 
         # Optional: ensure version is greater than the latest version
         latest = await model_repository.get_latest_version(db, model_id)
@@ -45,11 +39,7 @@ class VersionManager:
                 pass  # Ignore parse errors of legacy versions in SQLite if any exist
 
     @staticmethod
-    async def resolve_next_version(
-        db: AsyncSession,
-        model_id: uuid.UUID,
-        increment_type: str = "patch"
-    ) -> str:
+    async def resolve_next_version(db: AsyncSession, model_id: uuid.UUID, increment_type: str = "patch") -> str:
         """
         Calculates the next version string based on the latest registered version in the family.
         If no versions exist, defaults to '1.0.0'.
@@ -57,7 +47,7 @@ class VersionManager:
         latest = await model_repository.get_latest_version(db, model_id)
         if not latest:
             return "1.0.0"
-        
+
         try:
             return model_version_service.increment_version(latest.version, increment_type)
         except ValueError as e:

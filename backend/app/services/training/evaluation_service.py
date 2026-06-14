@@ -7,11 +7,7 @@ from app.services.training.metrics_calculator import metrics_calculator
 
 class EvaluationService:
     @staticmethod
-    def evaluate_model(
-        model: nn.Module,
-        dataloader: DataLoader,
-        device: torch.device
-    ) -> Dict[str, Any]:
+    def evaluate_model(model: nn.Module, dataloader: DataLoader, device: torch.device) -> Dict[str, Any]:
         """
         Evaluate model against validation/testing loader.
         Returns calculated metrics: accuracy, precision, recall, f1_score, roc_auc, confusion_matrix.

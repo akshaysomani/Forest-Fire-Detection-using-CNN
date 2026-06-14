@@ -6,7 +6,7 @@ class PolicyEngine:
     async def verify_soc2_compliance(self, db: AsyncSession) -> dict:
         """SOC2 security policy: verify system logging and authentication configuration."""
         issues = []
-        
+
         # Check 1: Ensure audit logs exist and are populated
         try:
             res = await db.execute(text("SELECT count(*) FROM audit_logs"))
@@ -29,17 +29,12 @@ class PolicyEngine:
         except Exception:
             pass
 
-        return {
-            "policy": "SOC2",
-            "compliant": len(issues) == 0,
-            "issues": issues,
-            "checked_at": datetime.utcnow().isoformat()
-        }
+        return {"policy": "SOC2", "compliant": len(issues) == 0, "issues": issues, "checked_at": datetime.utcnow().isoformat()}
 
     async def verify_gdpr_compliance(self, db: AsyncSession) -> dict:
         """GDPR compliance check: verify data encryption, classification, and retention policies."""
         issues = []
-        
+
         # Check 1: Verify that data retention runs are occurring
         try:
             res = await db.execute(text("SELECT count(*) FROM data_retention_logs WHERE status = 'SUCCESS'"))
@@ -58,13 +53,9 @@ class PolicyEngine:
         except Exception:
             pass
 
-        return {
-            "policy": "GDPR",
-            "compliant": len(issues) == 0,
-            "issues": issues,
-            "checked_at": datetime.utcnow().isoformat()
-        }
+        return {"policy": "GDPR", "compliant": len(issues) == 0, "issues": issues, "checked_at": datetime.utcnow().isoformat()}
 
 
 from datetime import datetime
+
 policy_engine = PolicyEngine()

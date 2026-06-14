@@ -33,7 +33,7 @@ class SecretManager:
             "JWT_SECRET_KEY": "Symmetric key used to sign and verify JSON Web Tokens.",
             "DATABASE_URL": "Primary PostgreSQL/SQLite connection URI containing credentials.",
             "EXTERNAL_GIS_API_KEY": "Third-party GIS intelligence API authentication token.",
-            "AWS_S3_SECRET_ACCESS_KEY": "Cloud storage backend API credentials for dataset archival."
+            "AWS_S3_SECRET_ACCESS_KEY": "Cloud storage backend API credentials for dataset archival.",
         }
 
         now = datetime.utcnow()
@@ -49,7 +49,7 @@ class SecretManager:
                     next_rotation_due=now + timedelta(days=90),
                     rotation_interval_days=90,
                     version=1,
-                    status="ACTIVE"
+                    status="ACTIVE",
                 )
                 db.add(metadata)
         await db.flush()

@@ -20,7 +20,6 @@ from app.services.image_upload_service import image_upload_service
 from app.services.storage_service import storage_service
 from app.repositories.image_repository import image_storage_location_repository
 
-
 router = APIRouter()
 
 
@@ -44,14 +43,11 @@ async def upload_image(
     file: UploadFile = File(...),
     source: str = Form(..., description="Source of the image: dataset, manual, drone, cctv, satellite"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("upload_images"))
+    current_user: User = Depends(PermissionChecker("upload_images")),
 ):
     """Upload a single image and trigger EXIF metadata extraction and preprocessing."""
     img = await image_upload_service.upload_single_image(
-        db=db,
-        upload_file=file,
-        owner_id=current_user.id,
-        upload_source=source
+        db=db, upload_file=file, owner_id=current_user.id, upload_source=source
     )
     await db.commit()
     return await populate_retrieval_url(db, img)
@@ -62,14 +58,11 @@ async def bulk_upload_images(
     files: List[UploadFile] = File(...),
     source: str = Form(..., description="Source of the images"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("upload_images"))
+    current_user: User = Depends(PermissionChecker("upload_images")),
 ):
     """Upload multiple images sequentially. Succeeded files are processed; failed items report errors."""
     report = await image_upload_service.upload_bulk_images(
-        db=db,
-        upload_files=files,
-        owner_id=current_user.id,
-        upload_source=source
+        db=db, upload_files=files, owner_id=current_user.id, upload_source=source
     )
     await db.commit()
     return report
@@ -81,15 +74,11 @@ async def upload_zip_images(
     source: str = Form(..., description="Source of the images"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("upload_images"))
+    current_user: User = Depends(PermissionChecker("upload_images")),
 ):
     """Upload a ZIP archive. File extraction and preprocessing run asynchronously in the background."""
     res = await image_upload_service.upload_zip_images(
-        db=db,
-        zip_file=file,
-        owner_id=current_user.id,
-        upload_source=source,
-        background_tasks=background_tasks
+        db=db, zip_file=file, owner_id=current_user.id, upload_source=source, background_tasks=background_tasks
     )
     await db.commit()
     return res
@@ -104,36 +93,21 @@ async def list_images(
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Fetch a paginated list of active images, with optional source and keyword filtering."""
     images = await image_service.list_images(
-        db=db,
-        skip=skip,
-        limit=limit,
-        owner_id=owner_id,
-        upload_source=source,
-        status=status,
-        search_query=search
+        db=db, skip=skip, limit=limit, owner_id=owner_id, upload_source=source, status=status, search_query=search
     )
     total = await image_service.count_images(
-        db=db,
-        owner_id=owner_id,
-        upload_source=source,
-        status=status,
-        search_query=search
+        db=db, owner_id=owner_id, upload_source=source, status=status, search_query=search
     )
 
     # Populate pre-signed URLs
     for img in images:
         await populate_retrieval_url(db, img)
 
-    return {
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "items": images
-    }
+    return {"total": total, "skip": skip, "limit": limit, "items": images}
 
 
 @router.get("/search", response_model=PaginatedImages)
@@ -154,7 +128,7 @@ async def advanced_search_images(
     source: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Advanced metadata search, supporting spatial coordinate boxes, dimensions, capture dates, and camera make."""
     images = await image_service.advanced_search(
@@ -173,7 +147,7 @@ async def advanced_search_images(
         end_date=end_date,
         camera_model=camera,
         upload_source=source,
-        status=status
+        status=status,
     )
     total = await image_service.count_advanced_search(
         db=db,
@@ -189,44 +163,27 @@ async def advanced_search_images(
         end_date=end_date,
         camera_model=camera,
         upload_source=source,
-        status=status
+        status=status,
     )
 
     for img in images:
         await populate_retrieval_url(db, img)
 
-    return {
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "items": images
-    }
+    return {"total": total, "skip": skip, "limit": limit, "items": images}
 
 
 @router.get("/statistics", response_model=ImageStatisticsResponse)
-async def get_statistics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
+async def get_statistics(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     """Retrieve system-wide aggregated storage statistics and source metrics."""
     return await image_service.get_statistics(db)
 
 
 @router.get("/{id}", response_model=ImageResponse)
-async def get_image(
-    id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
+async def get_image(id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     """Fetch full relational properties and versions of a specific image."""
     img = await image_service.get_image(db, id)
     # Log access audit record
-    await image_service.log_access(
-        db=db,
-        image_id=img.id,
-        user_id=current_user.id,
-        access_type="read"
-    )
+    await image_service.log_access(db=db, image_id=img.id, user_id=current_user.id, access_type="read")
     await db.commit()
     return await populate_retrieval_url(db, img)
 
@@ -235,7 +192,7 @@ async def get_image(
 async def delete_image(
     id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """Soft-delete an image record and log the cleanup action in the audit logs."""
     await image_service.delete_image(db, id, user_id=current_user.id)
@@ -244,9 +201,7 @@ async def delete_image(
 
 @router.get("/file/{file_path:path}", response_class=StreamingResponse)
 async def get_local_file(
-    file_path: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    file_path: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Read local storage bytes and stream them to authorized HTTP clients."""
     try:

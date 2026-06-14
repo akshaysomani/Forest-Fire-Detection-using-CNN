@@ -14,19 +14,12 @@ class PDFExporter:
     async def export(self, report_data: Dict[str, Any], file_key: str) -> str:
         """Generate a PDF document using ReportLab and save to storage_service."""
         logger.info(f"Generating PDF export: {file_key}")
-        
+
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=36,
-            leftMargin=36,
-            topMargin=36,
-            bottomMargin=36
-        )
+        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
 
         styles = getSampleStyleSheet()
-        
+
         # Define Custom Styles matching agency guidelines
         title_style = ParagraphStyle(
             name="TitleStyle",
@@ -35,9 +28,9 @@ class PDFExporter:
             fontSize=22,
             textColor=colors.HexColor("#1B5E20"),  # Dark green
             alignment=0,  # Left align
-            spaceAfter=15
+            spaceAfter=15,
         )
-        
+
         h2_style = ParagraphStyle(
             name="H2Style",
             parent=styles["Heading2"],
@@ -45,15 +38,11 @@ class PDFExporter:
             fontSize=14,
             textColor=colors.HexColor("#333333"),
             spaceBefore=12,
-            spaceAfter=8
+            spaceAfter=8,
         )
-        
+
         meta_style = ParagraphStyle(
-            name="MetaStyle",
-            fontName="Helvetica-Oblique",
-            fontSize=9,
-            textColor=colors.HexColor("#666666"),
-            spaceAfter=20
+            name="MetaStyle", fontName="Helvetica-Oblique", fontSize=9, textColor=colors.HexColor("#666666"), spaceAfter=20
         )
 
         body_style = ParagraphStyle(
@@ -61,28 +50,26 @@ class PDFExporter:
             parent=styles["BodyText"],
             fontName="Helvetica",
             fontSize=10,
-            textColor=colors.HexColor("#444444")
+            textColor=colors.HexColor("#444444"),
         )
 
         table_header_style = ParagraphStyle(
-            name="TableHeader",
-            parent=body_style,
-            fontName="Helvetica-Bold",
-            fontSize=9,
-            textColor=colors.whitesmoke
+            name="TableHeader", parent=body_style, fontName="Helvetica-Bold", fontSize=9, textColor=colors.whitesmoke
         )
 
         story = []
 
         # 1. Title
-        story.append(Paragraph(f"{report_data.get('report_type', 'N/A').replace('_', ' ').upper()} SUMMARY REPORT", title_style))
+        story.append(
+            Paragraph(f"{report_data.get('report_type', 'N/A').replace('_', ' ').upper()} SUMMARY REPORT", title_style)
+        )
         story.append(Paragraph(f"Generated at: {report_data.get('generated_at', '')}", meta_style))
         story.append(Spacer(1, 10))
 
         # 2. Summary Table
         story.append(Paragraph("Key Summary Indicators", h2_style))
         summary = report_data.get("summary", {})
-        
+
         summary_data = []
         for k, v in summary.items():
             k_p = Paragraph(f"<b>{k.replace('_', ' ').title()}</b>", body_style)
@@ -91,12 +78,16 @@ class PDFExporter:
 
         if summary_data:
             summary_table = Table(summary_data, colWidths=[200, 300])
-            summary_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F1F8E9")),  # light green tint
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#C8E6C9")),
-                ('PADDING', (0, 0), (-1, -1), 6),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP')
-            ]))
+            summary_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F1F8E9")),  # light green tint
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#C8E6C9")),
+                        ("PADDING", (0, 0), (-1, -1), 6),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
             story.append(summary_table)
         else:
             story.append(Paragraph("No summary indicators computed.", body_style))
@@ -108,10 +99,10 @@ class PDFExporter:
         data_list = report_data.get("data", [])
         if data_list:
             headers = list(data_list[0].keys())
-            
+
             # Format table data
             table_records = []
-            
+
             # Add Headers row
             header_row = [Paragraph(f"<b>{h.replace('_', ' ').title()}</b>", table_header_style) for h in headers]
             table_records.append(header_row)
@@ -126,19 +117,23 @@ class PDFExporter:
             col_width = 540 / col_count
 
             records_table = Table(table_records, colWidths=[col_width] * col_count)
-            records_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#2E7D32")),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
-                ('PADDING', (0, 0), (-1, -1), 5),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP')
-            ]))
+            records_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2E7D32")),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
+                        ("PADDING", (0, 0), (-1, -1), 5),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ]
+                )
+            )
             story.append(records_table)
         else:
             story.append(Paragraph("No records found matching filters.", body_style))
 
         # Build PDF Doc
         doc.build(story)
-        
+
         pdf_bytes = buffer.getvalue()
         saved_path = await storage_service.save_file(pdf_bytes, file_key)
         return saved_path

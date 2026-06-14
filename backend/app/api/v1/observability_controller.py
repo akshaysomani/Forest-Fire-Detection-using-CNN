@@ -5,6 +5,7 @@ Observability Controller - FastAPI routes for the Observability, Monitoring
 Exposes REST endpoints for metrics, logs, traces, health, SLO compliance,
 reliability dashboards, and performance monitoring.
 """
+
 import uuid
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -49,9 +50,7 @@ async def get_metrics(
     live_metrics = metrics_collector.collect_all()
 
     # Query persisted metrics from database
-    db_metrics = await metrics_service.query_metrics(
-        db=db, name=name, skip=skip, limit=limit
-    )
+    db_metrics = await metrics_service.query_metrics(db=db, name=name, skip=skip, limit=limit)
 
     return {
         "live": live_metrics,
@@ -252,9 +251,7 @@ async def get_performance_analytics(
     Requires 'view_reports' permission.
     """
     apm_summary = await apm_service.get_apm_summary(db, hours=hours)
-    endpoint_summaries = await performance_monitor.get_endpoint_summary(
-        db, endpoint=endpoint, hours=hours
-    )
+    endpoint_summaries = await performance_monitor.get_endpoint_summary(db, endpoint=endpoint, hours=hours)
 
     return {
         "apm": apm_summary,

@@ -4,6 +4,7 @@ Span Manager - Decorator helper to automatically trace service method calls.
 Provides a simple @traced decorator that wraps async functions with
 distributed tracing span creation and completion.
 """
+
 import logging
 import functools
 from typing import Optional, Dict, Any, Callable
@@ -29,6 +30,7 @@ def traced(
     The span is automatically started before the function executes
     and finished (with success or error status) after it completes.
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -54,4 +56,5 @@ def traced(
                 raise
 
         return wrapper
+
     return decorator

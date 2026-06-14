@@ -55,7 +55,7 @@ class EmergencyWorkflowEngine:
         Finds the best matching response team and dispatches them.
         """
         logger.info(f"Auto-dispatching team for incident {incident.id}")
-        
+
         # Suggest team
         team = await assignment_manager.suggest_best_team_for_incident(db, incident)
         if not team:
@@ -65,10 +65,7 @@ class EmergencyWorkflowEngine:
         try:
             # Create dispatch assignment
             await incident_assignment_service.assign_team(
-                db=db,
-                incident_id=incident.id,
-                team_id=team.id,
-                assigned_by=None  # System dispatch
+                db=db, incident_id=incident.id, team_id=team.id, assigned_by=None  # System dispatch
             )
             logger.info(f"Auto-dispatched team '{team.name}' to incident {incident.id}")
             return True

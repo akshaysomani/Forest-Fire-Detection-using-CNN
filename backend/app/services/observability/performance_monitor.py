@@ -5,6 +5,7 @@ and database query execution times.
 Provides non-intrusive performance instrumentation that records latency samples
 to the PerformanceMetric table for APM analysis.
 """
+
 import logging
 import time
 from datetime import datetime, timezone
@@ -115,17 +116,19 @@ class PerformanceMonitor:
             window_minutes = hours * 60
             throughput_rpm = round(total / window_minutes, 2) if window_minutes > 0 else 0.0
 
-            summaries.append({
-                "endpoint": row.endpoint,
-                "method": row.method,
-                "avg_latency_ms": round(float(row.avg_latency_ms or 0), 2),
-                "p95_latency_ms": round(float(row.p95_latency_ms or 0), 2),
-                "error_rate": round(error_count / total, 4),
-                "throughput_rpm": throughput_rpm,
-                "avg_db_query_time_ms": round(float(row.avg_db_query_time_ms or 0), 2),
-                "cache_hit_rate": round(cache_hits / total, 4),
-                "total_requests": total,
-            })
+            summaries.append(
+                {
+                    "endpoint": row.endpoint,
+                    "method": row.method,
+                    "avg_latency_ms": round(float(row.avg_latency_ms or 0), 2),
+                    "p95_latency_ms": round(float(row.p95_latency_ms or 0), 2),
+                    "error_rate": round(error_count / total, 4),
+                    "throughput_rpm": throughput_rpm,
+                    "avg_db_query_time_ms": round(float(row.avg_db_query_time_ms or 0), 2),
+                    "cache_hit_rate": round(cache_hits / total, 4),
+                    "total_requests": total,
+                }
+            )
 
         return summaries
 

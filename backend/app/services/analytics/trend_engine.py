@@ -16,36 +16,30 @@ class TrendEngine:
     async def get_detection_trends(self, db: AsyncSession, days: int = 30) -> List[Dict[str, Any]]:
         """Fetch daily counts of fire detections with their 7-day moving average."""
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        
+
         # SQLite vs Postgres compatible date extract
         date_expr = func.strftime("%Y-%m-%d", Detection.created_at)
-        query = select(
-            date_expr.label("date_bucket"),
-            func.count(Detection.id)
-        ).where(
-            and_(
-                Detection.prediction_label == "fire",
-                Detection.created_at >= cutoff,
-                Detection.deleted_at.is_(None)
-            )
-        ).group_by("date_bucket").order_by("date_bucket")
+        query = (
+            select(date_expr.label("date_bucket"), func.count(Detection.id))
+            .where(and_(Detection.prediction_label == "fire", Detection.created_at >= cutoff, Detection.deleted_at.is_(None)))
+            .group_by("date_bucket")
+            .order_by("date_bucket")
+        )
 
         res = await db.execute(query)
         raw_data = [(r[0], r[1]) for r in res.all()]
-        
+
         # Fill missing dates to keep charts contiguous
         filled = trend_analyzer.fill_missing_dates(raw_data, days)
-        
+
         # Add moving average
         moving_avgs = trend_analyzer.calculate_moving_average(filled, window_size=7)
-        
+
         result = []
         for i, item in enumerate(filled):
-            result.append({
-                "date": item["date_bucket"],
-                "detections_count": item["value"],
-                "moving_average_7d": moving_avgs[i]["value"]
-            })
+            result.append(
+                {"date": item["date_bucket"], "detections_count": item["value"], "moving_average_7d": moving_avgs[i]["value"]}
+            )
         return result
 
     async def get_incident_trends(self, db: AsyncSession, days: int = 30) -> List[Dict[str, Any]]:
@@ -53,24 +47,18 @@ class TrendEngine:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         date_expr = func.strftime("%Y-%m-%d", Incident.created_at)
 
-        query = select(
-            date_expr.label("date_bucket"),
-            func.count(Incident.id)
-        ).where(
-            and_(
-                Incident.created_at >= cutoff,
-                Incident.deleted_at.is_(None)
-            )
-        ).group_by("date_bucket").order_by("date_bucket")
+        query = (
+            select(date_expr.label("date_bucket"), func.count(Incident.id))
+            .where(and_(Incident.created_at >= cutoff, Incident.deleted_at.is_(None)))
+            .group_by("date_bucket")
+            .order_by("date_bucket")
+        )
 
         res = await db.execute(query)
         raw_data = [(r[0], r[1]) for r in res.all()]
         filled = trend_analyzer.fill_missing_dates(raw_data, days)
 
-        return [
-            {"date": f["date_bucket"], "incidents_count": int(f["value"])}
-            for f in filled
-        ]
+        return [{"date": f["date_bucket"], "incidents_count": int(f["value"])} for f in filled]
 
     async def get_all_trends_summary(self, db: AsyncSession, days: int = 30) -> Dict[str, Any]:
         """Compile seasonal, regional, and timeline trends into a single response."""
@@ -81,12 +69,9 @@ class TrendEngine:
 
         return {
             "timeframe_days": days,
-            "timeline": {
-                "detections": detections,
-                "incidents": incidents
-            },
+            "timeline": {"detections": detections, "incidents": incidents},
             "seasonal_distribution": seasons,
-            "regional_distribution": regions
+            "regional_distribution": regions,
         }
 
 

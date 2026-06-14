@@ -14,7 +14,7 @@ class ThreatDetectionEngine:
             re.compile(r"';\s*--", re.IGNORECASE),
             re.compile(r"';\s*drop\s+table", re.IGNORECASE),
             re.compile(r"';\s*delete\s+from", re.IGNORECASE),
-            re.compile(r"';\s*insert\s+into", re.IGNORECASE)
+            re.compile(r"';\s*insert\s+into", re.IGNORECASE),
         ]
 
         self._xss_patterns = [
@@ -24,7 +24,7 @@ class ThreatDetectionEngine:
             re.compile(r"onload\s*=", re.IGNORECASE),
             re.compile(r"<iframe.*?>", re.IGNORECASE),
             re.compile(r"<svg.*?>", re.IGNORECASE),
-            re.compile(r"alert\s*\(.*?\)", re.IGNORECASE)
+            re.compile(r"alert\s*\(.*?\)", re.IGNORECASE),
         ]
 
         self._traversal_patterns = [
@@ -32,7 +32,7 @@ class ThreatDetectionEngine:
             re.compile(r"\.\.\\", re.IGNORECASE),
             re.compile(r"/etc/passwd", re.IGNORECASE),
             re.compile(r"windows/win\.ini", re.IGNORECASE),
-            re.compile(r"cmd\.exe", re.IGNORECASE)
+            re.compile(r"cmd\.exe", re.IGNORECASE),
         ]
 
     def detect_threat(self, method: str, path: str, query_params: str, headers: Dict[str, str], body: str) -> Tuple[bool, str]:
@@ -40,11 +40,7 @@ class ThreatDetectionEngine:
         Scan path, query strings, headers, and request body for common attack signatures.
         Returns (is_threat, threat_type).
         """
-        payloads = [
-            ("PATH", path),
-            ("QUERY", query_params),
-            ("BODY", body)
-        ]
+        payloads = [("PATH", path), ("QUERY", query_params), ("BODY", body)]
 
         # Scan headers
         for k, v in headers.items():

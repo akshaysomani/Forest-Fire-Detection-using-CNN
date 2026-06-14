@@ -15,7 +15,7 @@ from app.schemas.security_schema import (
     SecretRotationRequest,
     CompliancePolicyResponse,
     ThreatResponse,
-    GovernanceDashboardResponse
+    GovernanceDashboardResponse,
 )
 from app.services.security.permission_auditor import permission_auditor
 from app.services.security.security_event_service import security_event_service
@@ -30,8 +30,7 @@ router = APIRouter()
 
 @router.get("/audit", status_code=status.HTTP_200_OK)
 async def get_security_audit(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("access_audit_logs"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("access_audit_logs"))
 ):
     """Triggers and returns a system identity governance and permissions compliance audit."""
     findings = await permission_auditor.perform_security_audit(db, current_user.id)
@@ -46,19 +45,16 @@ async def get_security_events(
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("access_audit_logs"))
+    current_user: User = Depends(PermissionChecker("access_audit_logs")),
 ):
     """Retrieve historical security logs and SIEM telemetry metadata."""
-    events = await security_event_service.get_events(
-        db, severity=severity, event_type=event_type, skip=skip, limit=limit
-    )
+    events = await security_event_service.get_events(db, severity=severity, event_type=event_type, skip=skip, limit=limit)
     return events
 
 
 @router.get("/compliance", response_model=List[CompliancePolicyResponse], status_code=status.HTTP_200_OK)
 async def get_compliance_status(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("manage_platform_settings"))
 ):
     """Retrieve the current compliance verification scan statuses for GDPR and SOC2 frameworks."""
     # Seed if empty to avoid returning empty array
@@ -72,7 +68,7 @@ async def get_compliance_status(
 async def run_compliance_check(
     policy_name: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """Trigger an active compliance scanning run for the specified policy configuration."""
     policy = await compliance_manager.run_compliance_check(db, policy_name, current_user.id)
@@ -82,11 +78,11 @@ async def run_compliance_check(
 
 @router.get("/access-reviews", response_model=List[AccessReviewCampaignResponse], status_code=status.HTTP_200_OK)
 async def get_access_reviews(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_users"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("manage_users"))
 ):
     """Fetch all registered access certification campaigns."""
     from sqlalchemy import select
+
     q = select(AccessReviewCampaign)
     res = await db.execute(q)
     return list(res.scalars().all())
@@ -96,7 +92,7 @@ async def get_access_reviews(
 async def create_access_review_campaign(
     campaign_in: AccessReviewCampaignCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_users"))
+    current_user: User = Depends(PermissionChecker("manage_users")),
 ):
     """Creates a new active access review campaign."""
     campaign = await access_review_manager.create_campaign(
@@ -106,12 +102,14 @@ async def create_access_review_campaign(
     return campaign
 
 
-@router.post("/access-reviews/{campaign_id}/decisions", response_model=AccessReviewDecisionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/access-reviews/{campaign_id}/decisions", response_model=AccessReviewDecisionResponse, status_code=status.HTTP_201_CREATED
+)
 async def submit_access_review_decision(
     campaign_id: uuid.UUID,
     decision_in: AccessReviewDecisionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_users"))
+    current_user: User = Depends(PermissionChecker("manage_users")),
 ):
     """Submits a certification or revocation decision for a user role assignment."""
     decision = await access_review_manager.submit_decision(
@@ -121,7 +119,7 @@ async def submit_access_review_decision(
         role_id=decision_in.role_id,
         reviewer_id=current_user.id,
         decision_type=decision_in.decision,
-        justification=decision_in.justification
+        justification=decision_in.justification,
     )
     await db.commit()
     return decision
@@ -131,25 +129,23 @@ async def submit_access_review_decision(
 async def rotate_secrets(
     req: SecretRotationRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """Trigger credentials rotation cycle for the specified key."""
     # Ensure secrets metadata are seeded
     from app.services.security.secret_manager import secret_manager
+
     await secret_manager.initialize_and_seed_secrets(db)
     await db.commit()
 
-    secret = await credential_rotation_service.rotate_secret(
-        db, key=req.key, rotated_by_id=current_user.id
-    )
+    secret = await credential_rotation_service.rotate_secret(db, key=req.key, rotated_by_id=current_user.id)
     await db.commit()
     return secret
 
 
 @router.get("/threats", response_model=ThreatResponse, status_code=status.HTTP_200_OK)
 async def get_threat_status(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("access_audit_logs"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("access_audit_logs"))
 ):
     """Retrieve active threats indicators, blocked IP counts, and security violations."""
     threat_report = await threat_analyzer.analyze_threats(db)
@@ -158,12 +154,12 @@ async def get_threat_status(
 
 @router.get("/governance", response_model=GovernanceDashboardResponse, status_code=status.HTTP_200_OK)
 async def get_governance_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """Fetch high-level safety risk scores, compliance ratings, and review completions."""
     # Initialize dependent secrets and policies if empty to prevent score calculations mismatch
     from app.services.security.secret_manager import secret_manager
+
     await secret_manager.initialize_and_seed_secrets(db)
     await compliance_manager.seed_compliance_policies(db)
     await db.commit()

@@ -4,7 +4,14 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.incident import Incident, IncidentEvent, ResponseTeam, IncidentAssignment, IncidentStatusHistory, IncidentUpdate
+from app.models.incident import (
+    Incident,
+    IncidentEvent,
+    ResponseTeam,
+    IncidentAssignment,
+    IncidentStatusHistory,
+    IncidentUpdate,
+)
 
 logger = logging.getLogger("incident.response_tracking_service")
 
@@ -43,7 +50,7 @@ class ResponseTrackingService:
                 .where(
                     and_(
                         IncidentStatusHistory.incident_id == inc.id,
-                        IncidentStatusHistory.new_status.in_(["Resolved", "Closed"])
+                        IncidentStatusHistory.new_status.in_(["Resolved", "Closed"]),
                     )
                 )
                 .order_by(IncidentStatusHistory.created_at.asc())
@@ -63,6 +70,7 @@ class ResponseTrackingService:
 
         # Calculate SLA breach rate (using SLATracker helper)
         from app.services.incident.sla_tracker import sla_tracker
+
         breached_count = 0
         current_time = datetime.now(timezone.utc)
         for inc in incidents:
@@ -97,7 +105,7 @@ class ResponseTrackingService:
             "sla_compliance_rate": round(sla_compliance_rate, 2),
             "total_teams": total_teams,
             "teams_by_status": team_status_counts,
-            "teams_currently_deployed": deployed_teams
+            "teams_currently_deployed": deployed_teams,
         }
 
     async def get_team_performance(self, db: AsyncSession, team_id: uuid.UUID) -> Dict[str, Any]:
@@ -109,10 +117,7 @@ class ResponseTrackingService:
         """
         # Fetch team assignments
         q = select(IncidentAssignment).where(
-            and_(
-                IncidentAssignment.team_id == team_id,
-                IncidentAssignment.deleted_at.is_(None)
-            )
+            and_(IncidentAssignment.team_id == team_id, IncidentAssignment.deleted_at.is_(None))
         )
         res = await db.execute(q)
         assignments = res.scalars().all()
@@ -156,7 +161,7 @@ class ResponseTrackingService:
             "total_assignments": total_assignments,
             "assignments_by_status": status_counts,
             "avg_acknowledgment_speed_seconds": avg_ack_speed,
-            "completed_missions_count": status_counts.get("Completed", 0)
+            "completed_missions_count": status_counts.get("Completed", 0),
         }
 
 

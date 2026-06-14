@@ -22,7 +22,7 @@ from app.schemas.model_registry_schema import (
     ModelVersionCompareResponse,
     ModelLifecycleEventResponse,
     ModelArtifactResponse,
-    PaginatedModels
+    PaginatedModels,
 )
 from app.services.model_registry.model_registry_service import model_registry_service
 from app.services.model_registry.model_lifecycle_service import model_lifecycle_service
@@ -36,7 +36,7 @@ from app.models.model_registry import (
     ModelDeployment,
     ModelApproval,
     ModelLifecycleEvent,
-    ModelArtifact
+    ModelArtifact,
 )
 
 router = APIRouter()
@@ -46,17 +46,14 @@ router = APIRouter()
 async def create_model_family(
     payload: ModelCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Register a new model definition family.
     Requires 'manage_platform_settings' permission.
     """
     return await model_registry_service.register_model(
-        db=db,
-        name=payload.name,
-        description=payload.description,
-        user_id=current_user.id
+        db=db, name=payload.name, description=payload.description, user_id=current_user.id
     )
 
 
@@ -65,19 +62,14 @@ async def list_models(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """
     List registered model families (paginated).
     Requires 'view_reports' permission.
     """
     models, total = await model_repository.list_models(db, skip, limit)
-    return {
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "items": models
-    }
+    return {"total": total, "skip": skip, "limit": limit, "items": models}
 
 
 @router.get("/versions", response_model=Dict[str, Any])
@@ -88,7 +80,7 @@ async def get_model_versions(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """
     If 'version_a' and 'version_b' are specified, compares metrics and hyperparameters.
@@ -102,23 +94,18 @@ async def get_model_versions(
         return comparison
 
     if not model_id:
-        raise ValidationException("Must provide either both 'version_a' and 'version_b' for comparison, or 'model_id' to list versions.")
+        raise ValidationException(
+            "Must provide either both 'version_a' and 'version_b' for comparison, or 'model_id' to list versions."
+        )
 
     versions, total = await model_repository.list_versions(db, model_id, skip, limit)
     versions_pydantic = [ModelVersionResponse.model_validate(v) for v in versions]
-    return {
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "items": versions_pydantic
-    }
+    return {"total": total, "skip": skip, "limit": limit, "items": versions_pydantic}
 
 
 @router.get("/versions/{version_id}", response_model=ModelVersionDetailResponse)
 async def get_model_version_details(
-    version_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    version_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """
     Get detailed information about a specific model version, including artifacts, deployments, and lifecycle history.
@@ -132,7 +119,7 @@ async def create_model_version(
     payload: ModelVersionCreateRequest,
     increment_type: str = Query("patch", description="patch, minor, major"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Register a new version of a model linked to a training run.
@@ -146,18 +133,15 @@ async def create_model_version(
         description=payload.description,
         release_notes=payload.release_notes,
         user_id=current_user.id,
-        increment_type=increment_type
+        increment_type=increment_type,
     )
-
-
-
 
 
 @router.post("/approve/request", response_model=ModelApprovalResponse, status_code=status.HTTP_201_CREATED)
 async def create_approval_request(
     payload: ApprovalRequestCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Initiate a model promotion approval request.
@@ -168,7 +152,7 @@ async def create_approval_request(
         model_version_id=payload.model_version_id,
         requested_by=current_user.id,
         target_stage=payload.target_stage,
-        request_notes=payload.request_notes
+        request_notes=payload.request_notes,
     )
 
 
@@ -176,7 +160,7 @@ async def create_approval_request(
 async def submit_approval_review(
     payload: ApprovalReviewRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Review and approve/reject a pending model promotion request.
@@ -187,7 +171,7 @@ async def submit_approval_review(
         approval_id=payload.approval_id,
         reviewed_by=current_user.id,
         status=payload.status,
-        review_notes=payload.review_notes
+        review_notes=payload.review_notes,
     )
 
 
@@ -195,7 +179,7 @@ async def submit_approval_review(
 async def deploy_model_version(
     payload: ModelDeploymentRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Deploy a model version to staging or production.
@@ -206,7 +190,7 @@ async def deploy_model_version(
         model_version_id=payload.model_version_id,
         environment=payload.environment,
         deployed_by=current_user.id,
-        metrics=payload.metrics
+        metrics=payload.metrics,
     )
 
 
@@ -214,17 +198,14 @@ async def deploy_model_version(
 async def rollback_deployment(
     payload: ModelRollbackRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Rollback the active deployment in an environment to the previous stable deployment.
     Requires 'manage_platform_settings' permission.
     """
     return await deployment_tracking_service.rollback_deployment(
-        db=db,
-        model_id=payload.model_id,
-        environment=payload.environment,
-        performed_by=current_user.id
+        db=db, model_id=payload.model_id, environment=payload.environment, performed_by=current_user.id
     )
 
 
@@ -232,7 +213,7 @@ async def rollback_deployment(
 async def get_lifecycle_history(
     model_version_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """
     List state transition lifecycle logs for a model version.
@@ -245,7 +226,7 @@ async def get_lifecycle_history(
 async def list_artifacts(
     model_version_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    current_user: User = Depends(PermissionChecker("view_reports")),
 ):
     """
     List registered artifacts for a model version.
@@ -256,22 +237,20 @@ async def list_artifacts(
 
 @router.get("/observability/metrics")
 async def get_observability_metrics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """
     Retrieve system observability telemetry for model registration, approvals, and deployments.
     Requires 'view_reports' permission.
     """
     from app.services.model_registry.model_observability_service import model_observability_service
+
     return await model_observability_service.get_metrics(db)
 
 
 @router.get("/{id}", response_model=ModelResponse)
 async def get_model_family(
-    id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_reports"))
+    id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """
     Get registered model family summary.

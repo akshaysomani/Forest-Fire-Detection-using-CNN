@@ -6,12 +6,7 @@ from app.services.training.cnn_model import CustomCNN
 
 class ModelFactory:
     @staticmethod
-    def create_model(
-        model_name: str,
-        num_classes: int = 2,
-        pretrained: bool = True,
-        dropout: float = 0.5
-    ) -> nn.Module:
+    def create_model(model_name: str, num_classes: int = 2, pretrained: bool = True, dropout: float = 0.5) -> nn.Module:
         """
         Build and configure a PyTorch classification model.
         Supports: custom_cnn, resnet18, resnet50, mobilenet_v3, efficientnet_b0.
@@ -25,20 +20,14 @@ class ModelFactory:
             weights = models.ResNet18_Weights.DEFAULT if pretrained else None
             model = models.resnet18(weights=weights)
             in_features = model.fc.in_features
-            model.fc = nn.Sequential(
-                nn.Dropout(p=dropout),
-                nn.Linear(in_features, num_classes)
-            )
+            model.fc = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(in_features, num_classes))
             return model
 
         elif model_name == "resnet50":
             weights = models.ResNet50_Weights.DEFAULT if pretrained else None
             model = models.resnet50(weights=weights)
             in_features = model.fc.in_features
-            model.fc = nn.Sequential(
-                nn.Dropout(p=dropout),
-                nn.Linear(in_features, num_classes)
-            )
+            model.fc = nn.Sequential(nn.Dropout(p=dropout), nn.Linear(in_features, num_classes))
             return model
 
         elif model_name == "mobilenet_v3":

@@ -15,7 +15,6 @@ from app.middleware.security_middleware import SecurityMiddleware
 from sqlalchemy import select
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Auto-create tables on startup (convenient for local run / testing)
@@ -26,13 +25,15 @@ async def lifespan(app: FastAPI):
     async with SessionLocal() as db:
         try:
             await permission_service.seed_roles_and_permissions(db)
-            
+
             # Seed default dataset categories and labels
             from app.services.dataset_service import dataset_service
+
             await dataset_service.seed_categories_and_labels(db)
 
             # Seed default regions
             from app.services.gis.region_service import region_service
+
             await region_service.seed_default_regions(db)
 
             # Check if default Super Admin already exists
@@ -52,7 +53,7 @@ async def lifespan(app: FastAPI):
                     username=settings.DEFAULT_ADMIN_USERNAME,
                     hashed_password=hashed_pwd,
                     is_active=True,
-                    is_verified=True
+                    is_verified=True,
                 )
                 if admin_role:
                     new_admin.roles.append(admin_role)
@@ -91,11 +92,7 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
-)
+app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json", lifespan=lifespan)
 
 # CORS middleware config
 if settings.BACKEND_CORS_ORIGINS:
@@ -108,18 +105,13 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 # Register Rate Limiting Middleware
-app.add_middleware(
-    RateLimitMiddleware,
-    requests_per_minute=100,
-    auth_requests_per_minute=5
-)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100, auth_requests_per_minute=5)
 
 # Register Observability Middleware (correlation IDs, tracing, request instrumentation)
 app.add_middleware(ObservabilityMiddleware)
 
 # Register Enterprise Security Middleware (IP blocking, threat detection, secure headers)
 app.add_middleware(SecurityMiddleware)
-
 
 
 # Register custom global exception handlers

@@ -14,7 +14,7 @@ class SecretAuditService:
         action: str = "ACCESS",  # 'ACCESS', 'DECRYPT', 'EXPOSE'
         success: bool = True,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> None:
         """Log audit entry for secret metadata or key read access."""
         now_status = "SUCCESS" if success else "DENIED"
@@ -27,7 +27,7 @@ class SecretAuditService:
             resource_id=key,
             ip_address=ip_address,
             user_agent=user_agent,
-            details={"status": now_status, "key": key}
+            details={"status": now_status, "key": key},
         )
         db.add(audit)
 
@@ -42,7 +42,7 @@ class SecretAuditService:
             user_id=accessed_by_id,
             ip_address=ip_address,
             user_agent=user_agent,
-            details_json={"secret_key": key, "action": action, "status": now_status}
+            details_json={"secret_key": key, "action": action, "status": now_status},
         )
         db.add(event)
         await db.flush()

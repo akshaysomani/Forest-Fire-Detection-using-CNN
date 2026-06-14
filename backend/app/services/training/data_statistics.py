@@ -24,7 +24,7 @@ class DataStatistics:
                 "avg_width": 0.0,
                 "avg_height": 0.0,
                 "channel_mean": [0.485, 0.456, 0.406],
-                "channel_std": [0.229, 0.224, 0.225]
+                "channel_std": [0.229, 0.224, 0.225],
             }
 
         # Class balance
@@ -39,11 +39,7 @@ class DataStatistics:
             class_counts[label_name] = class_counts.get(label_name, 0) + 1
 
         class_distribution = {
-            name: {
-                "count": count,
-                "percentage": round((count / total_files) * 100, 2)
-            }
-            for name, count in class_counts.items()
+            name: {"count": count, "percentage": round((count / total_files) * 100, 2)} for name, count in class_counts.items()
         }
 
         # Average dimensions from metadata
@@ -95,7 +91,7 @@ class DataStatistics:
             "avg_width": round(avg_width, 1),
             "avg_height": round(avg_height, 1),
             "channel_mean": [round(m, 4) for m in channel_mean],
-            "channel_std": [round(s, 4) for s in channel_std]
+            "channel_std": [round(s, 4) for s in channel_std],
         }
 
 

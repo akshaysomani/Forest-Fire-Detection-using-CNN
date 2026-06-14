@@ -9,22 +9,13 @@ logger = logging.getLogger("alert.preference_manager")
 
 class PreferenceManager:
     @staticmethod
-    async def should_notify_user(
-        db: AsyncSession,
-        user_id: uuid.UUID,
-        channel: str,
-        alert_severity: str
-    ) -> bool:
+    async def should_notify_user(db: AsyncSession, user_id: uuid.UUID, channel: str, alert_severity: str) -> bool:
         """
         Calculates if a user should be notified on a given channel for an alert severity.
         Verifies: channel is enabled, meets severity thresholds, and is NOT in quiet hours.
         """
         try:
-            pref = await alert_preferences_service.get_user_preference_for_channel(
-                db=db,
-                user_id=user_id,
-                channel=channel
-            )
+            pref = await alert_preferences_service.get_user_preference_for_channel(db=db, user_id=user_id, channel=channel)
 
             # 1. Check if channel is enabled
             if not pref.enabled:
@@ -32,13 +23,7 @@ class PreferenceManager:
                 return False
 
             # 2. Check severity threshold
-            severity_ranks = {
-                "Critical": 5,
-                "High": 4,
-                "Medium": 3,
-                "Low": 2,
-                "Informational": 1
-            }
+            severity_ranks = {"Critical": 5, "High": 4, "Medium": 3, "Low": 2, "Informational": 1}
             pref_rank = severity_ranks.get(pref.min_severity, 3)
             alert_rank = severity_ranks.get(alert_severity, 3)
 

@@ -33,13 +33,15 @@ class InferenceOptimizer:
             dummy_input = torch.randn(1, 3, 224, 224).to(device)
             if device.type == "cuda":
                 dummy_input = dummy_input.half()
-                
+
             # Perform tracing
             traced_model = torch.jit.trace(model, dummy_input)
             logger.info("Successfully traced CNN model using TorchScript JIT compiler.")
             return traced_model
         except Exception as e:
-            logger.warning(f"Could not trace model with Torch JIT: {e}. Falling back to standard PyTorch eager mode execution.")
+            logger.warning(
+                f"Could not trace model with Torch JIT: {e}. Falling back to standard PyTorch eager mode execution."
+            )
             return model
 
 

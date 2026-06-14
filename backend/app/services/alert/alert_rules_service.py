@@ -7,11 +7,7 @@ logger = logging.getLogger("alert.alert_rules_service")
 class AlertRulesService:
     def __init__(self):
         # Default alert rules
-        self._rules = {
-            "min_confidence_threshold": 0.70,
-            "target_labels": ["fire"],
-            "auto_escalation_enabled": True
-        }
+        self._rules = {"min_confidence_threshold": 0.70, "target_labels": ["fire"], "auto_escalation_enabled": True}
 
     def get_rules(self) -> Dict[str, Any]:
         """Fetch the current active alert rules."""

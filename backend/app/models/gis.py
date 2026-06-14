@@ -23,8 +23,12 @@ class Location(BaseModel):
 
     # Indexes are mapped to speed up bounding-box searches
     # Relationships
-    incidents: Mapped[List["IncidentLocation"]] = relationship("IncidentLocation", back_populates="location", cascade="all, delete-orphan")
-    alerts: Mapped[List["AlertLocation"]] = relationship("AlertLocation", back_populates="location", cascade="all, delete-orphan")
+    incidents: Mapped[List["IncidentLocation"]] = relationship(
+        "IncidentLocation", back_populates="location", cascade="all, delete-orphan"
+    )
+    alerts: Mapped[List["AlertLocation"]] = relationship(
+        "AlertLocation", back_populates="location", cascade="all, delete-orphan"
+    )
 
 
 class Region(BaseModel):
@@ -34,10 +38,7 @@ class Region(BaseModel):
     code: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
     type: Mapped[str] = mapped_column(String(50), nullable=False)  # Country, State, Forest Division, Forest Range
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        Uuid,
-        ForeignKey("regions.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
+        Uuid, ForeignKey("regions.id", ondelete="SET NULL"), nullable=True, index=True
     )
     boundary: Mapped[dict] = mapped_column(JSON, nullable=False)  # GeoJSON coordinates dictionary
 
@@ -52,10 +53,7 @@ class Zone(BaseModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     code: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
     region_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("regions.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Uuid, ForeignKey("regions.id", ondelete="CASCADE"), nullable=False, index=True
     )
     type: Mapped[str] = mapped_column(String(50), nullable=False)  # Monitoring Zone, Protected Area, Wildfire Buffer
     boundary: Mapped[dict] = mapped_column(JSON, nullable=False)  # GeoJSON polygon coordinates
@@ -79,16 +77,10 @@ class IncidentLocation(BaseModel):
     __tablename__ = "incident_locations"
 
     incident_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("incidents.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Uuid, ForeignKey("incidents.id", ondelete="CASCADE"), nullable=False, index=True
     )
     location_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("locations.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Uuid, ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # Relationships
@@ -99,17 +91,9 @@ class IncidentLocation(BaseModel):
 class AlertLocation(BaseModel):
     __tablename__ = "alert_locations"
 
-    alert_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("alerts.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    alert_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("alerts.id", ondelete="CASCADE"), nullable=False, index=True)
     location_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("locations.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Uuid, ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # Relationships
@@ -131,10 +115,7 @@ class GISAuditLog(BaseModel):
     __tablename__ = "gis_audit_logs"
 
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        Uuid,
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     action: Mapped[str] = mapped_column(String(100), nullable=False)
     details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)

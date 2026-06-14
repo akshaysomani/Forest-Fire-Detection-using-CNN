@@ -18,12 +18,7 @@ class EscalationService:
         logger.debug("Running alert SLA escalation scan...")
 
         # 1. Fetch active alerts
-        query = select(Alert).where(
-            and_(
-                Alert.status == "active",
-                Alert.deleted_at.is_(None)
-            )
-        )
+        query = select(Alert).where(and_(Alert.status == "active", Alert.deleted_at.is_(None)))
         res = await db.execute(query)
         active_alerts = res.scalars().all()
 
@@ -42,10 +37,7 @@ class EscalationService:
                 audit = AlertAuditLog(
                     alert_id=alert.id,
                     action="alert_escalated",
-                    details={
-                        "severity": alert.severity,
-                        "created_at": alert.created_at.isoformat()
-                    }
+                    details={"severity": alert.severity, "created_at": alert.created_at.isoformat()},
                 )
                 db.add(audit)
 
@@ -53,7 +45,7 @@ class EscalationService:
                 event_payload = {
                     "alert_id": str(alert.id),
                     "severity": alert.severity,
-                    "message": f"ESCALATED: {alert.message}"
+                    "message": f"ESCALATED: {alert.message}",
                 }
                 await event_bus.publish("alert_escalated", event_payload)
 

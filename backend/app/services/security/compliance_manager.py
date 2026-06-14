@@ -14,33 +14,30 @@ class ComplianceManager:
         policies_def = {
             "SOC2": {
                 "desc": "System and Organization Controls policy verifying platform logging, auditability, and access controls.",
-                "category": "SOC2"
+                "category": "SOC2",
             },
             "GDPR": {
                 "desc": "General Data Protection Regulation verifying data protection, user masking, and retention rules.",
-                "category": "GDPR"
-            }
+                "category": "GDPR",
+            },
         }
 
         for name, data in policies_def.items():
             q = select(CompliancePolicy).where(CompliancePolicy.name == name)
             res = await db.execute(q)
             if not res.scalar_one_or_none():
-                policy = CompliancePolicy(
-                    name=name,
-                    description=data["desc"],
-                    category=data["category"],
-                    status="COMPLIANT"
-                )
+                policy = CompliancePolicy(name=name, description=data["desc"], category=data["category"], status="COMPLIANT")
                 db.add(policy)
         await db.flush()
 
-    async def run_compliance_check(self, db: AsyncSession, policy_name: str, checked_by_id: Optional[uuid.UUID] = None) -> CompliancePolicy:
+    async def run_compliance_check(
+        self, db: AsyncSession, policy_name: str, checked_by_id: Optional[uuid.UUID] = None
+    ) -> CompliancePolicy:
         """Run policy validation scan and update policy record compliance status."""
         q = select(CompliancePolicy).where(CompliancePolicy.name == policy_name)
         res = await db.execute(q)
         policy = res.scalar_one_or_none()
-        
+
         if not policy:
             raise ValidationException(f"Compliance policy '{policy_name}' not found.")
 
@@ -66,7 +63,7 @@ class ComplianceManager:
             checked_by_id=checked_by_id,
             status="PASS" if report["compliant"] else "FAIL",
             findings=findings,
-            details_json=report
+            details_json=report,
         )
         db.add(audit)
 
@@ -77,7 +74,7 @@ class ComplianceManager:
                 severity="HIGH",
                 description=f"Compliance check failed for policy '{policy_name}': {findings}",
                 user_id=checked_by_id,
-                details_json=report
+                details_json=report,
             )
             db.add(event)
 

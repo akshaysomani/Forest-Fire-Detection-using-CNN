@@ -45,4 +45,3 @@ __all__ = [
     "incident_repository",
     "location_repository",
 ]
-

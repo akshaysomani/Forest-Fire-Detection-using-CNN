@@ -33,18 +33,14 @@ router = APIRouter()
 async def create_manual_alert(
     body: ManualAlertCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("manage_platform_settings"))
+    current_user: User = Depends(PermissionChecker("manage_platform_settings")),
 ):
     """
     Manually generate a fire detection alert.
     Requires 'manage_platform_settings' permission.
     """
     alert = await alert_engine.trigger_detection_alert(
-        db=db,
-        detection_id=body.detection_id,
-        severity=body.severity,
-        message=body.message,
-        payload=body.payload or {}
+        db=db, detection_id=body.detection_id, severity=body.severity, message=body.message, payload=body.payload or {}
     )
     await db.commit()
     await db.refresh(alert)
@@ -60,25 +56,16 @@ async def list_alerts(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    current_user: User = Depends(PermissionChecker("view_alerts")),
 ):
     """
     List and filter active or resolved fire alerts.
     Requires 'view_alerts' permission.
     """
     items, total = await alert_repository.get_alerts_filtered(
-        db=db,
-        skip=skip,
-        limit=limit,
-        status=status,
-        severity=severity,
-        start_date=start_date,
-        end_date=end_date
+        db=db, skip=skip, limit=limit, status=status, severity=severity, start_date=start_date, end_date=end_date
     )
-    return {
-        "alerts": items,
-        "total_count": total
-    }
+    return {"alerts": items, "total_count": total}
 
 
 @router.get("/history", response_model=AlertAuditHistoryResponse)
@@ -87,28 +74,19 @@ async def list_alert_audit_history(
     limit: int = Query(100, ge=1, le=1000),
     alert_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("access_audit_logs"))
+    current_user: User = Depends(PermissionChecker("access_audit_logs")),
 ):
     """
     Retrieve security audit trail logs for alert updates and deliveries.
     Requires 'access_audit_logs' permission.
     """
-    items, total = await alert_repository.get_audit_history(
-        db=db,
-        skip=skip,
-        limit=limit,
-        alert_id=alert_id
-    )
-    return {
-        "logs": items,
-        "total_count": total
-    }
+    items, total = await alert_repository.get_audit_history(db=db, skip=skip, limit=limit, alert_id=alert_id)
+    return {"logs": items, "total_count": total}
 
 
 @router.get("/statistics")
 async def get_alert_statistics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_alerts"))
 ):
     """
     Fetch system-wide alert statistics, SLA speeds, and notifications telemetry.
@@ -118,10 +96,7 @@ async def get_alert_statistics(
 
 
 @router.get("/preferences", response_model=List[AlertPreferenceResponse])
-async def get_my_preferences(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
+async def get_my_preferences(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     """
     Fetch current user alert delivery channels and quiet hours preferences.
     Requires authenticated user context.
@@ -133,7 +108,7 @@ async def get_my_preferences(
 async def update_my_preferences(
     body: List[AlertPreferenceUpdate],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update my notification channels, minimum severity trigger, or quiet hours.
@@ -150,9 +125,7 @@ async def update_my_preferences(
 
 @router.get("/{id}", response_model=AlertDetailsResponse)
 async def get_alert_by_id(
-    id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_alerts"))
 ):
     """
     Get detailed information for a single alert, including notifications and event triggers.
@@ -169,17 +142,14 @@ async def acknowledge_alert(
     id: uuid.UUID,
     body: AlertAcknowledgeRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    current_user: User = Depends(PermissionChecker("view_alerts")),
 ):
     """
     Acknowledge an active alert.
     Requires 'view_alerts' permission.
     """
     alert = await alert_acknowledgement_service.acknowledge_alert(
-        db=db,
-        alert_id=id,
-        user_id=current_user.id,
-        notes=body.notes
+        db=db, alert_id=id, user_id=current_user.id, notes=body.notes
     )
     await db.commit()
     await db.refresh(alert)
@@ -191,18 +161,13 @@ async def resolve_alert(
     id: uuid.UUID,
     body: AlertResolveRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("view_alerts"))
+    current_user: User = Depends(PermissionChecker("view_alerts")),
 ):
     """
     Mark an alert as resolved.
     Requires 'view_alerts' permission.
     """
-    alert = await resolution_manager.resolve_alert(
-        db=db,
-        alert_id=id,
-        user_id=current_user.id,
-        notes=body.notes
-    )
+    alert = await resolution_manager.resolve_alert(db=db, alert_id=id, user_id=current_user.id, notes=body.notes)
     await db.commit()
     await db.refresh(alert)
     return alert

@@ -30,7 +30,6 @@ class ResponseTeamDetailsResponse(ResponseTeamResponse):
     members: List[ResponseMemberResponse] = []
 
 
-
 class ResponseTeamCreateRequest(BaseModel):
     name: str = Field(..., max_length=100, description="Unique name of the response team")
     specialty: str = Field(..., max_length=100, description="Specialty description, e.g. Wildfire Suppression")
@@ -141,7 +140,9 @@ class ManualIncidentCreateRequest(BaseModel):
 
 
 class IncidentStatusTransitionRequest(BaseModel):
-    status: str = Field(..., description="Target status: Open, Acknowledged, Assigned, In Progress, Escalated, Resolved, Closed")
+    status: str = Field(
+        ..., description="Target status: Open, Acknowledged, Assigned, In Progress, Escalated, Resolved, Closed"
+    )
     reason: Optional[str] = Field(None, max_length=500, description="Reason for the status transition")
 
 

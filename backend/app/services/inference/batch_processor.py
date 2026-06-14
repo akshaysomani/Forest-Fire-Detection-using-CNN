@@ -58,10 +58,10 @@ class BatchProcessor:
                         user_id=user_id,
                         latitude=latitude,
                         longitude=longitude,
-                        image_path=image_path
+                        image_path=image_path,
                     )
                     await db.commit()
-                    
+
                     # Log success details
                     prediction_queue.update_job_success(
                         job_id=job_id,
@@ -69,17 +69,13 @@ class BatchProcessor:
                             "detection_id": str(detection.id),
                             "filename": filename,
                             "prediction_label": detection.prediction_label,
-                            "confidence": detection.confidence
-                        }
+                            "confidence": detection.confidence,
+                        },
                     )
                 except Exception as e:
                     await db.rollback()
                     logger.error(f"Failed to process task in batch job '{job_id}' for image '{filename}': {e}")
-                    prediction_queue.update_job_failure(
-                        job_id=job_id,
-                        filename=filename,
-                        error_msg=str(e)
-                    )
+                    prediction_queue.update_job_failure(job_id=job_id, filename=filename, error_msg=str(e))
                 finally:
                     prediction_queue.task_done()
 

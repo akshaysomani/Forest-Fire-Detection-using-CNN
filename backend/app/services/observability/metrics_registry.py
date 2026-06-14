@@ -4,6 +4,7 @@ Metrics Registry - In-memory counter and gauge storage for high-frequency metric
 Provides thread-safe, lock-free counters and gauges that avoid database write overhead
 for every metric sample. Designed to be periodically flushed to database storage.
 """
+
 import logging
 import threading
 from datetime import datetime, timezone
@@ -69,22 +70,26 @@ class MetricsRegistry:
 
         with self._lock:
             for name, value in self._counters.items():
-                snapshot.append({
-                    "name": name,
-                    "value": value,
-                    "type": "counter",
-                    "labels_json": self._labels.get(name),
-                    "timestamp": now,
-                })
+                snapshot.append(
+                    {
+                        "name": name,
+                        "value": value,
+                        "type": "counter",
+                        "labels_json": self._labels.get(name),
+                        "timestamp": now,
+                    }
+                )
 
             for name, value in self._gauges.items():
-                snapshot.append({
-                    "name": name,
-                    "value": value,
-                    "type": "gauge",
-                    "labels_json": self._labels.get(name),
-                    "timestamp": now,
-                })
+                snapshot.append(
+                    {
+                        "name": name,
+                        "value": value,
+                        "type": "gauge",
+                        "labels_json": self._labels.get(name),
+                        "timestamp": now,
+                    }
+                )
 
         return snapshot
 

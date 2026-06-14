@@ -14,7 +14,7 @@ class SpatialAnalytics:
         heatmap coordinate arrays, and density counts.
         """
         logger.info("Generating spatial analytics report...")
-        
+
         clusters = await cluster_analyzer.find_detection_clusters(db, distance_threshold_meters=1500.0)
         heatmap = await heatmap_generator.compile_fire_heatmap(db)
 
@@ -26,7 +26,7 @@ class SpatialAnalytics:
             "total_fire_points": total_points,
             "total_hotspot_clusters": total_clusters,
             "heatmap_data": heatmap,
-            "clusters_data": clusters
+            "clusters_data": clusters,
         }
 
 

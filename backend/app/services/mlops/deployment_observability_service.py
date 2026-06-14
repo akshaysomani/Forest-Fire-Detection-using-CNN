@@ -17,7 +17,7 @@ class DeploymentObservabilityService:
         total = await deployment_monitor.get_total_deployments_count(db)
         succeeded = await deployment_monitor.get_deployments_by_status_count(db, "succeeded")
         failed = await deployment_monitor.get_deployments_by_status_count(db, "failed")
-        
+
         success_rate = 1.0
         if (succeeded + failed) > 0:
             success_rate = float(succeeded) / float(succeeded + failed)
@@ -38,7 +38,7 @@ class DeploymentObservabilityService:
             "rollback_frequency": rollback_freq,
             "average_deployment_duration_seconds": avg_duration,
             "environment_health_statuses": env_health,
-            "release_stability_index": stability
+            "release_stability_index": stability,
         }
 
 

@@ -22,13 +22,15 @@ class ComplianceReportingEngine:
         # Compile policy detail audits
         policy_details = []
         for p in policies:
-            policy_details.append({
-                "policy_name": p.name,
-                "category": p.category,
-                "status": p.status,
-                "last_checked": p.last_checked_at.isoformat(),
-                "findings": p.details_json.get("issues", []) if p.details_json else []
-            })
+            policy_details.append(
+                {
+                    "policy_name": p.name,
+                    "category": p.category,
+                    "status": p.status,
+                    "last_checked": p.last_checked_at.isoformat(),
+                    "findings": p.details_json.get("issues", []) if p.details_json else [],
+                }
+            )
 
         return {
             "compliance_percentage": compliance_percentage,
@@ -37,9 +39,9 @@ class ComplianceReportingEngine:
             "non_compliant_policies_count": total_policies - compliant_count,
             "retention_status": {
                 "total_pruning_runs": len(retention_runs),
-                "last_run": retention_runs[0].execution_date.isoformat() if retention_runs else None
+                "last_run": retention_runs[0].execution_date.isoformat() if retention_runs else None,
             },
-            "policies": policy_details
+            "policies": policy_details,
         }
 
 

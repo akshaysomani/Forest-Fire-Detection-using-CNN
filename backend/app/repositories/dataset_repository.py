@@ -159,9 +159,7 @@ class DatasetFileRepository(BaseRepository[DatasetFile]):
     async def get_by_md5(
         self, db: AsyncSession, dataset_id: uuid.UUID, md5_hash: str, include_deleted: bool = False
     ) -> DatasetFile | None:
-        query = select(DatasetFile).where(
-            and_(DatasetFile.dataset_id == dataset_id, DatasetFile.md5_hash == md5_hash)
-        )
+        query = select(DatasetFile).where(and_(DatasetFile.dataset_id == dataset_id, DatasetFile.md5_hash == md5_hash))
         if not include_deleted:
             query = query.where(DatasetFile.deleted_at.is_(None))
         result = await db.execute(query)
@@ -176,12 +174,16 @@ class DatasetFileRepository(BaseRepository[DatasetFile]):
 
     async def get_active_files_by_dataset(self, db: AsyncSession, dataset_id: uuid.UUID) -> Sequence[DatasetFile]:
         """Fetch all files associated with a dataset that are currently active (not snapshotted to a specific version or soft deleted)."""
-        query = select(DatasetFile).where(
-            and_(
-                DatasetFile.dataset_id == dataset_id,
-                DatasetFile.deleted_at.is_(None),
+        query = (
+            select(DatasetFile)
+            .where(
+                and_(
+                    DatasetFile.dataset_id == dataset_id,
+                    DatasetFile.deleted_at.is_(None),
+                )
             )
-        ).options(selectinload(DatasetFile.label))
+            .options(selectinload(DatasetFile.label))
+        )
         result = await db.execute(query)
         return result.scalars().all()
 

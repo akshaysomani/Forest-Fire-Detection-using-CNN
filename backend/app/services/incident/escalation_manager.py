@@ -11,11 +11,7 @@ logger = logging.getLogger("incident.escalation_manager")
 
 class EscalationManager:
     async def escalate_incident(
-        self,
-        db: AsyncSession,
-        incident_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
-        reason: Optional[str] = None
+        self, db: AsyncSession, incident_id: uuid.UUID, user_id: Optional[uuid.UUID] = None, reason: Optional[str] = None
     ) -> Incident:
         """
         Escalates an incident to 'Escalated' status.
@@ -51,19 +47,15 @@ class EscalationManager:
                 payload={
                     "old_severity": old_severity,
                     "new_severity": new_severity,
-                    "escalated_by": str(user_id) if user_id else "system"
-                }
+                    "escalated_by": str(user_id) if user_id else "system",
+                },
             )
             db.add(sev_event)
 
         # 3. Perform the status transition to 'Escalated'
         transition_reason = reason or f"Escalation triggered. Severity bumped: {old_severity} -> {new_severity}."
         incident = await incident_lifecycle_service.transition_status(
-            db=db,
-            incident_id=incident_id,
-            new_status="Escalated",
-            user_id=user_id,
-            reason=transition_reason
+            db=db, incident_id=incident_id, new_status="Escalated", user_id=user_id, reason=transition_reason
         )
 
         # 4. Insert incident audit log for escalation action
@@ -75,8 +67,8 @@ class EscalationManager:
                 "escalated_by": str(user_id) if user_id else "system",
                 "old_severity": old_severity,
                 "new_severity": new_severity,
-                "reason": transition_reason
-            }
+                "reason": transition_reason,
+            },
         )
         db.add(audit)
         await db.flush()
@@ -90,6 +82,7 @@ class EscalationManager:
         Returns the number of incidents escalated.
         """
         from app.services.incident.sla_tracker import sla_tracker
+
         breaches = await sla_tracker.get_active_breaches(db)
         count = 0
 
@@ -101,7 +94,7 @@ class EscalationManager:
                         db=db,
                         incident_id=incident.id,
                         user_id=None,
-                        reason=f"System auto-escalation: SLA response threshold exceeded for severity '{incident.severity}'."
+                        reason=f"System auto-escalation: SLA response threshold exceeded for severity '{incident.severity}'.",
                     )
                     count += 1
                 except Exception as e:

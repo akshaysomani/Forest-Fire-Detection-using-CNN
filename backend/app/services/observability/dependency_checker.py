@@ -4,6 +4,7 @@ Dependency Checker - Health check driver for platform dependencies.
 Verifies the operational status of critical dependencies: database connectivity,
 storage volume access, ML model checkpoint availability, and background queue health.
 """
+
 import os
 import logging
 from datetime import datetime, timezone
@@ -24,6 +25,7 @@ class DependencyChecker:
     async def check_database(self, db: AsyncSession) -> Dict[str, Any]:
         """Verify database connectivity with a lightweight query."""
         import time
+
         start = time.perf_counter()
         try:
             result = await db.execute(text("SELECT 1"))

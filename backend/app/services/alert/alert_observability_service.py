@@ -21,14 +21,16 @@ class AlertObservabilityService:
             status_map = {row[0]: row[1] for row in status_res.all()}
 
             # 2. Alert Severity Counts
-            severity_query = select(Alert.severity, func.count(Alert.id)).where(Alert.deleted_at.is_(None)).group_by(Alert.severity)
+            severity_query = (
+                select(Alert.severity, func.count(Alert.id)).where(Alert.deleted_at.is_(None)).group_by(Alert.severity)
+            )
             severity_res = await db.execute(severity_query)
             severity_map = {row[0]: row[1] for row in severity_res.all()}
 
             # 3. Notification Channel Status Counts
-            notif_query = select(AlertNotification.channel, AlertNotification.status, func.count(AlertNotification.id)).group_by(
-                AlertNotification.channel, AlertNotification.status
-            )
+            notif_query = select(
+                AlertNotification.channel, AlertNotification.status, func.count(AlertNotification.id)
+            ).group_by(AlertNotification.channel, AlertNotification.status)
             notif_res = await db.execute(notif_query)
             notif_breakdown = {}
             for channel, status, count in notif_res.all():
@@ -38,13 +40,10 @@ class AlertObservabilityService:
 
             # 4. Average Acknowledgement Latency (in seconds)
             # Fetch alert creation and acknowledgement creation times
-            ack_time_query = select(Alert.created_at, AlertAcknowledgement.created_at).join(
-                AlertAcknowledgement, Alert.id == AlertAcknowledgement.alert_id
-            ).where(
-                and_(
-                    AlertAcknowledgement.action == "acknowledge",
-                    Alert.deleted_at.is_(None)
-                )
+            ack_time_query = (
+                select(Alert.created_at, AlertAcknowledgement.created_at)
+                .join(AlertAcknowledgement, Alert.id == AlertAcknowledgement.alert_id)
+                .where(and_(AlertAcknowledgement.action == "acknowledge", Alert.deleted_at.is_(None)))
             )
             ack_time_res = await db.execute(ack_time_query)
             ack_times = ack_time_res.all()
@@ -79,8 +78,8 @@ class AlertObservabilityService:
                     "alerts_evaluated": mem_summary.get("alerts_evaluated", 0),
                     "alerts_triggered": mem_summary.get("alerts_triggered", 0),
                     "escalations_triggered": mem_summary.get("escalations_triggered", 0),
-                    "notif_in_memory": notif_mem_summary
-                }
+                    "notif_in_memory": notif_mem_summary,
+                },
             }
         except Exception as e:
             logger.error(f"Error compiling observability metrics: {e}", exc_info=True)

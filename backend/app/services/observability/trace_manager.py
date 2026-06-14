@@ -4,6 +4,7 @@ Trace Manager - Propagates tracing context (trace ID, span stack) across async b
 Uses Python contextvars for async-safe trace context propagation within
 the request lifecycle. Manages the span hierarchy stack.
 """
+
 import uuid
 import logging
 from contextvars import ContextVar

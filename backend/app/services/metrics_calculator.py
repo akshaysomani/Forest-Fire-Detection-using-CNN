@@ -7,15 +7,13 @@ class MetricsCalculator:
         """
         if previous_val == 0.0:
             return 100.0 if current_val > 0.0 else 0.0
-        
+
         diff = current_val - previous_val
         growth = (diff / previous_val) * 100
         return round(float(growth), 2)
 
     @staticmethod
-    def calculate_accuracy(
-        tp: int, tn: int, fp: int, fn: int
-    ) -> float:
+    def calculate_accuracy(tp: int, tn: int, fp: int, fn: int) -> float:
         """Computes basic model classification accuracy from confusion matrix parameters."""
         total = tp + tn + fp + fn
         if total == 0:

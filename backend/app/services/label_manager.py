@@ -36,40 +36,25 @@ class LabelManager:
         # Execute bulk update
         query = (
             update(DatasetFile)
-            .where(
-                and_(
-                    DatasetFile.dataset_id == dataset_id,
-                    DatasetFile.id.in_(file_ids),
-                    DatasetFile.deleted_at.is_(None)
-                )
-            )
+            .where(and_(DatasetFile.dataset_id == dataset_id, DatasetFile.id.in_(file_ids), DatasetFile.deleted_at.is_(None)))
             .values(label_id=label_id, updated_at=uuid.uuid4())  # Note: just trigger update, or let SQLAlchemy handle it
         )
-        
+
         # Let's do update manually to count properly and set updated_at properly
         # Wait, using standard update values:
         query = (
             update(DatasetFile)
-            .where(
-                and_(
-                    DatasetFile.dataset_id == dataset_id,
-                    DatasetFile.id.in_(file_ids),
-                    DatasetFile.deleted_at.is_(None)
-                )
-            )
-            .values(label_id=label_id, updated_at=func.now() if hasattr(db, "bind") else None) # Wait, standard Python datetime works best to be provider-independent
+            .where(and_(DatasetFile.dataset_id == dataset_id, DatasetFile.id.in_(file_ids), DatasetFile.deleted_at.is_(None)))
+            .values(
+                label_id=label_id, updated_at=func.now() if hasattr(db, "bind") else None
+            )  # Wait, standard Python datetime works best to be provider-independent
         )
         # Let's import datetime with timezone
         from datetime import datetime, timezone
+
         query = (
             update(DatasetFile)
-            .where(
-                and_(
-                    DatasetFile.dataset_id == dataset_id,
-                    DatasetFile.id.in_(file_ids),
-                    DatasetFile.deleted_at.is_(None)
-                )
-            )
+            .where(and_(DatasetFile.dataset_id == dataset_id, DatasetFile.id.in_(file_ids), DatasetFile.deleted_at.is_(None)))
             .values(label_id=label_id, updated_at=datetime.now(timezone.utc))
         )
 
@@ -85,8 +70,8 @@ class LabelManager:
                 "label_id": str(label_id) if label_id else None,
                 "label_name": label_name,
                 "file_count": len(file_ids),
-                "updated_count": updated_count
-            }
+                "updated_count": updated_count,
+            },
         )
         db.add(audit_log)
         await db.flush()
@@ -96,4 +81,5 @@ class LabelManager:
 
 # Import func for database-level timezone-agnostic operations
 from sqlalchemy import func
+
 label_manager = LabelManager()

@@ -11,11 +11,11 @@ class AnalyticsObservabilityService:
         """Aggregate monitor statistics and run counters for live telemetry dashboards."""
         perf = analytics_monitor.get_performance_summary()
         counts = analytics_metrics.get_metrics()
-        
+
         return {
             "health_status": "healthy" if perf["export_failures_count"] < 5 else "degraded",
             "counters": counts,
-            "performance": perf
+            "performance": perf,
         }
 
 

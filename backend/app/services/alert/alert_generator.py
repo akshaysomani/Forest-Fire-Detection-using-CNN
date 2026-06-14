@@ -19,8 +19,7 @@ class AlertGenerator:
         """
         # 1. Check if prediction is fire and meets confidence threshold
         should_trigger = alert_rules_service.should_raise_alert(
-            prediction_label=detection.prediction_label,
-            confidence=detection.confidence
+            prediction_label=detection.prediction_label, confidence=detection.confidence
         )
 
         if not should_trigger:
@@ -28,21 +27,22 @@ class AlertGenerator:
             return None
 
         # 2. Classify severity level
-        severity = severity_classifier.classify(
-            label=detection.prediction_label,
-            confidence=detection.confidence
-        )
+        severity = severity_classifier.classify(label=detection.prediction_label, confidence=detection.confidence)
 
         # 3. Calculate composite risk score
         risk_score = risk_score_calculator.calculate_score(
             label=detection.prediction_label,
             confidence=detection.confidence,
             latitude=detection.latitude,
-            longitude=detection.longitude
+            longitude=detection.longitude,
         )
 
         # 4. Format detailed alert message
-        location_str = f"at coordinates ({detection.latitude}, {detection.longitude})" if detection.latitude and detection.longitude else ""
+        location_str = (
+            f"at coordinates ({detection.latitude}, {detection.longitude})"
+            if detection.latitude and detection.longitude
+            else ""
+        )
         message = (
             f"POTENTIAL WILDFIRE DETECTED: {detection.prediction_label.upper()} "
             f"identified with {detection.confidence * 100.0:.2f}% confidence {location_str}. "
@@ -59,16 +59,12 @@ class AlertGenerator:
             "model_version": detection.model_version,
             "risk_score": risk_score,
             "image_path": detection.image_path,
-            "filename": detection.filename
+            "filename": detection.filename,
         }
 
         # 6. Trigger alert creation and bus dispatch
         alert = await alert_engine.trigger_detection_alert(
-            db=db,
-            detection_id=detection.id,
-            severity=severity,
-            message=message,
-            payload=payload
+            db=db, detection_id=detection.id, severity=severity, message=message, payload=payload
         )
 
         # 7. Update detection record state

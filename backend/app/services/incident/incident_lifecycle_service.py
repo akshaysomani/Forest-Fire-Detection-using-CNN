@@ -13,12 +13,7 @@ logger = logging.getLogger("incident.incident_lifecycle_service")
 
 class IncidentLifecycleService:
     async def transition_status(
-        self,
-        db: AsyncSession,
-        incident_id: uuid.UUID,
-        new_status: str,
-        user_id: uuid.UUID,
-        reason: Optional[str] = None
+        self, db: AsyncSession, incident_id: uuid.UUID, new_status: str, user_id: uuid.UUID, reason: Optional[str] = None
     ) -> Incident:
         """
         Transitions an incident's lifecycle state, checking transition validations,
@@ -46,11 +41,7 @@ class IncidentLifecycleService:
 
         # 4. Save to status history
         history = IncidentStatusHistory(
-            incident_id=incident.id,
-            user_id=user_id,
-            old_status=old_status,
-            new_status=new_status,
-            transition_reason=reason
+            incident_id=incident.id, user_id=user_id, old_status=old_status, new_status=new_status, transition_reason=reason
         )
         db.add(history)
 
@@ -62,11 +53,7 @@ class IncidentLifecycleService:
             incident_id=incident.id,
             user_id=user_id,
             action="incident_status_changed",
-            details={
-                "old_status": old_status,
-                "new_status": new_status,
-                "reason": reason
-            }
+            details={"old_status": old_status, "new_status": new_status, "reason": reason},
         )
         db.add(audit)
 

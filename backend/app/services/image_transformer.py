@@ -14,7 +14,7 @@ class ImageTransformer:
         """
         img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
         img = img.resize(target_size, Image.Resampling.BILINEAR)
-        
+
         # Extract pixel data and scale
         pixel_bytes = img.tobytes()
         return [b / 255.0 for b in pixel_bytes]
@@ -24,9 +24,10 @@ class ImageTransformer:
         Apply a safe augmentation transform to the image.
         Supported actions: 'flip_horizontal', 'flip_vertical', 'rotate_90', 'rotate_180', 'enhance_contrast'
         """
+
         def _augment():
             img = Image.open(io.BytesIO(file_bytes))
-            
+
             if action == "flip_horizontal":
                 augmented = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
             elif action == "flip_vertical":

@@ -19,7 +19,7 @@ class HeatmapGenerator:
                 Detection.prediction_label == "fire",
                 Detection.latitude.isnot(None),
                 Detection.longitude.isnot(None),
-                Detection.deleted_at.is_(None)
+                Detection.deleted_at.is_(None),
             )
         )
         res = await db.execute(query)
@@ -27,11 +27,7 @@ class HeatmapGenerator:
 
         heatmap_points = []
         for d in detections:
-            heatmap_points.append({
-                "latitude": d.latitude,
-                "longitude": d.longitude,
-                "intensity": round(d.confidence, 2)
-            })
+            heatmap_points.append({"latitude": d.latitude, "longitude": d.longitude, "intensity": round(d.confidence, 2)})
 
         logger.info(f"Heatmap points compiled successfully. Total points: {len(heatmap_points)}")
         return heatmap_points

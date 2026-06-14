@@ -11,7 +11,7 @@ class RiskScoreCalculator:
         confidence: float,
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
-        category: Optional[str] = None
+        category: Optional[str] = None,
     ) -> float:
         """
         Calculate a composite risk score (0.0 to 100.0) based on prediction parameters,
@@ -28,10 +28,9 @@ class RiskScoreCalculator:
         if latitude is not None and longitude is not None:
             # Designate certain latitude/longitude bounding boxes as high risk forest zones
             # e.g., Mediterranean dry zones, California/Pacific Northwest approximations
-            is_high_risk_zone = (
-                (32.0 <= latitude <= 42.0 and -125.0 <= longitude <= -114.0) or  # California approx
-                (35.0 <= latitude <= 45.0 and -10.0 <= longitude <= 30.0)       # Med approx
-            )
+            is_high_risk_zone = (32.0 <= latitude <= 42.0 and -125.0 <= longitude <= -114.0) or (  # California approx
+                35.0 <= latitude <= 45.0 and -10.0 <= longitude <= 30.0
+            )  # Med approx
             if is_high_risk_zone:
                 location_score = 15.0
                 logger.debug("High risk geographical zone detected, adding risk weight.")

@@ -12,7 +12,9 @@ from app.core.exceptions import ValidationException
 
 
 class IdentityGovernanceService:
-    async def create_role(self, db: AsyncSession, name: str, description: Optional[str] = None, current_user_id: Optional[uuid.UUID] = None) -> Role:
+    async def create_role(
+        self, db: AsyncSession, name: str, description: Optional[str] = None, current_user_id: Optional[uuid.UUID] = None
+    ) -> Role:
         """Create a new security role in the system."""
         # Check if role already exists
         q = select(Role).where(Role.name == name)
@@ -30,7 +32,7 @@ class IdentityGovernanceService:
             action="role.create",
             resource_type="role",
             resource_id=str(role.id),
-            details={"role_name": name, "description": description}
+            details={"role_name": name, "description": description},
         )
         db.add(audit)
 
@@ -39,7 +41,7 @@ class IdentityGovernanceService:
             severity="INFO",
             description=f"Security role '{name}' created by user ID {current_user_id}",
             user_id=current_user_id,
-            details_json={"role_id": str(role.id), "role_name": name}
+            details_json={"role_id": str(role.id), "role_name": name},
         )
         db.add(event)
         return role
@@ -62,7 +64,7 @@ class IdentityGovernanceService:
             action="role.delete",
             resource_type="role",
             resource_id=str(role_id),
-            details={"role_name": role.name}
+            details={"role_name": role.name},
         )
         db.add(audit)
 
@@ -71,7 +73,7 @@ class IdentityGovernanceService:
             severity="WARNING",
             description=f"Security role '{role.name}' deleted by user ID {current_user_id}",
             user_id=current_user_id,
-            details_json={"role_id": str(role_id), "role_name": role.name}
+            details_json={"role_id": str(role_id), "role_name": role.name},
         )
         db.add(event)
 
@@ -79,7 +81,9 @@ class IdentityGovernanceService:
         await db.delete(role)
         await db.flush()
 
-    async def assign_role_to_user(self, db: AsyncSession, user_id: uuid.UUID, role_name: str, current_user_id: Optional[uuid.UUID] = None) -> User:
+    async def assign_role_to_user(
+        self, db: AsyncSession, user_id: uuid.UUID, role_name: str, current_user_id: Optional[uuid.UUID] = None
+    ) -> User:
         """Assign a security role to a user."""
         # Get user
         q_user = select(User).where(User.id == user_id, User.deleted_at.is_(None)).options(selectinload(User.roles))
@@ -110,7 +114,7 @@ class IdentityGovernanceService:
             action="user.role_assign",
             resource_type="user",
             resource_id=str(user_id),
-            details={"assigned_role": role_name}
+            details={"assigned_role": role_name},
         )
         db.add(audit)
 
@@ -120,12 +124,14 @@ class IdentityGovernanceService:
             severity=severity,
             description=f"Role '{role_name}' assigned to user {user.username} (ID: {user_id}) by user ID {current_user_id}",
             user_id=current_user_id,
-            details_json={"target_user_id": str(user_id), "role_name": role_name}
+            details_json={"target_user_id": str(user_id), "role_name": role_name},
         )
         db.add(event)
         return user
 
-    async def revoke_role_from_user(self, db: AsyncSession, user_id: uuid.UUID, role_name: str, current_user_id: Optional[uuid.UUID] = None) -> User:
+    async def revoke_role_from_user(
+        self, db: AsyncSession, user_id: uuid.UUID, role_name: str, current_user_id: Optional[uuid.UUID] = None
+    ) -> User:
         """Revoke a security role from a user."""
         q_user = select(User).where(User.id == user_id, User.deleted_at.is_(None)).options(selectinload(User.roles))
         res_user = await db.execute(q_user)
@@ -136,7 +142,11 @@ class IdentityGovernanceService:
         # Prevent removing last Super Admin
         if role_name == "Super Admin":
             # Check how many super admins exist
-            q_count = select(User).join(User.roles).where(Role.name == "Super Admin", User.is_active == True, User.deleted_at.is_(None))
+            q_count = (
+                select(User)
+                .join(User.roles)
+                .where(Role.name == "Super Admin", User.is_active == True, User.deleted_at.is_(None))
+            )
             res_count = await db.execute(q_count)
             super_admins = res_count.scalars().all()
             if len(super_admins) <= 1 and any(sa.id == user_id for sa in super_admins):
@@ -160,7 +170,7 @@ class IdentityGovernanceService:
                 action="user.role_revoke",
                 resource_type="user",
                 resource_id=str(user_id),
-                details={"revoked_role": role_name}
+                details={"revoked_role": role_name},
             )
             db.add(audit)
 
@@ -169,13 +179,15 @@ class IdentityGovernanceService:
                 severity="WARNING",
                 description=f"Role '{role_name}' revoked from user {user.username} (ID: {user_id}) by user ID {current_user_id}",
                 user_id=current_user_id,
-                details_json={"target_user_id": str(user_id), "role_name": role_name}
+                details_json={"target_user_id": str(user_id), "role_name": role_name},
             )
             db.add(event)
 
         return user
 
-    async def update_role_permissions(self, db: AsyncSession, role_id: uuid.UUID, permission_names: List[str], current_user_id: Optional[uuid.UUID] = None) -> Role:
+    async def update_role_permissions(
+        self, db: AsyncSession, role_id: uuid.UUID, permission_names: List[str], current_user_id: Optional[uuid.UUID] = None
+    ) -> Role:
         """Update the set of permissions assigned to a role."""
         q_role = select(Role).where(Role.id == role_id).options(selectinload(Role.permissions))
         res_role = await db.execute(q_role)
@@ -209,7 +221,7 @@ class IdentityGovernanceService:
             action="role.permissions_update",
             resource_type="role",
             resource_id=str(role_id),
-            details={"old_permissions": old_perms, "new_permissions": permission_names}
+            details={"old_permissions": old_perms, "new_permissions": permission_names},
         )
         db.add(audit)
 
@@ -218,7 +230,7 @@ class IdentityGovernanceService:
             severity="HIGH",
             description=f"Permissions for role '{role.name}' updated by user ID {current_user_id}",
             user_id=current_user_id,
-            details_json={"role_id": str(role_id), "role_name": role.name, "new_permissions": permission_names}
+            details_json={"role_id": str(role_id), "role_name": role.name, "new_permissions": permission_names},
         )
         db.add(event)
         return role

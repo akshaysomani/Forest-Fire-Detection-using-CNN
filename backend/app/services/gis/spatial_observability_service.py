@@ -34,7 +34,7 @@ class SpatialObservabilityService:
             "registered_regions": total_regions,
             "registered_zones": total_zones,
             "registered_geofences": total_geofences,
-            "in_memory_counters": in_memory
+            "in_memory_counters": in_memory,
         }
 
 

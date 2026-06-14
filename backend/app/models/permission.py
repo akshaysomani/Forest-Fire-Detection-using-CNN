@@ -13,7 +13,7 @@ role_permissions = Table(
     "role_permissions",
     Base.metadata,
     Column("role_id", Uuid, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
-    Column("permission_id", Uuid, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
+    Column("permission_id", Uuid, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
 )
 
 
@@ -24,8 +24,4 @@ class Permission(BaseModel):
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationships
-    roles: Mapped[list["Role"]] = relationship(
-        "Role",
-        secondary=role_permissions,
-        back_populates="permissions"
-    )
+    roles: Mapped[list["Role"]] = relationship("Role", secondary=role_permissions, back_populates="permissions")

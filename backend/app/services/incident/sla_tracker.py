@@ -10,13 +10,7 @@ logger = logging.getLogger("incident.sla_tracker")
 
 class SLATracker:
     # Default SLA thresholds in minutes for dispatch acknowledgment
-    SLA_THRESHOLDS = {
-        "Critical": 15,
-        "High": 30,
-        "Medium": 60,
-        "Low": 120,
-        "Informational": 240
-    }
+    SLA_THRESHOLDS = {"Critical": 15, "High": 30, "Medium": 60, "Low": 120, "Informational": 240}
 
     def get_threshold_minutes(self, severity: str) -> int:
         """Get the SLA threshold in minutes for a given severity."""
@@ -57,12 +51,7 @@ class SLATracker:
         Queries all active incidents that are in 'Open' or 'Assigned' status
         and have exceeded their SLA response window.
         """
-        query = select(Incident).where(
-            and_(
-                Incident.status.in_(["Open", "Assigned"]),
-                Incident.deleted_at.is_(None)
-            )
-        )
+        query = select(Incident).where(and_(Incident.status.in_(["Open", "Assigned"]), Incident.deleted_at.is_(None)))
         res = await db.execute(query)
         incidents = res.scalars().all()
 

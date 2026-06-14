@@ -24,7 +24,7 @@ class PredictionRepository(BaseRepository[Detection]):
         min_confidence: Optional[float] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        include_deleted: bool = False
+        include_deleted: bool = False,
     ) -> Tuple[Sequence[Detection], int]:
         """
         Retrieve a filtered, paginated list of predictions and the total matching record count.
@@ -74,7 +74,7 @@ class PredictionRepository(BaseRepository[Detection]):
             func.count().label("total"),
             func.sum(func.cast(self.model.prediction_label == "fire", Integer)).label("fire"),
             func.sum(func.cast(self.model.prediction_label == "non-fire", Integer)).label("non_fire"),
-            func.avg(self.model.confidence).label("avg_conf")
+            func.avg(self.model.confidence).label("avg_conf"),
         ).where(base_filter)
 
         res = await db.execute(count_q)
@@ -87,9 +87,7 @@ class PredictionRepository(BaseRepository[Detection]):
 
         # Calculate accuracy metrics using human-verified ground truths:
         # A prediction is "correct" if (prediction_label == 'fire' and is_verified_fire == True) OR (prediction_label == 'non-fire' and is_verified_fire == False)
-        verified_total_q = select(func.count()).where(
-            and_(base_filter, self.model.is_verified_fire.is_not(None))
-        )
+        verified_total_q = select(func.count()).where(and_(base_filter, self.model.is_verified_fire.is_not(None)))
         verified_total_res = await db.execute(verified_total_q)
         verified_total = verified_total_res.scalar() or 0
 
@@ -101,8 +99,8 @@ class PredictionRepository(BaseRepository[Detection]):
                     self.model.is_verified_fire.is_not(None),
                     or_(
                         and_(self.model.prediction_label == "fire", self.model.is_verified_fire == True),
-                        and_(self.model.prediction_label == "non-fire", self.model.is_verified_fire == False)
-                    )
+                        and_(self.model.prediction_label == "non-fire", self.model.is_verified_fire == False),
+                    ),
                 )
             )
             correct_res = await db.execute(correct_q)
@@ -114,7 +112,7 @@ class PredictionRepository(BaseRepository[Detection]):
             "fire_count": fire,
             "non_fire_count": non_fire,
             "average_confidence": avg_conf,
-            "accuracy_percentage": accuracy
+            "accuracy_percentage": accuracy,
         }
 
 

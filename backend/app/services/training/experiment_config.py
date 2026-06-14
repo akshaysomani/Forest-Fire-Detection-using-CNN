@@ -8,10 +8,7 @@ class ExperimentConfig(BaseSettings):
     MAX_CHECKPOINTS_TO_KEEP: int = 3
     DEFAULT_LOG_INTERVAL: int = 10  # Log training metrics every N batches
 
-    model_config = {
-        "env_prefix": "ML_",
-        "extra": "ignore"
-    }
+    model_config = {"env_prefix": "ML_", "extra": "ignore"}
 
 
 experiment_config = ExperimentConfig()

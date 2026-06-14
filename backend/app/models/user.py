@@ -36,26 +36,12 @@ class User(BaseModel):
     password_reset_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    roles: Mapped[list[Role]] = relationship(
-        "Role",
-        secondary=user_roles,
-        back_populates="users"
-    )
+    roles: Mapped[list[Role]] = relationship("Role", secondary=user_roles, back_populates="users")
 
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
-        "RefreshToken",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
 
-    sessions: Mapped[list["UserSession"]] = relationship(
-        "UserSession",
-        back_populates="user",
-        cascade="all, delete-orphan"
-    )
+    sessions: Mapped[list["UserSession"]] = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
 
-    audit_logs: Mapped[list["AuditLog"]] = relationship(
-        "AuditLog",
-        back_populates="user",
-        cascade="all, delete-orphan"
-    )
+    audit_logs: Mapped[list["AuditLog"]] = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")

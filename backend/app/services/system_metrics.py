@@ -19,16 +19,16 @@ class SystemMetrics:
                 "total_bytes": total,
                 "used_bytes": used,
                 "free_bytes": free,
-                "percentage_used": round((used / total) * 100, 2)
+                "percentage_used": round((used / total) * 100, 2),
             }
         except Exception as e:
             logger.error(f"Failed to read disk storage metrics: {e}")
             # Proactively return fallback mock values rather than failing
             return {
                 "total_bytes": 100 * 1024 * 1024 * 1024,  # 100 GB
-                "used_bytes": 35 * 1024 * 1024 * 1024,   # 35 GB
-                "free_bytes": 65 * 1024 * 1024 * 1024,   # 65 GB
-                "percentage_used": 35.00
+                "used_bytes": 35 * 1024 * 1024 * 1024,  # 35 GB
+                "free_bytes": 65 * 1024 * 1024 * 1024,  # 65 GB
+                "percentage_used": 35.00,
             }
 
     @staticmethod
@@ -36,6 +36,7 @@ class SystemMetrics:
         """Returns the current CPU usage percentage."""
         try:
             import psutil
+
             val = psutil.cpu_percent(interval=None)
             # If psutil returns 0.0 (as it sometimes does on first call), try again with minor delay
             if val == 0.0:
@@ -53,12 +54,13 @@ class SystemMetrics:
         """
         try:
             import psutil
+
             mem = psutil.virtual_memory()
             return {
                 "total_bytes": mem.total,
                 "used_bytes": mem.used,
                 "free_bytes": mem.available,
-                "percentage_used": round(mem.percent, 2)
+                "percentage_used": round(mem.percent, 2),
             }
         except Exception as e:
             logger.error(f"Failed to read RAM memory metrics: {e}")
@@ -67,7 +69,7 @@ class SystemMetrics:
                 "total_bytes": 8 * 1024 * 1024 * 1024,
                 "used_bytes": int(3.2 * 1024 * 1024 * 1024),
                 "free_bytes": int(4.8 * 1024 * 1024 * 1024),
-                "percentage_used": 40.00
+                "percentage_used": 40.00,
             }
 
 

@@ -19,7 +19,7 @@ class MetricsCalculator:
                 "recall": 0.0,
                 "f1_score": 0.0,
                 "roc_auc": 0.0,
-                "confusion_matrix": {"tn": 0, "fp": 0, "fn": 0, "tp": 0}
+                "confusion_matrix": {"tn": 0, "fp": 0, "fn": 0, "tp": 0},
             }
 
         y_true_arr = np.array(y_true)
@@ -61,12 +61,7 @@ class MetricsCalculator:
             "recall": round(float(recall), 4),
             "f1_score": round(float(f1), 4),
             "roc_auc": round(float(roc_auc), 4),
-            "confusion_matrix": {
-                "tn": int(tn),
-                "fp": int(fp),
-                "fn": int(fn),
-                "tp": int(tp)
-            }
+            "confusion_matrix": {"tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp)},
         }
 
 

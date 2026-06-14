@@ -37,26 +37,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         path = urllib.parse.unquote(request.url.path)
         query_params = urllib.parse.unquote(str(request.url.query))
         headers = dict(request.headers)
-        
+
         # Read and cache request body for scanning
         body_str = ""
         # Skip body scanning for upload endpoints to optimize performance & avoid false-positives on binaries
         is_upload = "/upload" in path or "/images" in path or "/datasets" in path
-        
+
         if not is_upload and request.method in ["POST", "PUT", "PATCH"]:
             body_bytes = await request.body()
             body_str = body_bytes.decode("utf-8", errors="ignore")
+
             # Override receive channel so endpoint can still consume the body
             async def receive():
                 return {"type": "http.request", "body": body_bytes, "more_body": False}
+
             request._receive = receive
 
         is_threat, threat_type = threat_detection_engine.detect_threat(
-            method=request.method,
-            path=path,
-            query_params=query_params,
-            headers=headers,
-            body=body_str
+            method=request.method, path=path, query_params=query_params, headers=headers, body=body_str
         )
 
         if is_threat:
@@ -74,7 +72,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         description=f"Malicious request block: {threat_type}",
                         ip_address=ip_address,
                         user_agent=headers.get("user-agent"),
-                        details_json={"path": path, "query": query_params, "threat": threat_type}
+                        details_json={"path": path, "query": query_params, "threat": threat_type},
                     )
                     db.add(event)
                     await db.commit()

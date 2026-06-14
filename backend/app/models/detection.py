@@ -12,10 +12,7 @@ class Detection(BaseModel):
     __tablename__ = "detections"
 
     user_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     image_path: Mapped[str] = mapped_column(String(512), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -23,11 +20,11 @@ class Detection(BaseModel):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     model_name: Mapped[str] = mapped_column(String(100), default="CNN_ResNet50_v1", nullable=False, index=True)
     model_version: Mapped[str] = mapped_column(String(50), default="1.0.0", nullable=False)
-    
+
     # Human Verification details for model accuracy calculations
-    is_verified_fire: Mapped[bool | None] = mapped_column(Boolean, default=None, nullable=True, index=True)  
+    is_verified_fire: Mapped[bool | None] = mapped_column(Boolean, default=None, nullable=True, index=True)
     alert_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    
+
     # Location metrics
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)

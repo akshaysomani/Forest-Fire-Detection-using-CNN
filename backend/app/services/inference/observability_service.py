@@ -7,10 +7,7 @@ logger = logging.getLogger("inference.observability")
 class ObservabilityService:
     @staticmethod
     def log_inference_event(
-        event_name: str,
-        message: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        level: str = "INFO"
+        event_name: str, message: str, metadata: Optional[Dict[str, Any]] = None, level: str = "INFO"
     ) -> None:
         """
         Log structured log entries with metadata attributes.
@@ -29,27 +26,21 @@ class ObservabilityService:
 
     @staticmethod
     def trigger_anomaly_alert(
-        metric_name: str,
-        threshold_value: Any,
-        actual_value: Any,
-        job_details: Optional[Dict[str, Any]] = None
+        metric_name: str, threshold_value: Any, actual_value: Any, job_details: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Structured logger hook designed to notify operations teams about SLA breaches
         or high inference error rates.
         """
-        alert_msg = (
-            f"ALERT: Metric '{metric_name}' breached threshold of {threshold_value}. "
-            f"Actual value: {actual_value}."
-        )
+        alert_msg = f"ALERT: Metric '{metric_name}' breached threshold of {threshold_value}. " f"Actual value: {actual_value}."
         logger.critical(
             alert_msg,
             extra={
                 "metric_name": metric_name,
                 "threshold": threshold_value,
                 "actual": actual_value,
-                "details": job_details or {}
-            }
+                "details": job_details or {},
+            },
         )
 
 

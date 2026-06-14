@@ -10,11 +10,7 @@ logger = logging.getLogger("alert.alert_acknowledgement_service")
 
 class AlertAcknowledgementService:
     async def acknowledge_alert(
-        self,
-        db: AsyncSession,
-        alert_id: uuid.UUID,
-        user_id: uuid.UUID,
-        notes: Optional[str] = None
+        self, db: AsyncSession, alert_id: uuid.UUID, user_id: uuid.UUID, notes: Optional[str] = None
     ) -> Alert:
         """
         Acknowledges an active or escalated alert, logging who acknowledged it and any remarks.
@@ -25,6 +21,7 @@ class AlertAcknowledgementService:
         query = db.add  # placeholder or direct select
         # Use select to get the alert
         from sqlalchemy import select
+
         res = await db.execute(select(Alert).where(Alert.id == alert_id, Alert.deleted_at.is_(None)))
         alert = res.scalar_one_or_none()
 
@@ -39,12 +36,7 @@ class AlertAcknowledgementService:
         db.add(alert)
 
         # 3. Create AlertAcknowledgement log
-        ack = AlertAcknowledgement(
-            alert_id=alert.id,
-            user_id=user_id,
-            action="acknowledge",
-            notes=notes
-        )
+        ack = AlertAcknowledgement(alert_id=alert.id, user_id=user_id, action="acknowledge", notes=notes)
         db.add(ack)
 
         # 4. Save Audit trail
@@ -52,10 +44,7 @@ class AlertAcknowledgementService:
             alert_id=alert.id,
             user_id=user_id,
             action="alert_acknowledged",
-            details={
-                "previous_status": alert.status,
-                "notes": notes
-            }
+            details={"previous_status": alert.status, "notes": notes},
         )
         db.add(audit)
 

@@ -6,13 +6,7 @@ from app.services.training.artifact_manager import artifact_manager
 class ExperimentTracker:
     @staticmethod
     async def log_epoch(
-        run_id: str,
-        epoch: int,
-        train_loss: float,
-        train_acc: float,
-        val_loss: float,
-        val_acc: float,
-        lr: float
+        run_id: str, epoch: int, train_loss: float, train_acc: float, val_loss: float, val_acc: float, lr: float
     ) -> Dict[str, Any]:
         """Log epoch progress to stdout and return log details."""
         metrics = {
@@ -21,13 +15,13 @@ class ExperimentTracker:
             "train_acc": round(train_acc, 5),
             "val_loss": round(val_loss, 5),
             "val_acc": round(val_acc, 5),
-            "learning_rate": lr
+            "learning_rate": lr,
         }
 
         training_logger.info(
             run_id=run_id,
             message=f"Epoch {epoch} Completed: train_loss={train_loss:.4f}, train_acc={train_acc:.4f}, val_loss={val_loss:.4f}, val_acc={val_acc:.4f}",
-            extra=metrics
+            extra=metrics,
         )
         return metrics
 
@@ -36,7 +30,7 @@ class ExperimentTracker:
         run_id: str,
         hyperparameters: Dict[str, Any],
         metrics_history: List[Dict[str, Any]],
-        evaluation_summary: Dict[str, Any] | None = None
+        evaluation_summary: Dict[str, Any] | None = None,
     ) -> None:
         """Saves hyperparameters, metrics, and evaluation summaries to storage as JSON artifacts."""
         await artifact_manager.save_config(run_id, hyperparameters)

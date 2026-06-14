@@ -16,12 +16,7 @@ class MetricsEngine:
         disk = system_metrics.get_storage_usage()
         active_sessions = await dashboard_repository.get_active_sessions_count(db)
 
-        return {
-            "cpu_usage_percent": cpu,
-            "memory_usage": ram,
-            "storage_usage": disk,
-            "active_sessions": active_sessions
-        }
+        return {"cpu_usage_percent": cpu, "memory_usage": ram, "storage_usage": disk, "active_sessions": active_sessions}
 
     async def get_model_statistics(self, db: AsyncSession) -> list:
         """Fetch invocation counts and average confidence values per model."""

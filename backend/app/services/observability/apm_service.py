@@ -5,6 +5,7 @@ Provides request throughput tracking, error rate calculation,
 latency percentile analysis, and baseline distribution compilation
 from persisted PerformanceMetric records.
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
@@ -41,9 +42,7 @@ class APMService:
         total_result = await db.execute(total_q)
         total = total_result.scalar() or 0
 
-        error_q = select(func.count(PerformanceMetric.id)).where(
-            and_(*conditions, PerformanceMetric.status_code >= 400)
-        )
+        error_q = select(func.count(PerformanceMetric.id)).where(and_(*conditions, PerformanceMetric.status_code >= 400))
         error_result = await db.execute(error_q)
         errors = error_result.scalar() or 0
 
@@ -75,11 +74,7 @@ class APMService:
             conditions.append(PerformanceMetric.endpoint == endpoint)
 
         # Fetch all latency values for percentile calculation
-        latency_q = (
-            select(PerformanceMetric.latency_ms)
-            .where(and_(*conditions))
-            .order_by(PerformanceMetric.latency_ms)
-        )
+        latency_q = select(PerformanceMetric.latency_ms).where(and_(*conditions)).order_by(PerformanceMetric.latency_ms)
         result = await db.execute(latency_q)
         latencies = [row[0] for row in result.all()]
 
@@ -134,10 +129,7 @@ class APMService:
         )
 
         result = await db.execute(query)
-        return [
-            {"status_code": row.status_code, "count": row.count}
-            for row in result.all()
-        ]
+        return [{"status_code": row.status_code, "count": row.count} for row in result.all()]
 
     async def get_apm_summary(
         self,

@@ -12,17 +12,23 @@ class AccessReviewCampaign(BaseModel):
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(50), default="ACTIVE", nullable=False, index=True)
     target_role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    created_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class AccessReviewDecision(BaseModel):
     __tablename__ = "access_review_decisions"
 
-    campaign_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("access_review_campaigns.id", ondelete="CASCADE"), nullable=False, index=True)
+    campaign_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("access_review_campaigns.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     role_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False, index=True)
-    reviewer_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reviewer_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     decision: Mapped[str] = mapped_column(String(50), nullable=False)  # 'CERTIFIED', 'REVOKED'
     decision_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     justification: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -46,7 +52,9 @@ class SecretRotationLog(BaseModel):
 
     secret_key: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     rotated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    rotated_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    rotated_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     status: Mapped[str] = mapped_column(String(50), nullable=False)  # 'SUCCESS', 'FAILURE'
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -54,13 +62,13 @@ class SecretRotationLog(BaseModel):
 class SecurityEvent(BaseModel):
     __tablename__ = "security_events"
 
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
-    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     severity: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # 'INFO', 'WARNING', 'HIGH', 'CRITICAL'
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
     user_agent: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     details_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
@@ -80,11 +88,11 @@ class CompliancePolicy(BaseModel):
 class ComplianceAudit(BaseModel):
     __tablename__ = "compliance_audits"
 
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
-    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
     policy_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    checked_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    checked_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     status: Mapped[str] = mapped_column(String(50), nullable=False)  # 'PASS', 'FAIL'
     findings: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     details_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

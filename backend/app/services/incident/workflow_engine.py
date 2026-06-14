@@ -19,8 +19,7 @@ class WorkflowEngine:
         if new_status in ["Resolved", "Closed"]:
             # Query all active assignments
             assignment_q = select(IncidentAssignment).where(
-                IncidentAssignment.incident_id == incident.id,
-                IncidentAssignment.status.in_(["Pending", "Accepted"])
+                IncidentAssignment.incident_id == incident.id, IncidentAssignment.status.in_(["Pending", "Accepted"])
             )
             res = await db.execute(assignment_q)
             assignments = res.scalars().all()
@@ -31,9 +30,7 @@ class WorkflowEngine:
 
             # Release teams: update current_incident_id to NULL
             team_update_q = (
-                update(ResponseTeam)
-                .where(ResponseTeam.current_incident_id == incident.id)
-                .values(current_incident_id=None)
+                update(ResponseTeam).where(ResponseTeam.current_incident_id == incident.id).values(current_incident_id=None)
             )
             await db.execute(team_update_q)
 
@@ -41,10 +38,7 @@ class WorkflowEngine:
             event = IncidentEvent(
                 incident_id=incident.id,
                 event_type="workflow_teams_released",
-                payload={
-                    "status": new_status,
-                    "released_assignments_count": len(assignments)
-                }
+                payload={"status": new_status, "released_assignments_count": len(assignments)},
             )
             db.add(event)
             logger.info(f"Released teams and completed active assignments for incident {incident.id}")

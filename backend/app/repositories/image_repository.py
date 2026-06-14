@@ -61,10 +61,7 @@ class ImageRepository(BaseRepository[Image]):
         if status:
             filters.append(Image.status == status)
         if search_query:
-            filters.append(
-                Image.filename.ilike(f"%{search_query}%")
-                | Image.original_filename.ilike(f"%{search_query}%")
-            )
+            filters.append(Image.filename.ilike(f"%{search_query}%") | Image.original_filename.ilike(f"%{search_query}%"))
         if filters:
             query = query.where(and_(*filters))
 
@@ -72,7 +69,7 @@ class ImageRepository(BaseRepository[Image]):
         query = query.options(
             selectinload(Image.metadata_relation),
             selectinload(Image.versions).selectinload(ImageVersion.storage_locations),
-            selectinload(Image.storage_locations)
+            selectinload(Image.storage_locations),
         )
         result = await db.execute(query)
         return result.scalars().all()
@@ -97,10 +94,7 @@ class ImageRepository(BaseRepository[Image]):
         if status:
             filters.append(Image.status == status)
         if search_query:
-            filters.append(
-                Image.filename.ilike(f"%{search_query}%")
-                | Image.original_filename.ilike(f"%{search_query}%")
-            )
+            filters.append(Image.filename.ilike(f"%{search_query}%") | Image.original_filename.ilike(f"%{search_query}%"))
         if filters:
             query = query.where(and_(*filters))
 
@@ -165,7 +159,7 @@ class ImageRepository(BaseRepository[Image]):
         query = query.options(
             selectinload(Image.metadata_relation),
             selectinload(Image.versions).selectinload(ImageVersion.storage_locations),
-            selectinload(Image.storage_locations)
+            selectinload(Image.storage_locations),
         )
         result = await db.execute(query)
         return result.scalars().all()
@@ -228,31 +222,25 @@ class ImageRepository(BaseRepository[Image]):
     async def get_statistics(self, db: AsyncSession) -> Dict[str, Any]:
         """Aggregate statistical breakdowns of active stored images."""
         base_filters = Image.deleted_at.is_(None)
-        
+
         # 1. Total count and size
-        summary_query = select(
-            func.count(Image.id),
-            func.sum(Image.size_bytes)
-        ).where(base_filters)
+        summary_query = select(func.count(Image.id), func.sum(Image.size_bytes)).where(base_filters)
         summary_res = await db.execute(summary_query)
         total_count, total_size = summary_res.first()
 
         # 2. Breakdowns by upload source
-        source_query = select(
-            Image.upload_source,
-            func.count(Image.id),
-            func.sum(Image.size_bytes)
-        ).where(base_filters).group_by(Image.upload_source)
+        source_query = (
+            select(Image.upload_source, func.count(Image.id), func.sum(Image.size_bytes))
+            .where(base_filters)
+            .group_by(Image.upload_source)
+        )
         source_res = await db.execute(source_query)
         source_breakdown = {}
         for source, count, size in source_res.all():
             source_breakdown[source] = {"count": count, "size_bytes": size or 0}
 
         # 3. Breakdowns by status
-        status_query = select(
-            Image.status,
-            func.count(Image.id)
-        ).where(base_filters).group_by(Image.status)
+        status_query = select(Image.status, func.count(Image.id)).where(base_filters).group_by(Image.status)
         status_res = await db.execute(status_query)
         status_breakdown = {}
         for status, count in status_res.all():
@@ -262,7 +250,7 @@ class ImageRepository(BaseRepository[Image]):
             "total_count": total_count or 0,
             "total_size_bytes": total_size or 0,
             "source_breakdown": source_breakdown,
-            "status_breakdown": status_breakdown
+            "status_breakdown": status_breakdown,
         }
 
 
@@ -281,9 +269,11 @@ class ImageVersionRepository(BaseRepository[ImageVersion]):
         super().__init__(ImageVersion)
 
     async def get_by_image_and_purpose(self, db: AsyncSession, image_id: uuid.UUID, purpose: str) -> ImageVersion | None:
-        query = select(ImageVersion).where(
-            and_(ImageVersion.image_id == image_id, ImageVersion.purpose == purpose)
-        ).options(selectinload(ImageVersion.storage_locations))
+        query = (
+            select(ImageVersion)
+            .where(and_(ImageVersion.image_id == image_id, ImageVersion.purpose == purpose))
+            .options(selectinload(ImageVersion.storage_locations))
+        )
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -298,7 +288,11 @@ class ImageProcessingLogRepository(BaseRepository[ImageProcessingLog]):
         super().__init__(ImageProcessingLog)
 
     async def get_logs_by_image(self, db: AsyncSession, image_id: uuid.UUID) -> Sequence[ImageProcessingLog]:
-        query = select(ImageProcessingLog).where(ImageProcessingLog.image_id == image_id).order_by(ImageProcessingLog.started_at.desc())
+        query = (
+            select(ImageProcessingLog)
+            .where(ImageProcessingLog.image_id == image_id)
+            .order_by(ImageProcessingLog.started_at.desc())
+        )
         result = await db.execute(query)
         return result.scalars().all()
 
@@ -309,10 +303,7 @@ class ImageStorageLocationRepository(BaseRepository[ImageStorageLocation]):
 
     async def get_primary_location(self, db: AsyncSession, image_id: uuid.UUID) -> ImageStorageLocation | None:
         query = select(ImageStorageLocation).where(
-            and_(
-                ImageStorageLocation.image_id == image_id,
-                ImageStorageLocation.is_primary.is_(True)
-            )
+            and_(ImageStorageLocation.image_id == image_id, ImageStorageLocation.is_primary.is_(True))
         )
         result = await db.execute(query)
         return result.scalar_one_or_none()
@@ -327,8 +318,16 @@ class ImageAccessLogRepository(BaseRepository[ImageAccessLog]):
     def __init__(self):
         super().__init__(ImageAccessLog)
 
-    async def get_logs_by_image(self, db: AsyncSession, image_id: uuid.UUID, skip: int = 0, limit: int = 100) -> Sequence[ImageAccessLog]:
-        query = select(ImageAccessLog).where(ImageAccessLog.image_id == image_id).order_by(ImageAccessLog.accessed_at.desc()).offset(skip).limit(limit)
+    async def get_logs_by_image(
+        self, db: AsyncSession, image_id: uuid.UUID, skip: int = 0, limit: int = 100
+    ) -> Sequence[ImageAccessLog]:
+        query = (
+            select(ImageAccessLog)
+            .where(ImageAccessLog.image_id == image_id)
+            .order_by(ImageAccessLog.accessed_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
         result = await db.execute(query)
         return result.scalars().all()
 

@@ -9,10 +9,10 @@ logger = logging.getLogger("inference.input_validator")
 class InputValidator:
     # Max file size: 15MB
     MAX_FILE_SIZE = 15 * 1024 * 1024
-    
+
     # Supported image formats
     SUPPORTED_FORMATS = {"JPEG", "JPG", "PNG", "WEBP"}
-    
+
     # Supported MIME types
     SUPPORTED_MIMES = {"image/jpeg", "image/png", "image/webp"}
 

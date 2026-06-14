@@ -9,10 +9,7 @@ logger = logging.getLogger("inference.batch_prediction_service")
 
 class BatchPredictionService:
     @staticmethod
-    async def submit_batch(
-        user_id: uuid.UUID,
-        images: List[Dict[str, Any]]
-    ) -> uuid.UUID:
+    async def submit_batch(user_id: uuid.UUID, images: List[Dict[str, Any]]) -> uuid.UUID:
         """
         Submit a batch of images for background inference.
         Ensures the background processor worker is running, enqueues the tasks,
@@ -24,7 +21,7 @@ class BatchPredictionService:
         # Enqueue job
         job_id = await prediction_queue.enqueue_job(user_id=user_id, images=images)
         logger.info(f"Batch prediction job '{job_id}' successfully submitted by user '{user_id}'.")
-        
+
         return job_id
 
     @staticmethod

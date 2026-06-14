@@ -9,7 +9,7 @@ class Settings(BaseSettings):
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
 
     PROJECT_NAME: str = "Forest Fire Detection API"

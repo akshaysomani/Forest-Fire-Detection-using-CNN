@@ -12,7 +12,7 @@ class Trainer:
         criterion: nn.Module,
         device: torch.device,
         scheduler: Any = None,
-        cancel_event: Any = None
+        cancel_event: Any = None,
     ):
         self.model = model
         self.optimizer = optimizer

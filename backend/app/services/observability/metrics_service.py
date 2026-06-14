@@ -4,6 +4,7 @@ Metrics Service - Database-backed metric storage, retrieval, and aggregation.
 Handles flushing in-memory registry snapshots to the database,
 querying historical metric data, and computing statistical summaries.
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
@@ -86,13 +87,7 @@ class MetricsService:
         total = total_result.scalar() or 0
 
         # Data
-        data_q = (
-            select(MetricEntry)
-            .where(and_(*conditions))
-            .order_by(desc(MetricEntry.timestamp))
-            .offset(skip)
-            .limit(limit)
-        )
+        data_q = select(MetricEntry).where(and_(*conditions)).order_by(desc(MetricEntry.timestamp)).offset(skip).limit(limit)
         result = await db.execute(data_q)
         items = list(result.scalars().all())
 
@@ -126,12 +121,7 @@ class MetricsService:
         row = result.one_or_none()
 
         # Latest value
-        latest_q = (
-            select(MetricEntry.value)
-            .where(and_(*conditions))
-            .order_by(desc(MetricEntry.timestamp))
-            .limit(1)
-        )
+        latest_q = select(MetricEntry.value).where(and_(*conditions)).order_by(desc(MetricEntry.timestamp)).limit(1)
         latest_result = await db.execute(latest_q)
         latest = latest_result.scalar()
 
