@@ -1,6 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.incident import Incident
+    from app.models.alert import Alert
+    from app.models.user import User
 from sqlalchemy import String, ForeignKey, JSON, Integer, Boolean, DateTime, Uuid, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel

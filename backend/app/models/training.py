@@ -1,6 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.dataset import Dataset, DatasetVersion
+    from app.models.user import User
 from sqlalchemy import String, ForeignKey, JSON, Integer, Float, Boolean, DateTime, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel

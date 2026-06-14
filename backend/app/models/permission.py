@@ -1,7 +1,11 @@
 import uuid
+from typing import TYPE_CHECKING
 from sqlalchemy import Column, ForeignKey, Table, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.role import Role
 from app.core.database import Base
 
 # Association table mapping Roles to Permissions

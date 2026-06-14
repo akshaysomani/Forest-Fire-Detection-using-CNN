@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_current_active_user, PermissionChecker
 from app.models.user import User
+from app.models.security import AccessReviewCampaign
 from app.schemas.security_schema import (
     SecurityEventResponse,
     AccessReviewCampaignResponse,

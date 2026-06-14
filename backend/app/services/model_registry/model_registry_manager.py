@@ -1,5 +1,6 @@
 import uuid
 import logging
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.model_registry.model_repository import model_repository
 from app.services.model_registry.model_registry_service import model_registry_service
@@ -48,8 +49,5 @@ class ModelRegistryManager:
 
         return version
 
-
-# Inline typing fix if needed
-from typing import Optional
 
 model_registry_manager = ModelRegistryManager()

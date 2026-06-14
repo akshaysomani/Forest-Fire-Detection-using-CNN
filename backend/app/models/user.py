@@ -1,8 +1,15 @@
+from __future__ import annotations
 from datetime import datetime
+from typing import TYPE_CHECKING
 from sqlalchemy import String, Boolean, DateTime, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel
 from app.models.role import Role, user_roles
+
+if TYPE_CHECKING:
+    from app.models.token import RefreshToken
+    from app.models.session import UserSession
+    from app.models.audit import AuditLog
 
 
 class User(BaseModel):
