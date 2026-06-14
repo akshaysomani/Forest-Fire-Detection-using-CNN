@@ -185,16 +185,16 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold text-neutral-400">
                 <span>CPU CORES UTILIZATION</span>
-                <span className={systemSummary.cpu_usage > 80 ? "text-rose-500" : "text-emerald-400"}>
-                  {systemSummary.cpu_usage}%
+                <span className={systemSummary.cpu_usage_percent > 80 ? "text-rose-500" : "text-emerald-400"}>
+                  {systemSummary.cpu_usage_percent}%
                 </span>
               </div>
               <div className="h-2.5 bg-neutral-900 rounded-full overflow-hidden border border-white/5">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    systemSummary.cpu_usage > 80 ? "bg-rose-500" : "bg-emerald-500"
+                    systemSummary.cpu_usage_percent > 80 ? "bg-rose-500" : "bg-emerald-500"
                   }`}
-                  style={{ width: `${systemSummary.cpu_usage}%` }}
+                  style={{ width: `${systemSummary.cpu_usage_percent}%` }}
                 />
               </div>
             </div>
@@ -202,16 +202,16 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold text-neutral-400">
                 <span>SYSTEM MEMORY LOAD</span>
-                <span className={systemSummary.memory_usage > 80 ? "text-rose-500" : "text-emerald-400"}>
-                  {systemSummary.memory_usage}%
+                <span className={systemSummary.memory_usage.percentage_used > 80 ? "text-rose-500" : "text-emerald-400"}>
+                  {systemSummary.memory_usage.percentage_used}%
                 </span>
               </div>
               <div className="h-2.5 bg-neutral-900 rounded-full overflow-hidden border border-white/5">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    systemSummary.memory_usage > 80 ? "bg-rose-500" : "bg-emerald-500"
+                    systemSummary.memory_usage.percentage_used > 80 ? "bg-rose-500" : "bg-emerald-500"
                   }`}
-                  style={{ width: `${systemSummary.memory_usage}%` }}
+                  style={{ width: `${systemSummary.memory_usage.percentage_used}%` }}
                 />
               </div>
             </div>
@@ -219,12 +219,12 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-semibold text-neutral-400">
                 <span>STORAGE DEPOT STATUS</span>
-                <span>{systemSummary.disk_usage}%</span>
+                <span>{systemSummary.storage_usage.percentage_used}%</span>
               </div>
               <div className="h-2.5 bg-neutral-900 rounded-full overflow-hidden border border-white/5">
                 <div
                   className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${systemSummary.disk_usage}%` }}
+                  style={{ width: `${systemSummary.storage_usage.percentage_used}%` }}
                 />
               </div>
             </div>

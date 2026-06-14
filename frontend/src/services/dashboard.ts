@@ -31,13 +31,24 @@ export interface RecentActivity {
 }
 
 export interface SystemSummary {
-  cpu_usage: number;
-  memory_usage: number;
-  disk_usage: number;
-  db_latency: number;
+  api_status: string;
+  database_status: string;
+  storage_usage: {
+    total_bytes: number;
+    used_bytes: number;
+    free_bytes: number;
+    percentage_used: number;
+  };
+  cpu_usage_percent: number;
+  memory_usage: {
+    total_bytes: number;
+    used_bytes: number;
+    free_bytes: number;
+    percentage_used: number;
+  };
   active_sessions: number;
-  uptime_seconds: number;
-  services_status: Record<string, "up" | "down">;
+  background_jobs_status: string;
+  queue_status: string;
 }
 
 export interface UserSummary {
