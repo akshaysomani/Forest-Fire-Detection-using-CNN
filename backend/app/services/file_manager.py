@@ -10,14 +10,14 @@ class FileManager:
     @staticmethod
     def calculate_md5(data: bytes) -> str:
         """Calculate MD5 hash of raw bytes."""
-        hasher = hashlib.md5()
+        hasher = hashlib.md5(usedforsecurity=False)  # nosec B324
         hasher.update(data)
         return hasher.hexdigest()
 
     @staticmethod
     def calculate_md5_stream(stream: BinaryIO) -> str:
         """Calculate MD5 hash of a binary stream, reading in chunks to prevent memory overhead."""
-        hasher = hashlib.md5()
+        hasher = hashlib.md5(usedforsecurity=False)  # nosec B324
         # Ensure we are at the start of the stream
         try:
             stream.seek(0)

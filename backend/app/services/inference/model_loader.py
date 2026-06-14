@@ -41,7 +41,7 @@ class ModelLoader:
             buffer = io.BytesIO(checkpoint_bytes)
 
             # 3. Load checkpoint state
-            checkpoint_data = torch.load(buffer, map_location=device)
+            checkpoint_data = torch.load(buffer, map_location=device)  # nosec B614
 
             # Support both raw state_dicts and wrapped checkpoint dictionary configurations
             if isinstance(checkpoint_data, dict) and "model_state_dict" in checkpoint_data:

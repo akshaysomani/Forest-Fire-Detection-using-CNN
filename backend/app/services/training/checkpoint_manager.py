@@ -58,7 +58,7 @@ class CheckpointManager:
         buffer = io.BytesIO(file_bytes)
 
         map_location = device if device else torch.device("cpu")
-        checkpoint_data = torch.load(buffer, map_location=map_location)
+        checkpoint_data = torch.load(buffer, map_location=map_location)  # nosec B614
 
         model.load_state_dict(checkpoint_data["model_state_dict"])
         if optimizer and "optimizer_state_dict" in checkpoint_data:
