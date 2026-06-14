@@ -106,7 +106,7 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
             <div className="flex justify-between items-center text-xs">
-              <span className="text-neutral-500">Demo Account: admin / AdminPass123</span>
+              <span className="text-neutral-500">Demo: admin / SuperSecurePassword123!</span>
               <Link
                 href="/auth/forgot"
                 className="font-medium text-emerald-500 hover:text-emerald-400 transition"

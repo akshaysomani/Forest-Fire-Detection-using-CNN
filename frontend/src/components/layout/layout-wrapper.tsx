@@ -14,6 +14,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const { sidebarOpen, theme, setTheme } = useUiStore();
 
   const isAuthPage = pathname?.startsWith("/auth");
+  const isHomePage = pathname === "/";
   const isAdminPage = pathname?.startsWith("/admin");
   const isSuperAdmin = user?.roles?.some((r) => r.name.toLowerCase() === "super admin");
 
@@ -36,17 +37,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, [theme]);
 
   useEffect(() => {
-    // If not authenticated and not on an auth page, redirect to login
-    if (!accessToken && !isAuthPage) {
+    // If not authenticated and not on a public page, redirect to login
+    if (!accessToken && !isAuthPage && !isHomePage) {
       router.push("/auth/login");
     }
     // If authenticated and tries to access admin page without permission, redirect to dashboard
     if (accessToken && isAdminPage && !isSuperAdmin) {
       router.push("/dashboard");
     }
-  }, [accessToken, isAuthPage, isAdminPage, isSuperAdmin, router]);
+  }, [accessToken, isAuthPage, isHomePage, isAdminPage, isSuperAdmin, router]);
 
-  if (isAuthPage) {
+  if (isAuthPage || isHomePage) {
     return <div className="min-h-screen bg-neutral-950 flex flex-col justify-center">{children}</div>;
   }
 
