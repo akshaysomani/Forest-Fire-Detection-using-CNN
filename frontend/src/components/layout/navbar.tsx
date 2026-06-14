@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { useUiStore } from "@/store/ui-store";
-import { Menu, LogOut, ShieldCheck, Moon } from "lucide-react";
+import { Menu, LogOut, ShieldCheck, Moon, Sun } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
   const { clearAuth, refreshToken } = useAuthStore();
-  const { toggleSidebar, addToast } = useUiStore();
+  const { toggleSidebar, addToast, theme, toggleTheme } = useUiStore();
 
   const handleLogout = async () => {
     try {
@@ -53,8 +53,12 @@ export default function Navbar() {
         </div>
 
         {/* Theme indicator */}
-        <button className="p-2 rounded-lg hover:bg-white/5 text-neutral-400 hover:text-white">
-          <Moon className="w-4 h-4" />
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-white/5 text-neutral-400 hover:text-white transition-colors"
+          title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
         {/* Logout */}

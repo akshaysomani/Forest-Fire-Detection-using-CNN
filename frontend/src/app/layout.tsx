@@ -11,13 +11,31 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         {/* Leaflet CSS styling */}
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin="" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                const savedTheme = localStorage.getItem('theme');
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const isDark = savedTheme === 'dark' || (!savedTheme && systemDark);
+                if (isDark) {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                } else {
+                  document.documentElement.classList.add('light');
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            })()
+          `
+        }} />
       </head>
       <body className="bg-neutral-950 text-neutral-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-400">
         <QueryProvider>

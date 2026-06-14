@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.prediction_result import PredictionResponse
 
 
 class AlertResponse(BaseModel):
@@ -14,6 +15,7 @@ class AlertResponse(BaseModel):
     message: str
     created_at: datetime
     updated_at: datetime
+    detection: Optional[PredictionResponse] = None
 
 
 class AlertEventResponse(BaseModel):

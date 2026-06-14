@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.alert_schema import AlertResponse
 
 
 class LocationResponse(BaseModel):
@@ -125,6 +126,7 @@ class AlertLocationResponse(BaseModel):
     location_id: uuid.UUID
     created_at: datetime
     location: LocationResponse
+    alert: Optional[AlertResponse] = None
 
 
 class IncidentLocationResponse(BaseModel):

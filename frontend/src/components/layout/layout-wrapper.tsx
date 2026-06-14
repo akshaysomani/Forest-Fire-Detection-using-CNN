@@ -10,17 +10,41 @@ import Navbar from "./navbar";
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { accessToken } = useAuthStore();
-  const { sidebarOpen } = useUiStore();
+  const { accessToken, user } = useAuthStore();
+  const { sidebarOpen, theme, setTheme } = useUiStore();
 
   const isAuthPage = pathname?.startsWith("/auth");
+  const isAdminPage = pathname?.startsWith("/admin");
+  const isSuperAdmin = user?.roles?.some((r) => r.name.toLowerCase() === "super admin");
+
+  useEffect(() => {
+    // Sync store theme state with the class name applied on documentElement on mount
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
+  }, [setTheme]);
+
+  useEffect(() => {
+    // Sync class list with store changes
+    const root = window.document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    } else {
+      root.classList.add("light");
+      root.classList.remove("dark");
+    }
+  }, [theme]);
 
   useEffect(() => {
     // If not authenticated and not on an auth page, redirect to login
     if (!accessToken && !isAuthPage) {
       router.push("/auth/login");
     }
-  }, [accessToken, isAuthPage, router]);
+    // If authenticated and tries to access admin page without permission, redirect to dashboard
+    if (accessToken && isAdminPage && !isSuperAdmin) {
+      router.push("/dashboard");
+    }
+  }, [accessToken, isAuthPage, isAdminPage, isSuperAdmin, router]);
 
   if (isAuthPage) {
     return <div className="min-h-screen bg-neutral-950 flex flex-col justify-center">{children}</div>;

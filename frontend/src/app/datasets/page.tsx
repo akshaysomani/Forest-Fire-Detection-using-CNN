@@ -24,6 +24,48 @@ export default function DatasetsPage() {
   // Upload state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    validateAndSetDatasetFile(file);
+  };
+
+  const validateAndSetDatasetFile = (file?: File) => {
+    if (!file) return;
+    const allowed = [".png", ".jpg", ".jpeg", ".zip"];
+    const extension = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    if (!allowed.includes(extension)) {
+      addToast({
+        type: "error",
+        title: "Unsupported File Format",
+        message: "Only PNG, JPG, JPEG images or ZIP archives are accepted.",
+      });
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      addToast({
+        type: "error",
+        title: "File Too Large",
+        message: "Maximum dataset file upload limit is 50MB.",
+      });
+      return;
+    }
+    setUploadFile(file);
+  };
 
   // Queries
   const { data: datasetsRes, isLoading: loadingDatasets } = useQuery({
@@ -239,18 +281,68 @@ export default function DatasetsPage() {
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleFileUpload} className="space-y-4">
-                      <div className="border border-dashed border-white/10 rounded-lg p-6 text-center bg-neutral-900/20">
-                        <Upload className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
-                        <span className="text-xs text-neutral-400 block font-medium">
-                          Select Image or zip file
-                        </span>
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        onClick={() => document.getElementById("dataset-file-input")?.click()}
+                        className={`border border-dashed rounded-lg p-6 text-center transition-all duration-200 cursor-pointer ${
+                          dragActive
+                            ? "border-emerald-500 bg-emerald-500/5"
+                            : "border-white/10 bg-neutral-900/20 hover:border-emerald-500/20"
+                        }`}
+                      >
                         <input
                           type="file"
                           accept=".png,.jpg,.jpeg,.zip"
-                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                          className="mt-4 text-xs w-full text-center file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-600/15 file:text-emerald-400 file:cursor-pointer"
+                          id="dataset-file-input"
+                          onChange={(e) => validateAndSetDatasetFile(e.target.files?.[0])}
+                          className="hidden"
                         />
+                        
+                        {!uploadFile ? (
+                          <>
+                            <Upload className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                            <span className="text-xs text-neutral-400 block font-medium">
+                              Drag image/zip here or click to select
+                            </span>
+                            <span className="text-[10px] text-neutral-500 mt-1 block">
+                              Accepts PNG, JPG, JPEG, or ZIP (Max 50MB)
+                            </span>
+                          </>
+                        ) : (
+                          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center space-x-2">
+                              <span className="text-xs font-semibold text-emerald-400">
+                                📎 {uploadFile.name}
+                              </span>
+                              <span className="text-[10px] text-neutral-500">
+                                ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setUploadFile(null)}
+                              className="text-[10px] text-rose-400 hover:text-rose-300 font-bold"
+                            >
+                              Clear Selection
+                            </button>
+                          </div>
+                        )}
                       </div>
+
+                      {uploading && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[9px] text-neutral-500 font-bold uppercase">
+                            <span>Extracting and transmitting...</span>
+                          </div>
+                          <div className="h-1 bg-neutral-950 rounded-full overflow-hidden border border-white/5 animate-pulse">
+                            <div className="h-full bg-emerald-500 rounded-full w-[85%]" />
+                          </div>
+                        </div>
+                      )}
+
                       <Button variant="primary" type="submit" loading={uploading} className="w-full" disabled={!uploadFile}>
                         Upload to Dataset
                       </Button>

@@ -69,3 +69,102 @@
 .leaflet-bar a:hover {
   background-color: #2a2a2a !important;
 }
+
+/* Light Mode overrides */
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light header, html.light aside {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light main {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .glass-panel, html.light .glass-panel-glow {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-neutral-400 {
+  color: #475569 !important;
+}
+
+html.light .text-neutral-500 {
+  color: #64748b !important;
+}
+
+html.light .bg-neutral-900, html.light .bg-neutral-900\/40, html.light .bg-neutral-900\/20 {
+  background-color: #ffffff !important;
+}
+
+html.light .border-white\/5, html.light .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .bg-neutral-950, html.light .bg-neutral-950\/40, html.light .bg-neutral-950\/20 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .divide-white\/5 > * + * {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+html.light .text-neutral-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-neutral-300 {
+  color: #334155 !important;
+}
+
+html.light .bg-neutral-900\/20 {
+  background-color: #f8fafc !important;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+/* Card custom styling for light mode */
+html.light .rounded-xl.border {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light input, html.light select, html.light textarea {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a !important;
+}
+
+html.light input:focus, html.light select:focus, html.light textarea:focus {
+  border-color: #10b981 !important;
+}
+
+html.light .leaflet-container {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .leaflet-bar a {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+

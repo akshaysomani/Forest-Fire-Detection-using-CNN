@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.api.deps import get_current_active_user, PermissionChecker
 from app.models.user import User
 from app.models.detection import Detection
+from app.models.alert import Alert
 from app.models.gis import Location, Region, Zone, Geofence, LocationHistory, AlertLocation
 from app.schemas.gis_schema import (
     LocationResponse,
@@ -198,7 +199,14 @@ async def list_fire_locations(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(PermissionChecker("view_reports"))
 ):
     """Retrieve coordinates reference mappings for active fire alerts."""
-    query = select(AlertLocation).options(selectinload(AlertLocation.location)).order_by(desc(AlertLocation.created_at))
+    query = (
+        select(AlertLocation)
+        .options(
+            selectinload(AlertLocation.location),
+            selectinload(AlertLocation.alert).selectinload(Alert.detection),
+        )
+        .order_by(desc(AlertLocation.created_at))
+    )
     res = await db.execute(query)
     return list(res.scalars().all())
 

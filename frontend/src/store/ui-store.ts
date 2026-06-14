@@ -15,6 +15,7 @@ interface UiState {
   toggleSidebar: () => void;
   setSidebar: (open: boolean) => void;
   toggleTheme: () => void;
+  setTheme: (theme: "dark" | "light") => void;
   addToast: (toast: Omit<Toast, "id">) => void;
   removeToast: (id: string) => void;
 }
@@ -25,7 +26,19 @@ export const useUiStore = create<UiState>((set) => ({
   toasts: [],
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebar: (open) => set({ sidebarOpen: open }),
-  toggleTheme: () => set((state) => ({ theme: state.theme === "dark" ? "light" : "dark" })),
+  toggleTheme: () => set((state) => {
+    const nextTheme = state.theme === "dark" ? "light" : "dark";
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", nextTheme);
+    }
+    return { theme: nextTheme };
+  }),
+  setTheme: (theme) => set(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", theme);
+    }
+    return { theme };
+  }),
   addToast: (toast) => {
     const id = Math.random().toString(36).substring(2, 9);
     set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));

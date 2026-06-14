@@ -18,17 +18,72 @@ export default function PredictionsPage() {
   const [longitude, setLongitude] = useState("");
   const [result, setResult] = useState<SinglePredictionResult | null>(null);
 
+  const [dragActive, setDragActive] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   // Queries
   const { data: historyRes, isLoading: loadingHistory } = useQuery({
     queryKey: ["predictions-history"],
     queryFn: () => predictionService.listPredictions(0, 100),
   });
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const validateAndSetFile = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      addToast({
+        type: "error",
+        title: "Unsupported File",
+        message: "Please upload a valid image file (PNG, JPG, or JPEG).",
+      });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      addToast({
+        type: "error",
+        title: "File Too Large",
+        message: "Maximum upload size is 10MB.",
+      });
+      return;
+    }
+    setUploadFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setUploadProgress(0);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      validateAndSetFile(e.dataTransfer.files[0]);
+    }
+  };
+
   // Mutations
   const predictMutation = useMutation({
     mutationFn: ({ file, lat, lon }: { file: File; lat?: number; lon?: number }) =>
       predictionService.predictSingle(file, lat, lon),
-    onSuccess: (data) => {
+    onMutate: () => {
+      setUploadProgress(20);
+      const timer = setInterval(() => {
+        setUploadProgress((p) => (p < 90 ? p + 10 : p));
+      }, 150);
+      return { timer };
+    },
+    onSuccess: (data, variables, context) => {
+      if (context?.timer) clearInterval(context.timer);
+      setUploadProgress(100);
       setResult(data);
       queryClient.invalidateQueries({ queryKey: ["predictions-history"] });
       addToast({
@@ -37,7 +92,9 @@ export default function PredictionsPage() {
         message: `Prediction: ${data.detection.prediction_label.toUpperCase()} (${(data.detection.confidence * 100).toFixed(1)}% confidence)`,
       });
     },
-    onError: (err: any) => {
+    onError: (err: any, variables, context) => {
+      if (context?.timer) clearInterval(context.timer);
+      setUploadProgress(0);
       addToast({
         type: "error",
         title: "Prediction Failed",
@@ -59,6 +116,8 @@ export default function PredictionsPage() {
 
   const clearForm = () => {
     setUploadFile(null);
+    setPreviewUrl(null);
+    setUploadProgress(0);
     setLatitude("");
     setLongitude("");
     setResult(null);
@@ -89,16 +148,65 @@ export default function PredictionsPage() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Image input */}
-                  <div className="border border-dashed border-white/10 rounded-xl p-8 text-center bg-neutral-900/20">
-                    <Upload className="w-10 h-10 text-neutral-600 mx-auto mb-3" />
-                    <h5 className="text-sm font-semibold text-neutral-300">Drag & Drop Image Here</h5>
-                    <p className="text-xs text-neutral-500 mt-1">Accepts PNG, JPG, or JPEG (Max 10MB)</p>
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById("file-upload-input")?.click()}
+                    className={`border border-dashed rounded-xl p-8 text-center bg-neutral-900/20 cursor-pointer transition-all duration-200 relative ${
+                      dragActive
+                        ? "border-emerald-500 bg-emerald-500/5 shadow-inner scale-[0.99]"
+                        : "border-white/10 hover:border-emerald-500/30 hover:bg-neutral-900/40"
+                    }`}
+                  >
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                      className="mt-6 text-xs w-full text-center file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600/10 file:text-emerald-400 file:cursor-pointer"
+                      id="file-upload-input"
+                      onChange={(e) => validateAndSetFile(e.target.files?.[0] || null)}
+                      className="hidden"
                     />
+                    
+                    {!previewUrl ? (
+                      <>
+                        <Upload className="w-10 h-10 text-neutral-600 mx-auto mb-3" />
+                        <h5 className="text-sm font-semibold text-neutral-300">Drag & Drop Image Here</h5>
+                        <p className="text-xs text-neutral-500 mt-1">Accepts PNG, JPG, or JPEG (Max 10MB)</p>
+                        <span className="mt-4 inline-block text-xs bg-emerald-600/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-bold">
+                          Select Local File
+                        </span>
+                      </>
+                    ) : (
+                      <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative max-w-[200px] mx-auto rounded-lg overflow-hidden border border-white/10">
+                          <img src={previewUrl} alt="Upload preview" className="w-full h-auto object-cover max-h-[140px]" />
+                        </div>
+                        <p className="text-xs text-neutral-300 font-semibold truncate max-w-[240px] mx-auto">
+                          {uploadFile?.name}
+                        </p>
+                        
+                        {uploadProgress > 0 && (
+                          <div className="w-full max-w-[240px] mx-auto space-y-1">
+                            <div className="flex justify-between text-[9px] text-neutral-500 font-bold uppercase">
+                              <span>Analyzing image</span>
+                              <span>{uploadProgress}%</span>
+                            </div>
+                            <div className="h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-white/5">
+                              <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            </div>
+                          </div>
+                        )}
+                        
+                        <button
+                          type="button"
+                          onClick={clearForm}
+                          className="text-xs text-rose-400 hover:text-rose-300 font-bold block mx-auto"
+                        >
+                          Remove Image
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Geolocation Fields */}
