@@ -12,11 +12,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const router = useRouter();
   const { accessToken, user } = useAuthStore();
   const { sidebarOpen, theme, setTheme } = useUiStore();
+  const [hasHydrated, setHasHydrated] = React.useState(false);
 
   const isAuthPage = pathname?.startsWith("/auth");
   const isHomePage = pathname === "/";
+  const isUsersPage = pathname === "/users";
   const isAdminPage = pathname?.startsWith("/admin");
   const isSuperAdmin = user?.roles?.some((r) => r.name.toLowerCase() === "super admin");
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   useEffect(() => {
     // Sync store theme state with the class name applied on documentElement on mount
@@ -37,22 +43,24 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, [theme]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+
     // If not authenticated and not on a public page, redirect to login
-    if (!accessToken && !isAuthPage && !isHomePage) {
+    if (!accessToken && !isAuthPage && !isHomePage && !isUsersPage) {
       router.push("/auth/login");
     }
     // If authenticated and tries to access admin page without permission, redirect to dashboard
     if (accessToken && isAdminPage && !isSuperAdmin) {
       router.push("/dashboard");
     }
-  }, [accessToken, isAuthPage, isHomePage, isAdminPage, isSuperAdmin, router]);
+  }, [hasHydrated, accessToken, isAuthPage, isHomePage, isUsersPage, isAdminPage, isSuperAdmin, router]);
 
-  if (isAuthPage || isHomePage) {
+  if (isAuthPage || isHomePage || isUsersPage) {
     return <div className="min-h-screen bg-neutral-950 flex flex-col justify-center">{children}</div>;
   }
 
   // If we don't have token and we are on a private page, show blank/loader while redirecting
-  if (!accessToken) {
+  if (!hasHydrated || !accessToken) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">

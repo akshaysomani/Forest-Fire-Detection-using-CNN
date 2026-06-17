@@ -3,3 +3,5 @@
 backend/storage/
 .coverage
 .pytest_cache/
+node_modules/
+server/.env

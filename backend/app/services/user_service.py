@@ -64,7 +64,7 @@ class UserService:
             hashed_password=hashed_password,
             profile_image_url=user_in.get("profile_image_url"),
             is_active=True,
-            is_verified=False,
+            is_verified=True,
         )
 
         if viewer_role:

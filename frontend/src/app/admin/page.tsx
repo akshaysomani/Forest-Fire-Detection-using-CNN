@@ -77,10 +77,20 @@ export default function AdminPage() {
           </p>
         </div>
         <div className="flex space-x-2 self-start">
-          <Button variant="outline" size="sm" onClick={() => runAuditMutation.mutate()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => runAuditMutation.mutate()}
+            loading={runAuditMutation.isPending}
+          >
             Audit Permissions
           </Button>
-          <Button variant="outline" size="sm" onClick={() => rotateSecretsMutation.mutate("jwt_secret_key")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => rotateSecretsMutation.mutate("JWT_SECRET_KEY")}
+            loading={rotateSecretsMutation.isPending}
+          >
             Rotate JWT Secret
           </Button>
         </div>
@@ -176,7 +186,7 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5 text-sm">
                   <tr className="hover:bg-white/5 transition">
-                    <td className="px-6 py-4 font-medium text-neutral-200">jwt_secret_key</td>
+                    <td className="px-6 py-4 font-medium text-neutral-200">JWT_SECRET_KEY</td>
                     <td className="px-6 py-4 font-mono text-xs">HS256</td>
                     <td className="px-6 py-4">
                       <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">

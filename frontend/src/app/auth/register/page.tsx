@@ -46,8 +46,8 @@ export default function RegisterPage() {
 
       addToast({
         type: "success",
-        title: "Account Request Sent",
-        message: "Your registration is complete. Please check email for activation.",
+        title: "Account Registered Successfully",
+        message: "Your registration is complete. You can sign in immediately!",
       });
 
       router.push("/auth/login");
