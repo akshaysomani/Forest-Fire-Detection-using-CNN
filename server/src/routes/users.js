@@ -17,7 +17,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC"
+      "SELECT id, name, email, role, created_at FROM node_users ORDER BY created_at DESC"
     );
     res.json({
       success: true,
@@ -42,7 +42,7 @@ router.get("/:id", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT id, name, email, role, created_at FROM users WHERE id = $1",
+      "SELECT id, name, email, role, created_at FROM node_users WHERE id = $1",
       [id]
     );
 

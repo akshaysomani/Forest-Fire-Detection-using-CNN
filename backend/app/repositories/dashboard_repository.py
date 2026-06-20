@@ -139,7 +139,10 @@ class DashboardRepository:
         """
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
         # Handle SQLite date formatting vs PostgreSQL
-        date_expr = func.strftime("%Y-%m-%d", User.created_at)
+        if db.bind.dialect.name == "sqlite":
+            date_expr = func.strftime("%Y-%m-%d", User.created_at)
+        else:
+            date_expr = func.to_char(User.created_at, "YYYY-MM-DD")
 
         query = (
             select(date_expr.label("date_bucket"), func.count(User.id))
@@ -157,7 +160,10 @@ class DashboardRepository:
         Returns tuples: (date_str, upload_count)
         """
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
-        date_expr = func.strftime("%Y-%m-%d", Detection.created_at)
+        if db.bind.dialect.name == "sqlite":
+            date_expr = func.strftime("%Y-%m-%d", Detection.created_at)
+        else:
+            date_expr = func.to_char(Detection.created_at, "YYYY-MM-DD")
 
         query = (
             select(date_expr.label("date_bucket"), func.count(Detection.id))

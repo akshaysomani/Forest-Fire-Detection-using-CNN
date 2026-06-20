@@ -13,9 +13,9 @@ async function seed() {
   try {
     await client.query("BEGIN");
 
-    // Create the users table
+    // Create the node_users table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE IF NOT EXISTS node_users (
         id         SERIAL PRIMARY KEY,
         name       VARCHAR(100) NOT NULL,
         email      VARCHAR(255) UNIQUE NOT NULL,
@@ -23,7 +23,7 @@ async function seed() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `);
-    console.log("✅ users table created (or already exists)");
+    console.log("✅ node_users table created (or already exists)");
 
     // Insert sample users (skip if they already exist)
     const sampleUsers = [
@@ -34,7 +34,7 @@ async function seed() {
 
     for (const user of sampleUsers) {
       await client.query(
-        `INSERT INTO users (name, email, role)
+        `INSERT INTO node_users (name, email, role)
          VALUES ($1, $2, $3)
          ON CONFLICT (email) DO NOTHING`,
         [user.name, user.email, user.role]

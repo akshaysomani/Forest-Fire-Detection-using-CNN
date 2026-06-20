@@ -18,7 +18,10 @@ class TrendEngine:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
         # SQLite vs Postgres compatible date extract
-        date_expr = func.strftime("%Y-%m-%d", Detection.created_at)
+        if db.bind.dialect.name == "sqlite":
+            date_expr = func.strftime("%Y-%m-%d", Detection.created_at)
+        else:
+            date_expr = func.to_char(Detection.created_at, "YYYY-MM-DD")
         query = (
             select(date_expr.label("date_bucket"), func.count(Detection.id))
             .where(and_(Detection.prediction_label == "fire", Detection.created_at >= cutoff, Detection.deleted_at.is_(None)))
@@ -45,7 +48,10 @@ class TrendEngine:
     async def get_incident_trends(self, db: AsyncSession, days: int = 30) -> List[Dict[str, Any]]:
         """Fetch daily counts of incidents logged."""
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        date_expr = func.strftime("%Y-%m-%d", Incident.created_at)
+        if db.bind.dialect.name == "sqlite":
+            date_expr = func.strftime("%Y-%m-%d", Incident.created_at)
+        else:
+            date_expr = func.to_char(Incident.created_at, "YYYY-MM-DD")
 
         query = (
             select(date_expr.label("date_bucket"), func.count(Incident.id))
