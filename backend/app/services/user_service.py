@@ -44,19 +44,28 @@ class UserService:
 
         hashed_password = password_service.hash_password(user_in["password"])
 
-        # Default role: Viewer
-        query = select(Role).where(Role.name == "Viewer")
+        # Determine requested role (default "Viewer"; Super Admin cannot be self-assigned)
+        requested_role_name = user_in.get("role") or "Viewer"
+        if requested_role_name == "Super Admin":
+            requested_role_name = "Viewer"
+
+        query = select(Role).where(Role.name == requested_role_name)
         res = await db.execute(query)
-        viewer_role = res.scalar_one_or_none()
+        assigned_role = res.scalar_one_or_none()
 
-        # Seed roles if they do not exist
-        if not viewer_role:
+        # Seed roles if they do not exist yet
+        if not assigned_role:
             from app.services.permission_service import permission_service
-
             await permission_service.seed_roles_and_permissions(db)
+            query = select(Role).where(Role.name == requested_role_name)
+            res = await db.execute(query)
+            assigned_role = res.scalar_one_or_none()
+
+        # Fall back to Viewer if the requested role still does not exist
+        if not assigned_role:
             query = select(Role).where(Role.name == "Viewer")
             res = await db.execute(query)
-            viewer_role = res.scalar_one_or_none()
+            assigned_role = res.scalar_one_or_none()
 
         db_user = User(
             email=user_in["email"],
@@ -67,8 +76,8 @@ class UserService:
             is_verified=True,
         )
 
-        if viewer_role:
-            db_user.roles.append(viewer_role)
+        if assigned_role:
+            db_user.roles.append(assigned_role)
 
         db.add(db_user)
         await db.flush()

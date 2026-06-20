@@ -168,3 +168,26 @@ html.light .leaflet-bar a {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
+
+/* ─── Role badge animations ─────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease both;
+}
+
+/* ─── Mobile-first layout helpers ───────────────────────── */
+@media (max-width: 640px) {
+  .glass-panel, .glass-panel-glow {
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* ─── Metric card glow on hover ─────────────────────────── */
+.card-metric:hover {
+  border-color: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}

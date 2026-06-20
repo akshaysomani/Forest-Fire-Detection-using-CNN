@@ -374,17 +374,19 @@ export default function DashboardPage() {
     return (
       <div className="space-y-8">
         {/* Metric Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {cardItems.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <Card key={idx} className="border border-white/5 shadow-glass flex items-center p-6 space-x-5">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.bg}`}>
-                  <Icon className={`w-6 h-6 ${item.color}`} />
+              <Card key={idx} className="border border-white/5 shadow-glass p-5 flex flex-col space-y-4 relative overflow-hidden">
+                {/* Subtle glow behind icon */}
+                <div className={`absolute top-0 right-0 w-24 h-24 rounded-full opacity-20 blur-2xl -translate-y-6 translate-x-6 ${item.bg}`} />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.bg} shrink-0`}>
+                  <Icon className={`w-5 h-5 ${item.color}`} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{item.title}</p>
-                  <h3 className="text-2xl font-black text-white mt-1">{item.value}</h3>
+                  <h3 className="text-3xl font-black text-white tabular-nums">{item.value}</h3>
+                  <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mt-1 leading-tight">{item.title}</p>
                 </div>
               </Card>
             );
@@ -608,24 +610,51 @@ export default function DashboardPage() {
             </button>
           </Card>
 
-          {/* Simple Profile Overview Widget */}
+          {/* Profile Overview Widget — with prominent role badges */}
           <Card className="border border-white/5 p-5 flex flex-col items-center text-center space-y-3 bg-neutral-900/15">
-            <div className="w-16 h-16 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-white text-2xl uppercase border-2 border-emerald-500/30">
-              {user?.username?.[0] || "U"}
+            {/* Avatar */}
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center font-black text-white text-2xl uppercase border border-emerald-500/30 shadow-lg">
+                {user?.username?.[0] || "U"}
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-neutral-950 flex items-center justify-center">
+                <CheckCircle className="w-3 h-3 text-white" />
+              </div>
             </div>
+
+            {/* Name + email */}
             <div>
-              <h3 className="font-bold text-white tracking-wide text-lg">{user?.username}</h3>
-              <p className="text-xs text-neutral-500 font-medium mt-0.5">{user?.email}</p>
+              <h3 className="font-bold text-white tracking-wide text-base">{user?.username}</h3>
+              <p className="text-[11px] text-neutral-500 font-medium mt-0.5 truncate max-w-[180px]">{user?.email}</p>
             </div>
-            <div className="flex flex-wrap gap-1.5 justify-center mt-1">
-              {user?.roles.map((r) => (
-                <span
-                  key={r.id}
-                  className="text-[9px] font-bold bg-neutral-800 text-neutral-300 border border-white/5 px-2 py-0.5 rounded-full uppercase"
-                >
-                  {r.name}
-                </span>
-              ))}
+
+            {/* Role badges — prominently shown */}
+            <div className="w-full pt-2 border-t border-white/5">
+              <p className="text-[9px] uppercase tracking-widest text-neutral-600 font-bold mb-2">Assigned Role</p>
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {user?.roles && user.roles.length > 0 ? (
+                  user.roles.map((r) => {
+                    const roleColors: Record<string, string> = {
+                      "Super Admin": "bg-purple-500/15 text-purple-300 border-purple-500/30",
+                      "Forest Officer": "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+                      "Emergency Response Officer": "bg-rose-500/15 text-rose-300 border-rose-500/30",
+                      "Research Analyst": "bg-amber-500/15 text-amber-300 border-amber-500/30",
+                      "Viewer": "bg-sky-500/15 text-sky-300 border-sky-500/30",
+                    };
+                    const colorClass = roleColors[r.name] ?? "bg-neutral-800 text-neutral-300 border-white/10";
+                    return (
+                      <span
+                        key={r.id}
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border uppercase tracking-wide ${colorClass}`}
+                      >
+                        {r.name}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="text-[10px] text-neutral-600 font-medium">No role assigned</span>
+                )}
+              </div>
             </div>
           </Card>
         </div>
@@ -1040,14 +1069,36 @@ export default function DashboardPage() {
       {/* Header operations toggle for super admin */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2">
-            <span>IGNISAI DASHBOARD</span>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            IGNISAI Dashboard
           </h1>
-          <p className="text-sm text-neutral-400 mt-1 uppercase tracking-wider font-semibold">
-            {dashboardView === "admin"
-              ? "Operations Telemetry Control Center"
-              : "Agent Command Center & Sandbox"}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <p className="text-xs text-neutral-500 uppercase tracking-wider font-semibold">
+              {dashboardView === "admin"
+                ? "Operations Control Center"
+                : "Command Center & Sandbox"}
+            </p>
+            {/* Role badge in header */}
+            {user?.roles && user.roles.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {user.roles.map((r) => {
+                  const roleColors: Record<string, string> = {
+                    "Super Admin": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+                    "Forest Officer": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+                    "Emergency Response Officer": "bg-rose-500/20 text-rose-300 border-rose-500/30",
+                    "Research Analyst": "bg-amber-500/20 text-amber-300 border-amber-500/30",
+                    "Viewer": "bg-sky-500/20 text-sky-300 border-sky-500/30",
+                  };
+                  const colorClass = roleColors[r.name] ?? "bg-neutral-800 text-neutral-300 border-white/10";
+                  return (
+                    <span key={r.id} className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide ${colorClass}`}>
+                      {r.name}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {isSuperAdmin && (

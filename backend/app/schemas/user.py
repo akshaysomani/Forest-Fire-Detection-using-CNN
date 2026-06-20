@@ -9,15 +9,29 @@ class UserBase(BaseModel):
     profile_image_url: str | None = Field(None, max_length=512)
 
 
+# Roles users are allowed to self-select during registration
+SELECTABLE_ROLES = ["Viewer", "Forest Officer", "Emergency Response Officer", "Research Analyst"]
+
+
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=128)
     confirm_password: str = Field(..., min_length=8, max_length=128)
+    # Optional role selection — defaults to "Viewer" if not provided.
+    # "Super Admin" is intentionally excluded; admins are created via seeding.
+    role: str | None = Field(None, description="Requested role during registration")
 
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v: str, info) -> str:
         if "password" in info.data and v != info.data["password"]:
             raise ValueError("Passwords do not match.")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str | None) -> str | None:
+        if v is not None and v not in SELECTABLE_ROLES:
+            raise ValueError(f"Invalid role. Choose one of: {', '.join(SELECTABLE_ROLES)}")
         return v
 
 
